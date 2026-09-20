@@ -20,8 +20,8 @@
      4.7
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.756,
    "diff": 0.344,
@@ -46,8 +46,8 @@
      5.4
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 6.667,
    "diff": 0.833,
@@ -67,13 +67,13 @@
     "s10": 12,
     "s01": 8.5,
     "had": [
-     3.42,
-     3.55,
-     1.8
+     3.5,
+     3.6,
+     1.77
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.976,
    "diff": 0.624,
@@ -98,8 +98,8 @@
      1.56
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 7.971,
    "diff": 0.679,
@@ -119,13 +119,13 @@
     "s10": 7,
     "s01": 24,
     "had": [
-     1.17,
-     5.45,
-     11
+     1.15,
+     5.7,
+     12
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 5.419,
    "diff": 0.281,
@@ -141,20 +141,20 @@
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 8.5,
-    "s10": 24,
-    "s01": 12,
+    "ttg1": 9,
+    "s10": 28,
+    "s01": 12.5,
     "had": [
-     6,
-     5.05,
-     1.31
+     6.4,
+     5.2,
+     1.28
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
-   "optimized": 8,
-   "diff": 0.5,
+   "optimized": 8.642,
+   "diff": 0.358,
    "matchDate": "2026-09-21"
   },
   {
@@ -176,8 +176,8 @@
      2.26
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.486,
    "diff": 0.614,
@@ -197,13 +197,13 @@
     "s10": 9,
     "s01": 8.5,
     "had": [
-     2.62,
-     3.16,
+     2.67,
+     3.1,
      2.32
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.371,
    "diff": 0.679,
@@ -228,8 +228,8 @@
      3.12
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.888,
    "diff": 0.362,
@@ -280,8 +280,8 @@
      2.86
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.418,
    "diff": 0.682,
@@ -301,13 +301,13 @@
     "s10": 10.5,
     "s01": 7.5,
     "had": [
-     3.28,
+     3.38,
      3.35,
-     1.9
+     1.87
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.375,
    "diff": 0.325,
@@ -323,7 +323,7 @@
    "matchTime": "18:00:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 4.7,
+    "ttg1": 4.9,
     "s10": 9.5,
     "s01": 8.2,
     "had": [
@@ -332,11 +332,11 @@
      2.2
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.401,
-   "diff": 0.299,
+   "diff": 0.499,
    "matchDate": "2026-09-20"
   },
   {
@@ -358,8 +358,8 @@
      null
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 8.182,
    "diff": 1.318,
@@ -384,8 +384,8 @@
      2.02
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.343,
    "diff": 0.757,
@@ -410,8 +410,8 @@
      4.05
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.855,
    "diff": 0.245,
@@ -431,13 +431,13 @@
     "s10": 5.3,
     "s01": 7.5,
     "had": [
-     1.92,
+     1.89,
      2.83,
-     3.92
+     4.05
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 3.105,
    "diff": 0.345,
@@ -454,19 +454,19 @@
    "matchStatus": "Selling",
    "odds": {
     "ttg1": 12,
-    "s10": 23,
+    "s10": 24,
     "s01": 19,
     "had": [
-     2.73,
-     4.05,
-     1.94
+     2.74,
+     4.06,
+     1.93
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
-   "optimized": 10.405,
-   "diff": 1.595,
+   "optimized": 10.605,
+   "diff": 1.395,
    "matchDate": "2026-09-20"
   },
   {
@@ -483,13 +483,13 @@
     "s10": 8.25,
     "s01": 15,
     "had": [
-     1.61,
-     3.6,
-     4.35
+     1.57,
+     3.7,
+     4.55
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 5.323,
    "diff": 0.677,
@@ -514,8 +514,8 @@
      1.92
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 7.018,
    "diff": 0.532,
@@ -540,8 +540,8 @@
      9.8
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 5.769,
    "diff": 0.331,
@@ -557,7 +557,7 @@
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 3.7,
+    "ttg1": 3.8,
     "s10": 7.5,
     "s01": 6.25,
     "had": [
@@ -566,11 +566,11 @@
      2.3
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 3.409,
-   "diff": 0.291,
+   "diff": 0.391,
    "matchDate": "2026-09-20"
   },
   {
@@ -592,8 +592,8 @@
      1.35
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 6.441,
    "diff": 1.059,
@@ -609,20 +609,20 @@
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 10,
+    "ttg1": 10.5,
     "s10": 17,
-    "s01": 22,
+    "s01": 23,
     "had": [
-     1.91,
-     3.95,
-     2.85
+     1.83,
+     4.1,
+     2.95
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
-   "optimized": 9.59,
-   "diff": 0.41,
+   "optimized": 9.775,
+   "diff": 0.725,
    "matchDate": "2026-09-20"
   },
   {
@@ -635,20 +635,20 @@
    "matchTime": "22:15:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 7.75,
-    "s10": 17,
-    "s01": 12,
+    "ttg1": 7,
+    "s10": 16,
+    "s01": 11.5,
     "had": [
-     3.4,
-     3.8,
-     1.75
+     3.32,
+     3.75,
+     1.78
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
-   "optimized": 7.034,
-   "diff": 0.716,
+   "optimized": 6.691,
+   "diff": 0.309,
    "matchDate": "2026-09-20"
   },
   {
@@ -670,8 +670,8 @@
      2.4
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.988,
    "diff": 0.563,
@@ -696,8 +696,8 @@
      6.2
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 9.07,
    "diff": 0.93,
@@ -722,8 +722,8 @@
      1.83
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 4.459,
    "diff": 0.341,
@@ -743,13 +743,13 @@
     "s10": 16,
     "s01": 10.5,
     "had": [
-     3.37,
-     3.65,
-     1.79
+     3.5,
+     3.7,
+     1.75
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
    "optimized": 6.34,
    "diff": 0.36,
@@ -765,22 +765,22 @@
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
    "odds": {
-    "ttg1": 7,
+    "ttg1": 7.5,
     "s10": 12,
-    "s01": 15,
+    "s01": 16,
     "had": [
-     1.95,
-     3.57,
-     2.97
+     1.9,
+     3.6,
+     3.08
     ]
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
+   "oddsAt": "2026-09-20T14:32:26+08:00",
+   "captureCount": 6,
    "result": null,
-   "optimized": 6.667,
-   "diff": 0.333,
+   "optimized": 6.857,
+   "diff": 0.643,
    "matchDate": "2026-09-20"
   }
  ],
- "updatedAt": "2026-09-20T13:00:45+08:00"
+ "updatedAt": "2026-09-20T14:32:26+08:00"
 }
