@@ -69,7 +69,16 @@ git push -u origin main
 powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1
 ```
 
-任务名：「竞彩1球-早间抓取回填」（11:00）、「竞彩1球-晚间抓取」（21:00），时间可在 `config.json` 里改（改完重新运行注册脚本）。任务以 SYSTEM 账户运行，**电脑开机即执行，无需登录**；错过的时间点会自动补跑。
+任务名：「竞彩1球-早间抓取回填」（11:00）、「竞彩1球-晚间抓取」（21:00），时间可在 `config.json` 里改（改完重新运行注册脚本）。**注册任务需要管理员 PowerShell**（本机策略限制）。运行身份二选一：
+
+- 默认 **SYSTEM**：电脑开机即执行、无需登录；自动推送 GitHub 需要先把令牌写进远端地址（即上面带 `-Token` 的方式）
+- 加 `-InteractiveUser`：以你的账户身份运行（**需保持登录状态**）；先手动执行一次 `git push` 让 Windows 记住 GitHub 登录，之后就能**免令牌自动推送**（会弹一次浏览器/登录窗口，登录即可）
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -InteractiveUser
+```
+
+两种方式错过的时间点都会在开机后自动补跑。
 
 ### 第 3 步：开启 GitHub Pages
 
