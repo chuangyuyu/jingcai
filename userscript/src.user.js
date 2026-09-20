@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      1.0.0
-// @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值，浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
+// @version      2.0.0
+// @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
+// @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
+// @downloadURL  https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
 // @match        https://www.lottery.gov.cn/jc/*
 // @match        https://www.sporttery.cn/jc/*
 // @match        https://m.lottery.gov.cn/*
