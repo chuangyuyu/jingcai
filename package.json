@@ -1,0 +1,17 @@
+{
+  "name": "jingcai-1qiu-diff",
+  "version": "1.0.0",
+  "private": true,
+  "description": "竞彩足球：1球赔率 vs 比分(1:0/0:1)双选优化赔率 差值记录与统计",
+  "scripts": {
+    "odds": "node scripts/daily.js odds",
+    "results": "node scripts/daily.js results",
+    "both": "node scripts/daily.js both",
+    "excel": "node scripts/export-excel.js",
+    "test": "node scripts/test-core.js",
+    "build:userscript": "node scripts/build-userscript.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

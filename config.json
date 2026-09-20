@@ -1,0 +1,6 @@
+{
+  "autoPush": true,
+  "backfillDays": 10,
+  "morningTime": "09:10",
+  "eveningTime": "21:10"
+}

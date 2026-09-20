@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>竞彩 1球 · 比分双选差值记录</title>
+<meta name="description" content="竞彩足球：总进球1球赔率 与 1:0/0:1比分双选优化赔率 的差值记录与统计（个人数据分析工具）">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-left">
+    <h1>竞彩 1球 · 比分双选差值</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="status">正在加载数据…</span></div>
+  </div>
+  <div class="top-actions">
+    <button id="btn-odds" class="primary" title="从体彩官方接口抓取/刷新当前在售比赛赔率并计算差值">抓取今日赔率</button>
+    <button id="btn-results" title="抓取最近未出结果场次的赛果并回填">回填赛果</button>
+    <button id="btn-sync" title="把本机未同步的数据提交到 GitHub（需在设置中配置令牌）">同步到云端</button>
+    <div class="menu">
+      <button id="btn-more">更多 ▾</button>
+      <div class="menu-list" id="menu-list" hidden>
+        <a id="btn-xlsx-repo" href="excel/竞彩1球-差值记录.xlsx" download>下载云端 Excel</a>
+        <button id="btn-xlsx">浏览器导出 Excel</button>
+        <button id="btn-csv">导出 CSV</button>
+        <button id="btn-reload">重新加载云端数据</button>
+        <button id="btn-settings">设置…</button>
+        <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">创建 GitHub 令牌…</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button class="tab active" data-view="stats">统计分布</button>
+  <button class="tab" data-view="data">数据表</button>
+</nav>
+
+<main>
+  <!-- ============================ 统计视图 ============================ -->
+  <section id="view-stats" class="view">
+    <div class="filters">
+      <div class="seg" id="range-seg">
+        <button data-range="7">近7天</button>
+        <button data-range="30" class="active">近30天</button>
+        <button data-range="month">本月</button>
+        <button data-range="all">全部</button>
+      </div>
+      <select id="league-filter"><option value="">全部联赛</option></select>
+      <label class="chk"><input type="checkbox" id="only-settled"> 只看已出赛果</label>
+    </div>
+
+    <div class="tiles" id="tiles"></div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>差值分布（按赛果分组）</h2>
+        <div class="legend" id="legend-dist"></div>
+      </div>
+      <p class="card-sub">横轴：差值 = 1球赔率 − 优化赔率；纵轴：场次数。重点关注赛果为 1 球（1:0 / 0:1）的场次集中在哪些差值区间。</p>
+      <div class="chart-wrap"><div class="chart" id="chart-dist"></div></div>
+      <div class="xlabels" id="xlabels-dist"></div>
+      <div id="chart-dist-empty" class="empty" hidden>暂无已出赛果的数据，等比赛结束后回填赛果即可看到分布。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>各差值区间的 1 球命中率</h2></div>
+      <p class="card-sub">每个差值区间内，赛果恰好为 1 球的场次占比（虚线为总体 1 球占比）。样本少于 5 场的区间仅供参考。</p>
+      <div class="chart-wrap"><div class="chart" id="chart-ratio"></div></div>
+      <div class="xlabels" id="xlabels-ratio"></div>
+      <div id="chart-ratio-empty" class="empty" hidden>暂无已出赛果的数据。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>分箱明细（箱宽 0.05）</h2></div>
+      <div class="table-scroll">
+        <table class="grid" id="bins-table">
+          <thead><tr><th>差值区间</th><th>总场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均差值</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <details class="card help">
+      <summary><h2>计算口径与说明</h2></summary>
+      <div class="help-body">
+        <p><b>优化赔率</b> = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)。含义：把 1 元本金按赔率倒数比例拆成两注分别押 1:0 和 0:1，无论哪个比分命中，回报都相同，这个保底回报就是优化赔率。</p>
+        <p><b>差值</b> = 1球赔率 − 优化赔率。<b>正数</b>表示押「总进球 1球」回报更高；<b>负数</b>表示押「1:0 + 0:1 比分双选（等回报拆注）」回报更高。</p>
+        <p>1球赔率与比分双选对应同一个事件（全场恰好进 1 球），两者赔率差异来自官方不同的抽水结构，本工具长期记录这个差值，用于观察：赛果为 1 球的比赛，其差值分布有什么规律。</p>
+        <p>数据来自中国体育彩票官方接口，每天定时抓取（本机任务）或手动抓取（本页按钮）；赛果于比赛结束后回填。赔率为每次抓取时的实时值，以最后一次抓取为准（见数据表中的「赔率更新时间」）。</p>
+        <p class="muted">仅为个人数据分析用途，数据版权归中国体育彩票（sporttery.cn）所有，不构成投注建议，请理性购彩。</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============================ 数据表视图 ============================ -->
+  <section id="view-data" class="view" hidden>
+    <div class="filters">
+      <div class="seg" id="range-seg2">
+        <button data-range="7">近7天</button>
+        <button data-range="30" class="active">近30天</button>
+        <button data-range="month">本月</button>
+        <button data-range="all">全部</button>
+      </div>
+      <select id="league-filter2"><option value="">全部联赛</option></select>
+      <label class="chk"><input type="checkbox" id="only-settled2"> 只看已出赛果</label>
+      <label class="chk"><input type="checkbox" id="only-value"> 只看有差值</label>
+    </div>
+    <div class="card">
+      <div class="table-scroll">
+        <table class="grid data-table" id="data-table">
+          <thead><tr>
+            <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th>
+            <th data-sort="ttg1" class="num">1球</th><th data-sort="s10" class="num">1:0</th><th data-sort="s01" class="num">0:1</th>
+            <th data-sort="optimized" class="num">优化</th><th data-sort="diff" class="num">差值</th>
+            <th data-sort="score">赛果</th><th>1球?</th><th data-sort="oddsAt">赔率更新</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="data-more" class="more" hidden><button id="btn-more-rows">显示更多…</button></div>
+    </div>
+  </section>
+</main>
+
+<!-- 设置对话框 -->
+<dialog id="dlg-settings">
+  <form method="dialog" class="dlg">
+    <h2>设置</h2>
+    <p class="muted">配置 GitHub 仓库后，本页抓取的数据可以一键同步到云端（其他设备也能看到），并更新仓库中的 Excel。</p>
+    <label>仓库所有者（用户名/组织）<input id="set-owner" placeholder="例如 zhangsan" autocomplete="off"></label>
+    <label>仓库名<input id="set-repo" placeholder="例如 jingcai" autocomplete="off"></label>
+    <label>分支<input id="set-branch" placeholder="main" autocomplete="off"></label>
+    <label>访问令牌（细粒度 Token，仅需该仓库的 Contents 读写权限）
+      <input id="set-token" type="password" placeholder="github_pat_…" autocomplete="off">
+    </label>
+    <p class="muted small">令牌只保存在本机浏览器（localStorage），不会上传到任何第三方。创建入口见「更多」菜单。若只在电脑上使用定时任务，本页可以不配置令牌。</p>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost">取消</button>
+      <button id="btn-clear-token" type="button" class="ghost danger">清除令牌</button>
+      <button id="btn-save-settings" type="button" class="primary">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" hidden></div>
+<div id="tooltip" hidden></div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

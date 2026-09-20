@@ -1,0 +1,32 @@
+{
+ "date": "2026-09-21",
+ "matches": [
+  {
+   "matchId": 2041616,
+   "businessDate": "2026-09-21",
+   "matchNumStr": "周一001",
+   "league": "亚运女足",
+   "home": "中国女",
+   "away": "菲律宾女",
+   "matchTime": "15:00:00",
+   "matchStatus": "Selling",
+   "odds": {
+    "ttg1": 8.5,
+    "s10": 9.25,
+    "s01": 55,
+    "had": [
+     null,
+     null,
+     null
+    ]
+   },
+   "oddsAt": "2026-09-20T12:32:45+08:00",
+   "captureCount": 2,
+   "result": null,
+   "optimized": 7.918,
+   "diff": 0.582,
+   "matchDate": "2026-09-21"
+  }
+ ],
+ "updatedAt": "2026-09-20T12:32:45+08:00"
+}
