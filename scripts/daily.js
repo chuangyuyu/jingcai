@@ -21,6 +21,7 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 const JC = require('../docs/core.js');
+const { detectProxy, ensureGitProxy } = require('./lib/proxy.js');
 
 const ROOT = path.join(__dirname, '..');
 const DATA_DIR = path.join(ROOT, 'docs', 'data');
@@ -55,7 +56,7 @@ function saveJson(file, obj) {
 }
 
 function loadConfig() {
-  return Object.assign({ autoPush: true, backfillDays: 10 }, loadJson(path.join(ROOT, 'config.json'), {}));
+  return Object.assign({ autoPush: true, backfillDays: 10, gitProxy: '' }, loadJson(path.join(ROOT, 'config.json'), {}));
 }
 
 function loadDay(date) {
@@ -82,6 +83,26 @@ function git(args, opts) {
   return execFileSync('git', args, Object.assign({ cwd: ROOT, encoding: 'utf8', stdio: 'pipe' }, opts));
 }
 
+// 每次 git 操作前自动探测本地代理（端口可能变化），并同步到本仓库 git 配置。
+// config.json 的 gitProxy 可手动指定（如 "http://127.0.0.1:7890"），留空则自动探测。
+async function gitEnsureProxy() {
+  try {
+    const cfg = loadConfig();
+    const r = await ensureGitProxy(ROOT, { hint: cfg.gitProxy || '' });
+    if (r.proxy) {
+      log(`代理检测：${r.proxy.source} ${r.proxy.url}` + (r.changed ? `（已更新 git 配置${r.previous ? '，原为 ' + r.previous : ''}）` : '（git 配置未变）'));
+    } else if (r.changed) {
+      log(`未探测到可用代理，已清除过期配置（原 ${r.removed}），将尝试直连 GitHub`);
+    } else {
+      log('未探测到本地代理，将尝试直连 GitHub');
+    }
+    return r;
+  } catch (e) {
+    log('代理探测出错（按现有 git 配置继续）：' + e.message);
+    return {};
+  }
+}
+
 function hasRemote() {
   try { git(['remote', 'get-url', 'origin']); return true; }
   catch (e) { return false; }
@@ -98,7 +119,7 @@ function gitPullRebase() {
   }
 }
 
-function gitCommitAndPush(message) {
+async function gitCommitAndPush(message) {
   if (!hasRemote()) {
     log('未配置 git remote origin，跳过推送（数据已保存在本地，按 README 配置后可重新运行 --push）');
     return false;
@@ -119,7 +140,8 @@ function gitCommitAndPush(message) {
       log('已推送到 GitHub');
       return true;
     } catch (e) {
-      log(`git push 第 ${attempt} 次失败，尝试 pull --rebase 后重试…`);
+      log(`git push 第 ${attempt} 次失败，重新探测代理并 pull --rebase 后重试…`);
+      if (attempt === 1) await gitEnsureProxy(); // 端口可能变了，重新探测
       if (!gitPullRebase()) break;
     }
   }
@@ -195,17 +217,94 @@ async function runResults(config) {
   return { changed: totalChanged, filled: totalFilled, dates: touchedDates };
 }
 
+// ---------------------------------------------------------------- 环境自检
+
+function withTimeout(promise, ms, label) {
+  return new Promise(function (resolve, reject) {
+    const t = setTimeout(function () { reject(new Error((label || '操作') + '超时')); }, ms);
+    promise.then(function (v) { clearTimeout(t); resolve(v); }, function (e) { clearTimeout(t); reject(e); });
+  });
+}
+
+// node scripts/daily.js check —— 迁移/排障用：逐项检查运行环境并给出结论
+async function runCheck() {
+  console.log('=== 竞彩1球差值 · 环境自检 ===');
+  console.log('时间：' + JC.nowIso());
+  console.log('目录：' + ROOT + '\n');
+  let fails = 0;
+  const ok = function (name, pass, detail) {
+    if (!pass) fails++;
+    console.log((pass ? '  [通过] ' : '  [需处理] ') + name + (detail ? ' —— ' + detail : ''));
+  };
+
+  ok('Node.js 版本', Number(process.versions.node.split('.')[0]) >= 18, 'v' + process.versions.node + '（需 >= 18）');
+
+  try { require('exceljs'); ok('依赖 exceljs', true, '已安装'); }
+  catch (e) { ok('依赖 exceljs', false, '未安装：请在本目录运行 npm install（或双击 一键安装.cmd）'); }
+
+  try {
+    const raw = await withTimeout(JC.fetchJson(JC.ODDS_URL, true), 20000, '赔率接口');
+    const n = JC.parseOdds(raw, JC.nowIso()).length;
+    ok('体彩赔率接口（需国内网络）', true, '正常，当前在售 ' + n + ' 场');
+  } catch (e) { ok('体彩赔率接口（需国内网络）', false, e.message); }
+  try {
+    const d = JC.localDateStr();
+    const rs = await withTimeout(JC.fetchAllResults(d, d, true), 20000, '赛果接口');
+    ok('体彩赛果接口', true, '正常，今日已出赛果 ' + rs.length + ' 条');
+  } catch (e) { ok('体彩赛果接口', false, e.message); }
+
+  let proxy = null;
+  try { proxy = await detectProxy({ hint: loadConfig().gitProxy || '' }); } catch (e) {}
+  ok('本地代理探测', true, proxy ? (proxy.url + '（来源：' + proxy.source + '）') : '未发现可用代理（若是直连网络，属正常）');
+
+  if (hasRemote()) {
+    const r = await ensureGitProxy(ROOT, { hint: loadConfig().gitProxy || '' });
+    ok('git 代理配置', true, r.proxy ? ('已适配为 ' + r.proxy.url + (r.changed ? '（本次更新）' : '')) : '直连模式');
+    try {
+      const out = execFileSync('git', ['ls-remote', 'origin', 'main'], { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', timeout: 40000 });
+      ok('GitHub 远端连通', out.trim().length > 0, '远端 main：' + out.trim().split(/\s/)[0].slice(0, 10) + '…');
+    } catch (e) {
+      ok('GitHub 远端连通', false, '连接失败：检查网络；国内直连被拦截时请先开启代理软件');
+    }
+    try {
+      const url = git(['remote', 'get-url', 'origin']).trim();
+      ok('git 远端 origin', true, url);
+    } catch (e) { /* 上面已覆盖 */ }
+  } else {
+    ok('git 远端 origin', false, '未配置：git remote add origin https://github.com/你的用户名/仓库名.git');
+  }
+
+  try {
+    execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
+    ok('计划任务（每天 11:00 / 21:00）', true, '已注册');
+  } catch (e) {
+    ok('计划任务（每天 11:00 / 21:00）', false, '未注册或查询受限：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
+  }
+
+  const index = loadIndex();
+  const dates = Object.keys(index.dates || {});
+  const total = dates.reduce(function (s, d) { return s + (index.dates[d].count || 0); }, 0);
+  ok('本地数据', true, dates.length ? (dates.length + ' 天（' + dates[0] + ' ~ ' + dates[dates.length - 1] + '），共 ' + total + ' 场') : '暂无数据：双击 手动执行.cmd 即可开始抓取');
+
+  console.log('\n结果：' + (fails ? fails + ' 项需要处理（见上方 [需处理] 项）' : '全部通过 ✓'));
+  if (fails) process.exitCode = 1;
+}
+
 // ---------------------------------------------------------------- 主流程
 
 async function main() {
   const args = process.argv.slice(2);
+  if (args.includes('check')) { await runCheck(); return; }
   const mode = args.includes('odds') ? 'odds' : args.includes('results') ? 'results' : 'both';
   const config = loadConfig();
   const doPush = args.includes('--push') || (!args.includes('--no-push') && config.autoPush);
   const doExcel = !args.includes('--no-excel');
 
   log(`=== 任务开始（模式：${mode}${doPush ? '，完成后推送' : ''}）===`);
-  if (doPush && hasRemote()) gitPullRebase(); // 先同步远端，避免冲突
+  if (doPush && hasRemote()) {
+    await gitEnsureProxy(); // 每次执行前自动探测代理（端口可能变化）
+    gitPullRebase();        // 先同步远端，避免冲突
+  }
 
   const parts = [];
   if (mode === 'odds' || mode === 'both') {
@@ -229,7 +328,7 @@ async function main() {
   }
 
   if (doPush && parts.length) {
-    gitCommitAndPush('data: ' + parts.join('；'));
+    await gitCommitAndPush('data: ' + parts.join('；'));
   }
   log('=== 任务结束 ===');
 }

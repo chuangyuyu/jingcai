@@ -48,6 +48,8 @@ powershell -ExecutionPolicy Bypass -File scripts\setup.ps1
 
 脚本会依次：安装依赖 → git init 提交 → 提示输入仓库地址（如 `https://github.com/你的用户名/jingcai.git`）→ 推送 → 注册两个计划任务。
 
+> **新电脑/迁移**：如果只是想让一台已拷贝了本项目文件夹（或已 clone）的电脑跑起来，直接双击 **`一键安装.cmd`** 更省事（安装依赖 + 注册任务 + 自检，推送登录见「迁移到其他电脑」一节）。
+
 > 想省去推送时的登录弹窗，可先生成一个**细粒度令牌**（<https://github.com/settings/personal-access-tokens/new>：Repository access 只选该仓库，Permissions → Contents 选 Read and write），然后：
 > ```powershell
 > powershell -ExecutionPolicy Bypass -File scripts\setup.ps1 -RepoUrl https://github.com/你的用户名/jingcai.git -Token github_pat_xxx
@@ -101,6 +103,32 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Interactive
 3. 之后你每次访问体彩官网（如竞彩赛程页），脚本每天首次访问会自动抓一次数据；页面右下角浮窗可看当天场次差值，点「设置」填入仓库和令牌即可同步到云端
 
 ---
+
+## 迁移到其他电脑（整个文件夹拷走即可用）
+
+项目里所有路径都是相对本目录的，脚本会自动适配新电脑；数据在 git 仓库里，多台电脑共享同一份。
+
+**方式 A：拷贝整个文件夹**
+1. 把整个项目文件夹拷到新电脑任意位置（`node_modules` 可以不拷，会自动重建）
+2. 新电脑装好 [Node.js](https://nodejs.org)（LTS 版即可）
+3. **双击 `一键安装.cmd`**，弹出的 UAC 窗口点「是」。它会自动：安装依赖 → 注册每天 11:00 / 21:00 的计划任务（以当前登录用户身份）→ 运行环境自检并打印结果
+4. 首次推送 GitHub 要登录一次：双击 `手动执行.cmd`，弹出登录窗口时登录 GitHub（之后长期免登录）
+5. 完成。以后任何时候想确认状态，双击 `环境自检.cmd`（等价于 `node scripts\daily.js check`）
+
+**方式 B：从 GitHub 克隆**
+
+```bash
+git clone https://github.com/chuangyuyu/jingcai.git
+cd jingcai
+```
+
+然后同样执行上面的第 2~5 步。
+
+**说明与注意**
+- 计划任务需要：电脑开机且保持登录；能访问 GitHub（有代理会自动探测适配，直连网络也适用）
+- 数据、赔率记录、Excel 全部随 git 同步：任务每次运行前先 `git pull` 合并，不会互相覆盖
+- 换机器后如需调整抓取时间，改 `config.json` 后用**管理员 PowerShell** 重新运行 `scripts\register-tasks.ps1 -InteractiveUser`
+- 手工指定代理（探测不到时）：`config.json` 里填 `"gitProxy": "http://127.0.0.1:端口"`
 
 ## 本机手动执行（不用打开浏览器）
 
@@ -159,7 +187,7 @@ logs/daily.log           计划任务运行日志
 
 ## 常见问题
 
-- **推送失败 / 连不上 GitHub？** 本机是通过本地代理（`127.0.0.1:7890`）访问 GitHub 的，代理地址已写入本仓库的 `.git/config`（`http.proxy`），所以**请保持代理软件运行**（Edge 访问 GitHub 也依赖它）。若代理端口变了，在仓库目录执行 `git config http.proxy http://127.0.0.1:新端口` 更新即可
+- **推送失败 / 连不上 GitHub？** 程序**每次执行前会自动探测本地代理**：先读 Windows 系统代理设置（与 Edge 共用），再扫描常见代理端口，并逐个实际验证能否连上 github.com，找到后自动写入本仓库 git 配置——**代理端口变了不需要手动改**。请在推送时段保持代理软件运行。若特殊环境探测不到，可在 `config.json` 里填 `"gitProxy": "http://127.0.0.1:端口"` 手动指定。排查问题先跑一次「环境自检.cmd」
 - **手机打不开网页？** `github.io` 域名在国内直连可能不稳定，手机上也需可用的网络环境（或代理）；打不开时可以改用网页里的「下载云端 Excel」等替代方式，或告诉我，可以再部署一份到国内可直连的托管（如 Cloudflare Pages）
 - **电脑关机了？** 开机后计划任务会补跑一次（StartWhenAvailable）。几天不开机也不影响已有数据；之后可在网页手动「回填赛果」补齐
 - **接口变了怎么办？** 所有接口地址与解析逻辑都在 `docs/core.js` 一个文件里，改完重新 `npm run build:userscript` 即可，三端同时生效
