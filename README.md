@@ -20,7 +20,7 @@
 | 入口 | 作用 | 谁来执行 |
 |---|---|---|
 | **网页**（GitHub Pages） | 查看/分析：明细表、差值分布图、1球命中率、导出 Excel；也可手动抓取、回填赛果 | 任何设备打开浏览器 |
-| **计划任务**（本机 Windows） | 每天 09:10 抓赔率+回填赛果、21:10 抓赔率，自动提交到 GitHub | 这台电脑（需开机） |
+| **计划任务**（本机 Windows） | 每天 11:00 抓赔率+回填赛果、21:00 抓赔率，自动提交到 GitHub | 这台电脑（需开机） |
 | **油猴脚本**（Edge 等浏览器） | 访问体彩官网时自动抓取；网页右下角浮窗直接看当天差值；可一键同步 | 你日常用的浏览器 |
 
 网页端直接调用体彩官方接口（接口已开放跨域），所以**手机上打开网页也能抓取最新数据**；数据保存在你的 GitHub 仓库里，多设备共享。
@@ -69,7 +69,7 @@ git push -u origin main
 powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1
 ```
 
-任务名：「竞彩1球-早间抓取回填」（09:10）、「竞彩1球-晚间抓取」（21:10），时间可在 `config.json` 里改（改完重新运行注册脚本）。任务以 SYSTEM 账户运行，**电脑开机即执行，无需登录**；错过的时间点会自动补跑。
+任务名：「竞彩1球-早间抓取回填」（11:00）、「竞彩1球-晚间抓取」（21:00），时间可在 `config.json` 里改（改完重新运行注册脚本）。任务以 SYSTEM 账户运行，**电脑开机即执行，无需登录**；错过的时间点会自动补跑。
 
 ### 第 3 步：开启 GitHub Pages
 
@@ -85,11 +85,23 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1
 
 ### 第 5 步（可选）：安装油猴脚本
 
-1. Edge 安装 [Tampermonkey](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd) 扩展
-2. 打开 `https://raw.githubusercontent.com/你的用户名/仓库名/main/userscript/jingcai.user.js`，点"安装"
+1. Edge 安装 [Tampermonkey](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd) 扩展（必须先装它，否则脚本无法运行）
+2. 安装脚本，二选一：
+   - 仓库已推送：打开 `https://raw.githubusercontent.com/你的用户名/仓库名/main/userscript/jingcai.user.js`，点"安装"
+   - 仓库还没推送：打开 Tampermonkey 管理面板 → 把本项目里的 `userscript/jingcai.user.js` 文件直接拖进浏览器窗口 → 点"安装"
 3. 之后你每次访问体彩官网（如竞彩赛程页），脚本每天首次访问会自动抓一次数据；页面右下角浮窗可看当天场次差值，点「设置」填入仓库和令牌即可同步到云端
 
 ---
+
+## 本机手动执行（不用打开浏览器）
+
+**双击项目目录里的 `手动执行.cmd`** 即可，等价于命令行运行 `node scripts\daily.js both`：
+抓取/刷新赔率 → 回填赛果 → 更新 Excel → （已配置仓库时）推送到 GitHub。窗口里会打印每一步结果，看完按任意键关闭。
+
+其他手动方式：
+- 网页上点「抓取今日赔率 / 回填赛果」按钮（任意设备可用；配置令牌后能同步云端）
+- 装了油猴脚本后，用 Edge 打开体彩官网页面会自动抓取，右下角浮窗直接看当天差值
+- 只用 Edge 打开体彩官网、不装油猴脚本的话，不会有任何动作
 
 ## 网页功能说明
 
@@ -130,7 +142,7 @@ logs/daily.log           计划任务运行日志
 
 ## 数据口径（重要）
 
-- **抓取时点**：每场比赛记录的是"最后一次抓取时"的在售赔率（见每行「赔率更新时间」）。计划任务在比赛日 09:10 与 21:10 各抓一次，所以白天开赛的场次最后一次刷新在当天上午，晚间/凌晨场在当晚
+- **抓取时点**：每场比赛记录的是"最后一次抓取时"的在售赔率（见每行「赔率更新时间」）。计划任务在比赛日 11:00 与 21:00 各抓一次，所以白天开赛的场次最后一次刷新在当天上午，晚间/凌晨场在当晚 21 点
 - 只有 **1球、1:0、0:1 三个赔率齐全**的场次才计算差值；缺赔率的场次保留行但不计算
 - 凌晨开赛的比赛（如欧洲联赛）属于前一天的"销售日"，网页与 Excel 的「日期」按销售日分组，「开赛时间」显示真实日期的月-日
 - 赛果按全场（90 分钟）比分判定；回填窗口为最近 10~14 天，晚出结果的比赛会自动补齐
