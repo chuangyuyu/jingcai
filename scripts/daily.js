@@ -162,7 +162,7 @@ async function runOdds() {
   matches.forEach(m => { (byDate[m.businessDate] = byDate[m.businessDate] || []).push(m); });
 
   const index = loadIndex();
-  let totalAdded = 0, totalUpdated = 0;
+  let totalAdded = 0, totalUpdated = 0, totalCaptured = 0;
   const touchedDates = [];
   Object.keys(byDate).sort().forEach(date => {
     const day = loadDay(date) || { date, matches: [] };
@@ -170,13 +170,13 @@ async function runOdds() {
     saveDay(r.day);
     index.dates[date] = { count: r.day.matches.length, updatedAt: capturedAt };
     index.updatedAt = capturedAt;
-    totalAdded += r.added; totalUpdated += r.updated;
+    totalAdded += r.added; totalUpdated += r.updated; totalCaptured += r.captured;
     touchedDates.push(date);
-    log(`  ${date}: 新增 ${r.added} 场，刷新 ${r.updated} 场，共 ${r.day.matches.length} 场`);
+    log(`  ${date}: 新增 ${r.added} 场，快照 +${r.captured}（其中 ${r.updated} 场赔率有变化），共 ${r.day.matches.length} 场`);
   });
   saveIndex(index);
-  log(`赔率抓取完成：新增 ${totalAdded}，刷新 ${totalUpdated}，涉及日期 ${touchedDates.join(', ')}`);
-  return { added: totalAdded, updated: totalUpdated, dates: touchedDates };
+  log(`赔率抓取完成：新增 ${totalAdded}，快照 +${totalCaptured}，赔率变化 ${totalUpdated}，涉及日期 ${touchedDates.join(', ')}`);
+  return { added: totalAdded, updated: totalUpdated, captured: totalCaptured, dates: touchedDates };
 }
 
 // ---------------------------------------------------------------- 赛果回填
@@ -229,7 +229,7 @@ function withTimeout(promise, ms, label) {
 // node scripts/daily.js check —— 迁移/排障用：逐项检查运行环境并给出结论
 async function runCheck() {
   console.log('=== 竞彩1球差值 · 环境自检 ===');
-  console.log('时间：' + JC.nowIso());
+  console.log('时间：' + JC.nowIso() + '（核心库 v' + JC.VERSION + '）');
   console.log('目录：' + ROOT + '\n');
   let fails = 0;
   const ok = function (name, pass, detail) {
@@ -275,10 +275,17 @@ async function runCheck() {
   }
 
   try {
-    execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
-    ok('计划任务（每天 11:00 / 21:00）', true, '已注册');
+    execFileSync('schtasks', ['/query', '/tn', '竞彩1球-上午抓取'], { stdio: 'pipe', encoding: 'buffer' });
+    ok('计划任务（每天 11:00 / 17:00 两次）', true, '已注册（上午抓取 / 下午抓取）');
   } catch (e) {
-    ok('计划任务（每天 11:00 / 21:00）', false, '未注册或查询受限：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
+    let legacy = false;
+    try {
+      execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
+      legacy = true;
+    } catch (e2) { /* 新旧都没有 */ }
+    ok('计划任务（每天 11:00 / 17:00 两次）', false, legacy
+      ? '仍是旧版任务（晚间 21:00）：请用管理员 PowerShell 重新运行 scripts\\register-tasks.ps1 -InteractiveUser 更新为 11:00/17:00'
+      : '未注册：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
   }
 
   const index = loadIndex();
@@ -309,7 +316,7 @@ async function main() {
   const parts = [];
   if (mode === 'odds' || mode === 'both') {
     const r = await runOdds();
-    if (r.added || r.updated) parts.push(`赔率 +${r.added}/~${r.updated}（${r.dates.join(' ')}）`);
+    if (r.added || r.updated || r.captured) parts.push(`赔率 新增${r.added} 变化${r.updated} 快照+${r.captured}（${r.dates.join(' ')}）`);
   }
   if (mode === 'results' || mode === 'both') {
     const r = await runResults(config);

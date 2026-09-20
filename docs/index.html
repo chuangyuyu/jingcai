@@ -49,6 +49,7 @@
       </div>
       <select id="league-filter"><option value="">全部联赛</option></select>
       <label class="chk"><input type="checkbox" id="only-settled"> 只看已出赛果</label>
+      <label class="chk"><input type="checkbox" id="only-single"> 只看单关</label>
     </div>
 
     <div class="tiles" id="tiles"></div>
@@ -73,7 +74,36 @@
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>分箱明细（箱宽 0.05）</h2></div>
+      <div class="card-head"><h2>差值变化 ①→② 与 1 球命中率</h2></div>
+      <p class="card-sub">按"第二次差值相对第一次的变化方向/幅度"分组，各组内赛果恰为 1 球的占比（虚线为总体 1 球占比）。仅统计两次快照齐全且已出赛果的场次。</p>
+      <div class="chart-wrap"><div class="chart" id="chart-delta"></div></div>
+      <div class="xlabels" id="xlabels-delta"></div>
+      <div id="chart-delta-empty" class="empty" hidden>暂无"两次快照齐全且已出赛果"的数据，等几次抓取和赛果回填后即可看到。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>单关 vs 非单关 对比</h2></div>
+      <p class="card-sub">「单场胜平负」是官方精挑细选、开放单关的场次（接口 HAD.single=1）。对比两组的 1 球出现率与平均差值。勾选上方「只看单关」可把全部图表切换为单关视角。</p>
+      <div class="table-scroll">
+        <table class="grid" id="single-table">
+          <thead><tr><th>分组</th><th>场次</th><th>已出赛果</th><th>1球场次</th><th>1球占比</th><th>平均差值</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>差值变化分档明细 ①→②</h2></div>
+      <div class="table-scroll">
+        <table class="grid" id="delta-table">
+          <thead><tr><th>变化区间</th><th>场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均变化量</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>分箱明细（差值取最新一次，箱宽 0.05）</h2></div>
       <div class="table-scroll">
         <table class="grid" id="bins-table">
           <thead><tr><th>差值区间</th><th>总场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均差值</th></tr></thead>
@@ -86,9 +116,10 @@
       <summary><h2>计算口径与说明</h2></summary>
       <div class="help-body">
         <p><b>优化赔率</b> = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)。含义：把 1 元本金按赔率倒数比例拆成两注分别押 1:0 和 0:1，无论哪个比分命中，回报都相同，这个保底回报就是优化赔率。</p>
-        <p><b>差值</b> = 1球赔率 − 优化赔率。<b>正数</b>表示押「总进球 1球」回报更高；<b>负数</b>表示押「1:0 + 0:1 比分双选（等回报拆注）」回报更高。</p>
-        <p>1球赔率与比分双选对应同一个事件（全场恰好进 1 球），两者赔率差异来自官方不同的抽水结构，本工具长期记录这个差值，用于观察：赛果为 1 球的比赛，其差值分布有什么规律。</p>
-        <p>数据来自中国体育彩票官方接口，每天定时抓取（本机任务）或手动抓取（本页按钮）；赛果于比赛结束后回填。赔率为每次抓取时的实时值，以最后一次抓取为准（见数据表中的「赔率更新时间」）。</p>
+        <p><b>差值</b> = 1球赔率 − 优化赔率。<b>正数</b>表示押「总进球 1球」回报更高；<b>负数</b>表示押「1:0 + 0:1 比分双选（等回报拆注）」回报更高。1球赔率与比分双选对应同一个事件（全场恰好进 1 球）。</p>
+        <p><b>两次抓取</b>：每天 11:00 与 17:00 各抓一次，①/② 列分别是第一、第二次抓取时的数据；<b>变化</b>列 = 第二次差值相对第一次：↑变大、↓缩小、→基本不变（±0.03）。第二次抓取时已开赛/停售的比赛只保留第一次数据。分析口径统一取最新一次快照。</p>
+        <p><b>单关维度</b>：「单场胜平负」= 官方开放胜平负单关的场次（精挑细选），统计页可单独对比；勾选「只看单关」可将全部图表切换为单关视角。</p>
+        <p>数据来自中国体育彩票官方接口，每天定时抓取（本机任务）或手动抓取（本页按钮）；赛果于比赛结束后回填。</p>
         <p class="muted">仅为个人数据分析用途，数据版权归中国体育彩票（sporttery.cn）所有，不构成投注建议，请理性购彩。</p>
       </div>
     </details>
@@ -105,16 +136,18 @@
       </div>
       <select id="league-filter2"><option value="">全部联赛</option></select>
       <label class="chk"><input type="checkbox" id="only-settled2"> 只看已出赛果</label>
+      <label class="chk"><input type="checkbox" id="only-single2"> 只看单关</label>
       <label class="chk"><input type="checkbox" id="only-value"> 只看有差值</label>
     </div>
     <div class="card">
       <div class="table-scroll">
         <table class="grid data-table" id="data-table">
           <thead><tr>
-            <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th>
-            <th data-sort="ttg1" class="num">1球</th><th data-sort="s10" class="num">1:0</th><th data-sort="s01" class="num">0:1</th>
-            <th data-sort="optimized" class="num">优化</th><th data-sort="diff" class="num">差值</th>
-            <th data-sort="score">赛果</th><th>1球?</th><th data-sort="oddsAt">赔率更新</th>
+            <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th><th>单关</th>
+            <th class="num">①1球</th><th class="num">①1:0</th><th class="num">①0:1</th><th class="num">①优化</th><th class="num">①差值</th>
+            <th class="num">②1球</th><th class="num">②1:0</th><th class="num">②0:1</th><th class="num">②优化</th><th data-sort="diff" class="num">②差值</th>
+            <th data-sort="diffDelta">变化</th>
+            <th data-sort="score">赛果</th><th>1球?</th><th>抓取时间（①/②）</th>
           </tr></thead>
           <tbody></tbody>
         </table>

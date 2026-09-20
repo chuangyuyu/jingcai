@@ -19,7 +19,7 @@
     dirty: {},         // date -> dayDoc（本地未同步的整份日数据）
     settings: loadSettings(),
     rows: [],          // 展平后的全部行
-    filters: { range: '30', league: '', onlySettled: false, onlyValue: false },
+    filters: { range: '30', league: '', onlySettled: false, onlyValue: false, onlySingle: false },
     sort: { key: 'date', dir: -1 },
     shownRows: 200,
     busy: false
@@ -60,6 +60,7 @@
     $('#dot').className = 'dot ' + (cls || '');
   }
   function fmtOdds(v) { return v == null ? '—' : Number(v).toFixed(2); }
+  function fmt3(v) { return v == null ? '—' : Number(v).toFixed(3); }
   function fmtDiff(v) { return v == null ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(3); }
   function fmtPct(v, digits) { return v == null ? '—' : (v * 100).toFixed(digits == null ? 1 : digits) + '%'; }
   function todayStr() { return JC.localDateStr(); }
@@ -151,7 +152,10 @@
     var dates = Object.keys(state.days).sort();
     var dirtyCount = Object.keys(state.dirty).length;
     var lastAt = '';
-    state.rows.forEach(function (r) { if (r.oddsAt && r.oddsAt > lastAt) lastAt = r.oddsAt; });
+    state.rows.forEach(function (r) {
+      var t = (r.o2 && r.o2.at) || (r.o1 && r.o1.at) || '';
+      if (t > lastAt) lastAt = t;
+    });
     var txt = '数据 ' + state.rows.length + ' 场 · ' + dates.length + ' 天（' +
       (dates.length ? dates[0] + ' ~ ' + dates[dates.length - 1] : '—') + '）' +
       ' · 最近抓取 ' + (lastAt ? lastAt.replace('T', ' ').slice(0, 16) : '—');
@@ -371,6 +375,7 @@
       if (f.league && r.league !== f.league) return false;
       if (f.onlySettled && r.isOneGoal == null) return false;
       if (f.onlyValue && r.diff == null) return false;
+      if (f.onlySingle && r.isSingleWin !== true) return false;
       return true;
     });
   }
@@ -380,6 +385,9 @@
     renderTiles(rows);
     renderDistChart(rows);
     renderRatioChart(rows);
+    renderDeltaChart(rows);
+    renderSingleTable(rows);
+    renderDeltaTable(rows);
     renderBinsTable(rows);
     renderDataTable(rows);
     renderLeagueOptions();
@@ -400,11 +408,12 @@
   function renderTiles(rows) {
     var st = JC.stats(rows, 0.05).summary;
     var tiles = [
-      { k: '场次（当前筛选）', v: st.total, sub: '' },
+      { k: '场次（当前筛选）', v: st.total, sub: st.twoCaptureCount ? '两次快照 ' + st.twoCaptureCount : '' },
       { k: '已出赛果', v: st.settled, sub: st.total ? '占 ' + fmtPct(st.settled / st.total, 0) : '' },
-      { k: '其中 1 球赛果', v: st.oneGoalCount, sub: st.settled ? '占已出 ' + fmtPct(st.oneGoalRatio) : '' },
-      { k: '平均差值（1球场次）', v: fmtDiff(st.avgDiffOne), cls: st.avgDiffOne > 0 ? 'pos' : (st.avgDiffOne < 0 ? 'neg' : ''), sub: '正=1球更划算' },
-      { k: '平均差值（非1球场次）', v: fmtDiff(st.avgDiffNon), cls: st.avgDiffNon > 0 ? 'pos' : (st.avgDiffNon < 0 ? 'neg' : ''), sub: '对比参考' }
+      { k: '1球赛果', v: st.oneGoalCount, sub: st.settled ? '占已出 ' + fmtPct(st.oneGoalRatio) : '' },
+      { k: '单关场次', v: st.singleCount, sub: st.singleSettled ? '其中已出 ' + st.singleSettled : '官方开放胜平负单关' },
+      { k: '单关1球占比', v: fmtPct(st.singleOneGoalRatio), sub: st.nonSingleGroup.oneGoalRatio != null ? '非单关 ' + fmtPct(st.nonSingleGroup.oneGoalRatio) : '对比非单关' },
+      { k: '平均差值（1球场次）', v: fmtDiff(st.avgDiffOne), cls: st.avgDiffOne > 0 ? 'pos' : (st.avgDiffOne < 0 ? 'neg' : ''), sub: '正=1球更划算' }
     ];
     $('#tiles').innerHTML = tiles.map(function (t) {
       return '<div class="tile"><div class="v ' + (t.cls || '') + '">' + t.v +
@@ -540,6 +549,82 @@
     }).join('');
   }
 
+  // 差值变化 ①→② 分档 → 1球占比
+  function renderDeltaChart(rows) {
+    var chart = $('#chart-delta');
+    var labels = $('#xlabels-delta');
+    var st = JC.stats(rows, pickWidth(rows, 16));
+    var hasData = st.summary.deltaSettled > 0 && st.deltaBins.some(function (b) { return b.count > 0; });
+    $('#chart-delta-empty').hidden = hasData;
+    chart.style.display = hasData ? '' : 'none';
+    labels.style.display = hasData ? '' : 'none';
+    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; return; }
+    var shortLabels = ['↓≥0.10', '↓0.03~0.10', '±0.03', '↑0.03~0.10', '↑≥0.10'];
+    var html = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
+      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + (p * 100) + '%"></div>';
+      html += '<div class="ytick" style="bottom:' + (p * 100) + '%">' + Math.round(p * 100) + '%</div>';
+    });
+    st.deltaBins.forEach(function (b, i) {
+      var h = b.oneRatio != null ? b.oneRatio * 100 : 0;
+      html += '<div class="bin" data-i="' + i + '">' +
+        (b.count > 0 ? '<div class="seg bar-ratio" style="height:' + h + '%"></div>' : '<div class="mark"></div>') +
+        '</div>';
+    });
+    var overall = st.summary.oneGoalRatio;
+    if (overall != null) {
+      html += '<div class="ref-line" style="bottom:' + (overall * 100) + '%"><span class="ref-label">总体 ' + fmtPct(overall) + '</span></div>';
+    }
+    chart.innerHTML = html;
+    chart._bins = st.deltaBins;
+    labels.innerHTML = st.deltaBins.map(function (b, i) { return '<div class="xl">' + shortLabels[i] + '</div>'; }).join('');
+    chart.onmousemove = function (ev) {
+      var binEl = ev.target.closest ? ev.target.closest('.bin') : null;
+      if (!binEl || !chart._bins) { hideTooltip(); return; }
+      var b = chart._bins[Number(binEl.dataset.i)];
+      if (!b) { hideTooltip(); return; }
+      showTooltip(ev, '变化：' + b.label + '<br>1球占比 ' + fmtPct(b.oneRatio) +
+        '<br>样本 ' + b.count + ' 场 · 平均变化 ' + fmtDiff(b.avgDelta) + (b.count < 5 ? '（样本少，仅供参考）' : ''));
+    };
+    chart.onmouseleave = hideTooltip;
+  }
+
+  // 单关 vs 非单关对比表
+  function renderSingleTable(rows) {
+    var st = JC.stats(rows, 0.05);
+    var s = st.summary;
+    var tbody = $('#single-table tbody');
+    var mk = function (name, g) {
+      var ratioCls = '';
+      if (g.oneRatio != null && s.oneGoalRatio != null) {
+        ratioCls = g.oneRatio >= s.oneGoalRatio ? 'diff-pos' : 'diff-neg';
+      }
+      return '<tr><td>' + name + '</td><td class="num">' + g.count + '</td><td class="num">' + g.settled +
+        '</td><td class="num">' + g.oneGoalCount + '</td><td class="num ' + ratioCls + '">' + fmtPct(g.oneRatio) +
+        '</td><td class="num">' + fmtDiff(g.avgDiff) + '</td></tr>';
+    };
+    tbody.innerHTML = mk('单场胜平负（单关）', s.singleGroup) + mk('非单关场次', s.nonSingleGroup);
+  }
+
+  // 差值变化分档明细表
+  function renderDeltaTable(rows) {
+    var st = JC.stats(rows, 0.05);
+    var tbody = $('#delta-table tbody');
+    if (!st.summary.deltaSettled) {
+      tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无两次快照齐全且已出赛果的数据</td></tr>';
+      return;
+    }
+    tbody.innerHTML = st.deltaBins.map(function (b) {
+      var ratioCls = '';
+      if (b.oneRatio != null && b.count >= 5 && st.summary.oneGoalRatio != null) {
+        ratioCls = b.oneRatio >= st.summary.oneGoalRatio ? 'diff-pos' : 'diff-neg';
+      }
+      return '<tr><td>' + b.label + '</td><td class="num">' + b.count + '</td><td class="num">' + b.oneCount +
+        '</td><td class="num">' + b.nonOneCount + '</td><td class="num ' + ratioCls + '">' + fmtPct(b.oneRatio) +
+        '</td><td class="num">' + fmtDiff(b.avgDelta) + '</td></tr>';
+    }).join('');
+  }
+
   function sortRows(rows) {
     var key = state.sort.key, dir = state.sort.dir;
     return rows.slice().sort(function (a, b) {
@@ -557,23 +642,35 @@
     var shown = sorted.slice(0, state.shownRows);
     var tbody = $('#data-table tbody');
     tbody.innerHTML = shown.map(function (r) {
-      var diffCls = r.diff == null ? '' : (r.diff > 0 ? 'diff-pos' : 'diff-neg');
+      var d1 = r.o1.diff, d2 = r.o2.diff;
+      var cls1 = d1 == null ? '' : (d1 > 0 ? 'diff-pos' : 'diff-neg');
+      var cls2 = d2 == null ? '' : (d2 > 0 ? 'diff-pos' : 'diff-neg');
+      var dirCls = r.dir === '↑' ? 'dir-up' : (r.dir === '↓' ? 'dir-down' : 'dir-flat');
       var oneTxt = r.isOneGoal == null ? '' : (r.isOneGoal ? '是' : '否');
       var oneCls = r.isOneGoal === true ? 'one-yes' : (r.isOneGoal === false ? 'one-no' : '');
+      var singleTxt = r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否');
+      var singleCls = r.isSingleWin === true ? 'single-yes' : '';
       return '<tr>' +
         '<td>' + r.date + '</td>' +
         '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
         '<td>' + escapeHtml(r.league) + '</td>' +
         '<td class="match-cell">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</td>' +
         '<td>' + escapeHtml(r.kickoff) + '</td>' +
-        '<td class="num">' + fmtOdds(r.ttg1) + '</td>' +
-        '<td class="num">' + fmtOdds(r.s10) + '</td>' +
-        '<td class="num">' + fmtOdds(r.s01) + '</td>' +
-        '<td class="num">' + (r.optimized == null ? '—' : Number(r.optimized).toFixed(3)) + '</td>' +
-        '<td class="num ' + diffCls + '">' + fmtDiff(r.diff) + '</td>' +
+        '<td class="' + singleCls + '">' + singleTxt + '</td>' +
+        '<td class="num">' + fmtOdds(r.o1.ttg1) + '</td>' +
+        '<td class="num">' + fmtOdds(r.o1.s10) + '</td>' +
+        '<td class="num">' + fmtOdds(r.o1.s01) + '</td>' +
+        '<td class="num">' + fmt3(r.o1.optimized) + '</td>' +
+        '<td class="num ' + cls1 + '">' + fmtDiff(d1) + '</td>' +
+        '<td class="num">' + fmtOdds(r.o2.ttg1) + '</td>' +
+        '<td class="num">' + fmtOdds(r.o2.s10) + '</td>' +
+        '<td class="num">' + fmtOdds(r.o2.s01) + '</td>' +
+        '<td class="num">' + fmt3(r.o2.optimized) + '</td>' +
+        '<td class="num ' + cls2 + '">' + fmtDiff(d2) + '</td>' +
+        '<td class="' + dirCls + '">' + (r.dir || '') + (r.diffDelta != null ? ' ' + fmtDiff(r.diffDelta) : '') + '</td>' +
         '<td>' + (r.score || '') + '</td>' +
         '<td class="' + oneCls + '">' + oneTxt + '</td>' +
-        '<td class="muted">' + (r.oddsAt ? r.oddsAt.replace('T', ' ').slice(5, 16) : '') + '</td>' +
+        '<td class="muted">' + escapeHtml(r.times) + '</td>' +
         '</tr>';
     }).join('');
     $('#data-more').hidden = sorted.length <= state.shownRows;
@@ -618,21 +715,30 @@
     // 统计表
     var st = JC.stats(rows, 0.05);
     var s = st.summary;
+    var preg = function (v) { return v == null ? '' : Number((v * 100).toFixed(1)) + '%'; };
     var aoa2 = [
       ['统计（导出时间 ' + JC.nowIso() + '，当前筛选）'], [],
-      ['总场次', s.total], ['已出赛果场次', s.settled], ['其中1球赛果场次', s.oneGoalCount],
-      ['1球占比', s.oneGoalRatio == null ? '' : Number((s.oneGoalRatio * 100).toFixed(1)) + '%'],
+      ['总场次', s.total], ['其中含两次抓取的场次', s.twoCaptureCount], ['已出赛果场次', s.settled],
+      ['其中1球赛果场次', s.oneGoalCount], ['1球占比', preg(s.oneGoalRatio)],
       ['平均差值（全部已出）', s.avgDiffAll], ['平均差值（1球场次）', s.avgDiffOne], ['平均差值（非1球场次）', s.avgDiffNon],
-      [], ['差值区间', '总场次', '1球场次', '非1球场次', '1球占比']
+      [], ['单关 vs 非单关', '场次', '已出赛果', '1球场次', '1球占比', '平均差值'],
+      ['单场胜平负（单关）', s.singleGroup.count, s.singleGroup.settled, s.singleGroup.oneGoalCount, preg(s.singleGroup.oneGoalRatio), s.singleGroup.avgDiff],
+      ['非单关场次', s.nonSingleGroup.count, s.nonSingleGroup.settled, s.nonSingleGroup.oneGoalCount, preg(s.nonSingleGroup.oneGoalRatio), s.nonSingleGroup.avgDiff],
+      [], ['差值区间', '总场次', '1球场次', '非1球场次', '1球占比', '平均差值']
     ].concat(st.bins.map(function (b) {
-      return [b.label, b.count, b.oneCount, b.nonOneCount, b.oneRatio == null ? '' : Number((b.oneRatio * 100).toFixed(1)) + '%'];
+      return [b.label, b.count, b.oneCount, b.nonOneCount, preg(b.oneRatio), b.avgDiff];
+    })).concat([
+      [], ['差值变化 ①→②', '场次', '1球场次', '非1球场次', '1球占比', '平均变化量']
+    ]).concat(st.deltaBins.map(function (b) {
+      return [b.label, b.count, b.oneCount, b.nonOneCount, preg(b.oneRatio), b.avgDelta];
     }));
     var ws2 = XLSX.utils.aoa_to_sheet(aoa2);
-    ws2['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+    ws2['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, ws2, '统计');
     var ws3 = XLSX.utils.aoa_to_sheet([
       ['优化赔率 = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)'],
       ['差值 = 1球赔率 − 优化赔率（正数：押1球回报更高；负数：押两个比分双选回报更高）'],
+      ['①/② = 当天第一次(11:00)/第二次(17:00)抓取的快照；变化 = 第二次差值 − 第一次差值的方向（↑/↓/→）；第二次抓取时已开赛的比赛只有①列。'],
       ['数据来源：中国体育彩票官方接口；本文件由网页端即时导出，完整版见仓库 excel/ 目录。'],
       ['仅为个人数据分析用途，不构成投注建议。']
     ]);
@@ -727,6 +833,8 @@
     $('#league-filter2').onchange = function () { state.filters.league = this.value; $('#league-filter').value = this.value; render(); };
     $('#only-settled').onchange = function () { state.filters.onlySettled = this.checked; $('#only-settled2').checked = this.checked; render(); };
     $('#only-settled2').onchange = function () { state.filters.onlySettled = this.checked; $('#only-settled').checked = this.checked; render(); };
+    $('#only-single').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single2').checked = this.checked; render(); };
+    $('#only-single2').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single').checked = this.checked; render(); };
     $('#only-value').onchange = function () { state.filters.onlyValue = this.checked; render(); };
 
     // 表头排序

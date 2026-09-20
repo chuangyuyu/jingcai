@@ -71,17 +71,17 @@
       var days = getDays();
       var byDate = {};
       matches.forEach(function (m) { (byDate[m.businessDate] = byDate[m.businessDate] || []).push(m); });
-      var added = 0;
+      var added = 0, captured = 0;
       Object.keys(byDate).forEach(function (d) {
         var doc = days[d] || { date: d, matches: [] };
         var r = JC.mergeDay(doc, byDate[d], at);
-        days[d] = r.day; added += r.added;
+        days[d] = r.day; added += r.added; captured += r.captured;
         markDirty(d);
       });
       setDays(days);
       GM_setValue(K_LAST, JC.localDateStr());
-      var complete = matches.filter(function (m) { return m.diff != null; }).length;
-      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，可算差值 ' + complete + '）');
+      var complete = matches.filter(function (m) { return m.captures[0].diff != null; }).length;
+      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，快照 +' + captured + '，可算差值 ' + complete + '）');
       renderPanel();
       if (canSync()) return sync();
       if (manual) say('已存本机（未配置 GitHub，暂存于油猴存储）');
@@ -277,6 +277,7 @@
       '#jcq-panel td.num{text-align:right;font-variant-numeric:tabular-nums}',
       '#jcq-panel .pos{color:#0a7a2f;font-weight:700}',
       '#jcq-panel .neg{color:#c0392b;font-weight:700}',
+      '#jcq-panel .single{color:#b85c00;font-weight:700}',
       '#jcq-panel .pill{position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#1f4e79;color:#fff;',
       'border-radius:20px;padding:8px 14px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);',
       'font:12px/1 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}'
@@ -348,23 +349,24 @@
     var showDate = dates[dates.length - 1];
     var today = JC.localDateStr();
     if (days[today]) showDate = today;
-    var matches = days[showDate].matches.slice().sort(function (a, b) { return (a.matchTime || '').localeCompare(b.matchTime || ''); });
+    var rows = JC.flatRows([days[showDate]]);
     var dirty = getDirty();
-    var complete = matches.filter(function (m) { return m.diff != null; }).length;
-    statEl.textContent = showDate + ' · ' + matches.length + ' 场 · 可算差值 ' + complete +
+    var complete = rows.filter(function (r) { return r.diff != null; }).length;
+    statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
 
-    var rows = matches.map(function (m) {
-      var d = m.diff;
-      var cls = d == null ? '' : (d > 0 ? 'pos' : 'neg');
-      return '<tr><td>' + esc(m.matchNumStr) + '</td>' +
-        '<td>' + esc(m.home) + ' vs ' + esc(m.away) + '</td>' +
-        '<td class="num">' + fmt(m.odds && m.odds.ttg1) + '</td>' +
-        '<td class="num">' + fmt3(m.optimized) + '</td>' +
-        '<td class="num ' + cls + '">' + fmtDiff(d) + '</td>' +
-        '<td>' + (m.result ? m.result.score : '') + '</td></tr>';
+    var body = rows.map(function (r) {
+      var cls = r.diff == null ? '' : (r.diff > 0 ? 'pos' : 'neg');
+      var dirCls = r.dir === '↑' ? 'neg' : (r.dir === '↓' ? 'pos' : '');
+      return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
+        '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +
+        '<td class="single">' + (r.isSingleWin ? '单' : '') + '</td>' +
+        '<td class="num">' + fmt(r.o1.ttg1) + '</td>' +
+        '<td class="num ' + cls + '">' + fmtDiff(r.diff) + '</td>' +
+        '<td class="' + dirCls + '">' + (r.dir || '') + '</td>' +
+        '<td>' + (r.score || '') + '</td></tr>';
     }).join('');
-    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>1球</th><th>优化</th><th>差值</th><th>赛果</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>1球①</th><th>差值</th><th>变化</th><th>赛果</th></tr></thead><tbody>' + body + '</tbody></table>';
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

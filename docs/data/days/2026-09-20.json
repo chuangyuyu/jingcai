@@ -10,22 +10,43 @@
    "away": "亚特兰大",
    "matchTime": "00:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.1,
-    "s10": 7.5,
-    "s01": 13,
-    "had": [
-     1.55,
-     3.7,
-     4.7
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.756,
-   "diff": 0.344,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 7.5,
+      "s01": 13,
+      "had": [
+       1.55,
+       3.7,
+       4.7
+      ]
+     },
+     "optimized": 4.756,
+     "diff": 0.344
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 7.5,
+      "s01": 13,
+      "had": [
+       1.53,
+       3.75,
+       4.8
+      ]
+     },
+     "optimized": 4.756,
+     "diff": 0.344
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041608,
@@ -36,22 +57,43 @@
    "away": "莱万特",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 7.5,
-    "s10": 10,
-    "s01": 20,
-    "had": [
-     1.38,
-     4.55,
-     5.4
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 6.667,
-   "diff": 0.833,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 7.5,
+      "s10": 10,
+      "s01": 20,
+      "had": [
+       1.38,
+       4.55,
+       5.4
+      ]
+     },
+     "optimized": 6.667,
+     "diff": 0.833
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 8.1,
+      "s10": 10.5,
+      "s01": 23,
+      "had": [
+       1.38,
+       4.55,
+       5.4
+      ]
+     },
+     "optimized": 7.209,
+     "diff": 0.891
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041609,
@@ -62,22 +104,43 @@
    "away": "贝蒂斯",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.6,
-    "s10": 12,
-    "s01": 8.5,
-    "had": [
-     3.5,
-     3.6,
-     1.77
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.976,
-   "diff": 0.624,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.6,
+      "s10": 12,
+      "s01": 8.5,
+      "had": [
+       3.5,
+       3.6,
+       1.77
+      ]
+     },
+     "optimized": 4.976,
+     "diff": 0.624
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.6,
+      "s10": 12,
+      "s01": 8.5,
+      "had": [
+       3.62,
+       3.6,
+       1.74
+      ]
+     },
+     "optimized": 4.976,
+     "diff": 0.624
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041610,
@@ -88,22 +151,43 @@
    "away": "霍芬海姆",
    "matchTime": "01:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 8.65,
-    "s10": 22,
-    "s01": 12.5,
-    "had": [
-     4.1,
-     4.1,
-     1.56
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 7.971,
-   "diff": 0.679,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 8.65,
+      "s10": 22,
+      "s01": 12.5,
+      "had": [
+       4.1,
+       4.1,
+       1.56
+      ]
+     },
+     "optimized": 7.971,
+     "diff": 0.679
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 9,
+      "s10": 22,
+      "s01": 12.5,
+      "had": [
+       4.2,
+       4.15,
+       1.54
+      ]
+     },
+     "optimized": 7.971,
+     "diff": 1.029
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041611,
@@ -114,22 +198,43 @@
    "away": "莱切",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.7,
-    "s10": 7,
-    "s01": 24,
-    "had": [
-     1.15,
-     5.7,
-     12
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 5.419,
-   "diff": 0.281,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.7,
+      "s10": 7,
+      "s01": 24,
+      "had": [
+       1.15,
+       5.7,
+       12
+      ]
+     },
+     "optimized": 5.419,
+     "diff": 0.281
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.7,
+      "s10": 7,
+      "s01": 24,
+      "had": [
+       1.14,
+       5.95,
+       12
+      ]
+     },
+     "optimized": 5.419,
+     "diff": 0.281
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041612,
@@ -140,22 +245,43 @@
    "away": "巴黎圣曼",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 9,
-    "s10": 28,
-    "s01": 12.5,
-    "had": [
-     6.4,
-     5.2,
-     1.28
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 8.642,
-   "diff": 0.358,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 9,
+      "s10": 28,
+      "s01": 12.5,
+      "had": [
+       6.4,
+       5.2,
+       1.28
+      ]
+     },
+     "optimized": 8.642,
+     "diff": 0.358
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 9,
+      "s10": 28,
+      "s01": 12.5,
+      "had": [
+       6.25,
+       5.15,
+       1.29
+      ]
+     },
+     "optimized": 8.642,
+     "diff": 0.358
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041613,
@@ -166,22 +292,43 @@
    "away": "皇家社会",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.1,
-    "s10": 9.5,
-    "s01": 8.5,
-    "had": [
-     2.65,
-     3.25,
-     2.26
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.486,
-   "diff": 0.614,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 9.5,
+      "s01": 8.5,
+      "had": [
+       2.65,
+       3.25,
+       2.26
+      ]
+     },
+     "optimized": 4.486,
+     "diff": 0.614
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 9.5,
+      "s01": 8.5,
+      "had": [
+       2.67,
+       3.08,
+       2.33
+      ]
+     },
+     "optimized": 4.486,
+     "diff": 0.614
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041614,
@@ -192,22 +339,43 @@
    "away": "本菲卡",
    "matchTime": "03:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.05,
-    "s10": 9,
-    "s01": 8.5,
-    "had": [
-     2.67,
-     3.1,
-     2.32
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.371,
-   "diff": 0.679,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.05,
+      "s10": 9,
+      "s01": 8.5,
+      "had": [
+       2.67,
+       3.1,
+       2.32
+      ]
+     },
+     "optimized": 4.371,
+     "diff": 0.679
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.05,
+      "s10": 9.25,
+      "s01": 8.5,
+      "had": [
+       2.67,
+       3.1,
+       2.32
+      ]
+     },
+     "optimized": 4.43,
+     "diff": 0.62
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041615,
@@ -218,22 +386,43 @@
    "away": "巴伊亚",
    "matchTime": "06:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.25,
-    "s10": 8.5,
-    "s01": 11.5,
-    "had": [
-     1.98,
-     3.3,
-     3.12
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.888,
-   "diff": 0.362,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.25,
+      "s10": 8.5,
+      "s01": 11.5,
+      "had": [
+       1.98,
+       3.3,
+       3.12
+      ]
+     },
+     "optimized": 4.888,
+     "diff": 0.362
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.25,
+      "s10": 8.5,
+      "s01": 11.5,
+      "had": [
+       2.01,
+       3.2,
+       3.13
+      ]
+     },
+     "optimized": 4.888,
+     "diff": 0.362
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041586,
@@ -244,22 +433,34 @@
    "away": "中国亚",
    "matchTime": "13:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 4.1,
-    "s10": 6.4,
-    "s01": 10.5,
-    "had": [
-     1.85,
-     3.1,
-     3.75
-    ]
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-20T19:05:58+08:00"
    },
-   "oddsAt": "2026-09-20T13:00:45+08:00",
-   "captureCount": 5,
-   "result": null,
-   "optimized": 3.976,
-   "diff": 0.124,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T13:00:45+08:00",
+     "odds": {
+      "ttg1": 4.1,
+      "s10": 6.4,
+      "s01": 10.5,
+      "had": [
+       1.85,
+       3.1,
+       3.75
+      ]
+     },
+     "optimized": 3.976,
+     "diff": 0.124
+    }
+   ],
+   "totalCaptures": 5,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041587,
@@ -270,22 +471,34 @@
    "away": "柏太阳神",
    "matchTime": "16:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.1,
-    "s10": 8.5,
-    "s01": 9.2,
-    "had": [
-     2.13,
-     3.22,
-     2.86
-    ]
+   "result": {
+    "score": "2:4",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-20T19:05:58+08:00"
    },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
-   "result": null,
-   "optimized": 4.418,
-   "diff": 0.682,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 8.5,
+      "s01": 9.2,
+      "had": [
+       2.13,
+       3.22,
+       2.86
+      ]
+     },
+     "optimized": 4.418,
+     "diff": 0.682
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041588,
@@ -296,22 +509,28 @@
    "away": "神户胜利",
    "matchTime": "16:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 4.7,
-    "s10": 10.5,
-    "s01": 7.5,
-    "had": [
-     3.38,
-     3.35,
-     1.87
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.375,
-   "diff": 0.325,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 4.7,
+      "s10": 10.5,
+      "s01": 7.5,
+      "had": [
+       3.38,
+       3.35,
+       1.87
+      ]
+     },
+     "optimized": 4.375,
+     "diff": 0.325
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041589,
@@ -322,22 +541,28 @@
    "away": "大田市民",
    "matchTime": "18:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 4.9,
-    "s10": 9.5,
-    "s01": 8.2,
-    "had": [
-     2.82,
-     3.12,
-     2.2
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.401,
-   "diff": 0.499,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 4.9,
+      "s10": 9.5,
+      "s01": 8.2,
+      "had": [
+       2.82,
+       3.12,
+       2.2
+      ]
+     },
+     "optimized": 4.401,
+     "diff": 0.499
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041590,
@@ -348,22 +573,28 @@
    "away": "日本亚",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 9.5,
-    "s10": 45,
-    "s01": 10,
-    "had": [
-     null,
-     null,
-     null
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 8.182,
-   "diff": 1.318,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 9.5,
+      "s10": 45,
+      "s01": 10,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 8.182,
+     "diff": 1.318
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041591,
@@ -374,22 +605,28 @@
    "away": "那不勒斯",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.1,
-    "s10": 9.5,
-    "s01": 8,
-    "had": [
-     3.08,
-     3.23,
-     2.02
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.343,
-   "diff": 0.757,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 9.5,
+      "s01": 8,
+      "had": [
+       3.08,
+       3.23,
+       2.02
+      ]
+     },
+     "optimized": 4.343,
+     "diff": 0.757
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041592,
@@ -400,22 +637,28 @@
    "away": "西布罗姆",
    "matchTime": "19:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.1,
-    "s10": 7.75,
-    "s01": 13,
-    "had": [
-     1.69,
-     3.45,
-     4.05
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.855,
-   "diff": 0.245,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 7.75,
+      "s01": 13,
+      "had": [
+       1.69,
+       3.45,
+       4.05
+      ]
+     },
+     "optimized": 4.855,
+     "diff": 0.245
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": null
   },
   {
    "matchId": 2041593,
@@ -426,22 +669,43 @@
    "away": "马拉加",
    "matchTime": "20:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 3.45,
-    "s10": 5.3,
-    "s01": 7.5,
-    "had": [
-     1.89,
-     2.83,
-     4.05
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 3.105,
-   "diff": 0.345,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 3.45,
+      "s10": 5.3,
+      "s01": 7.5,
+      "had": [
+       1.89,
+       2.83,
+       4.05
+      ]
+     },
+     "optimized": 3.105,
+     "diff": 0.345
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 3.45,
+      "s10": 5.15,
+      "s01": 8,
+      "had": [
+       1.78,
+       2.88,
+       4.55
+      ]
+     },
+     "optimized": 3.133,
+     "diff": 0.317
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041594,
@@ -452,22 +716,43 @@
    "away": "埃因霍温",
    "matchTime": "20:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 12,
-    "s10": 24,
-    "s01": 19,
-    "had": [
-     2.74,
-     4.06,
-     1.93
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 10.605,
-   "diff": 1.395,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 12,
+      "s10": 24,
+      "s01": 19,
+      "had": [
+       2.74,
+       4.06,
+       1.93
+      ]
+     },
+     "optimized": 10.605,
+     "diff": 1.395
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 12,
+      "s10": 24,
+      "s01": 19,
+      "had": [
+       2.83,
+       4.1,
+       1.88
+      ]
+     },
+     "optimized": 10.605,
+     "diff": 1.395
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041595,
@@ -478,22 +763,43 @@
    "away": "水晶宫",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 6,
-    "s10": 8.25,
-    "s01": 15,
-    "had": [
-     1.57,
-     3.7,
-     4.55
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 5.323,
-   "diff": 0.677,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 6,
+      "s10": 8.25,
+      "s01": 15,
+      "had": [
+       1.57,
+       3.7,
+       4.55
+      ]
+     },
+     "optimized": 5.323,
+     "diff": 0.677
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 6,
+      "s10": 8.25,
+      "s01": 15,
+      "had": [
+       1.53,
+       3.8,
+       4.7
+      ]
+     },
+     "optimized": 5.323,
+     "diff": 0.677
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041596,
@@ -504,22 +810,28 @@
    "away": "利物浦",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 7.55,
-    "s10": 16,
-    "s01": 12.5,
-    "had": [
-     3,
-     3.65,
-     1.92
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 7.018,
-   "diff": 0.532,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 7.55,
+      "s10": 16,
+      "s01": 12.5,
+      "had": [
+       3,
+       3.65,
+       1.92
+      ]
+     },
+     "optimized": 7.018,
+     "diff": 0.532
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": true,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041597,
@@ -530,22 +842,43 @@
    "away": "桑德兰",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 6.1,
-    "s10": 7.5,
-    "s01": 25,
-    "had": [
-     1.18,
-     5.55,
-     9.8
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 5.769,
-   "diff": 0.331,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 6.1,
+      "s10": 7.5,
+      "s01": 25,
+      "had": [
+       1.18,
+       5.55,
+       9.8
+      ]
+     },
+     "optimized": 5.769,
+     "diff": 0.331
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 6.5,
+      "s10": 7.5,
+      "s01": 25,
+      "had": [
+       1.19,
+       5.45,
+       9.5
+      ]
+     },
+     "optimized": 5.769,
+     "diff": 0.731
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041598,
@@ -556,22 +889,43 @@
    "away": "热那亚",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 3.8,
-    "s10": 7.5,
-    "s01": 6.25,
-    "had": [
-     2.96,
-     2.8,
-     2.3
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 3.409,
-   "diff": 0.391,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 3.8,
+      "s10": 7.5,
+      "s01": 6.25,
+      "had": [
+       2.96,
+       2.8,
+       2.3
+      ]
+     },
+     "optimized": 3.409,
+     "diff": 0.391
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 3.9,
+      "s10": 7.75,
+      "s01": 6.25,
+      "had": [
+       3,
+       2.64,
+       2.4
+      ]
+     },
+     "optimized": 3.46,
+     "diff": 0.44
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041599,
@@ -582,22 +936,43 @@
    "away": "科莫",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 7.5,
-    "s10": 20,
-    "s01": 9.5,
-    "had": [
-     5.85,
-     4.6,
-     1.35
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 6.441,
-   "diff": 1.059,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 7.5,
+      "s10": 20,
+      "s01": 9.5,
+      "had": [
+       5.85,
+       4.6,
+       1.35
+      ]
+     },
+     "optimized": 6.441,
+     "diff": 1.059
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 7.7,
+      "s10": 20,
+      "s01": 9.5,
+      "had": [
+       5.95,
+       4.65,
+       1.34
+      ]
+     },
+     "optimized": 6.441,
+     "diff": 1.259
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041600,
@@ -608,22 +983,43 @@
    "away": "莱红牛",
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 10.5,
-    "s10": 17,
-    "s01": 23,
-    "had": [
-     1.83,
-     4.1,
-     2.95
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 9.775,
-   "diff": 0.725,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 10.5,
+      "s10": 17,
+      "s01": 23,
+      "had": [
+       1.83,
+       4.1,
+       2.95
+      ]
+     },
+     "optimized": 9.775,
+     "diff": 0.725
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 11,
+      "s10": 17,
+      "s01": 24,
+      "had": [
+       1.71,
+       4.2,
+       3.26
+      ]
+     },
+     "optimized": 9.951,
+     "diff": 1.049
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041601,
@@ -634,22 +1030,43 @@
    "away": "皇马",
    "matchTime": "22:15:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 7,
-    "s10": 16,
-    "s01": 11.5,
-    "had": [
-     3.32,
-     3.75,
-     1.78
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 6.691,
-   "diff": 0.309,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 7,
+      "s10": 16,
+      "s01": 11.5,
+      "had": [
+       3.32,
+       3.75,
+       1.78
+      ]
+     },
+     "optimized": 6.691,
+     "diff": 0.309
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 7.25,
+      "s10": 16,
+      "s01": 11.5,
+      "had": [
+       3.26,
+       3.7,
+       1.81
+      ]
+     },
+     "optimized": 6.691,
+     "diff": 0.559
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": true,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041602,
@@ -660,22 +1077,28 @@
    "away": "盖斯",
    "matchTime": "22:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 5.55,
-    "s10": 10.5,
-    "s01": 9.5,
-    "had": [
-     2.45,
-     3.28,
-     2.4
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.988,
-   "diff": 0.563,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 5.55,
+      "s10": 10.5,
+      "s01": 9.5,
+      "had": [
+       2.45,
+       3.28,
+       2.4
+      ]
+     },
+     "optimized": 4.988,
+     "diff": 0.563
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041603,
@@ -686,22 +1109,43 @@
    "away": "利勒斯特",
    "matchTime": "23:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 10,
-    "s10": 13,
-    "s01": 30,
-    "had": [
-     1.29,
-     5.2,
-     6.2
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 9.07,
-   "diff": 0.93,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 10,
+      "s10": 13,
+      "s01": 30,
+      "had": [
+       1.29,
+       5.2,
+       6.2
+      ]
+     },
+     "optimized": 9.07,
+     "diff": 0.93
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 10.5,
+      "s10": 13.5,
+      "s01": 35,
+      "had": [
+       1.23,
+       5.75,
+       7
+      ]
+     },
+     "optimized": 9.742,
+     "diff": 0.758
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041604,
@@ -712,22 +1156,43 @@
    "away": "里尔",
    "matchTime": "23:15:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 4.8,
-    "s10": 11,
-    "s01": 7.5,
-    "had": [
-     3.52,
-     3.35,
-     1.83
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 4.459,
-   "diff": 0.341,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 4.8,
+      "s10": 11,
+      "s01": 7.5,
+      "had": [
+       3.52,
+       3.35,
+       1.83
+      ]
+     },
+     "optimized": 4.459,
+     "diff": 0.341
+    },
+    {
+     "at": "2026-09-20T19:05:58+08:00",
+     "odds": {
+      "ttg1": 5.5,
+      "s10": 11,
+      "s01": 7.5,
+      "had": [
+       3.52,
+       3.35,
+       1.83
+      ]
+     },
+     "optimized": 4.459,
+     "diff": 1.041
+    }
+   ],
+   "totalCaptures": 7,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041605,
@@ -738,22 +1203,28 @@
    "away": "曼联",
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 6.7,
-    "s10": 16,
-    "s01": 10.5,
-    "had": [
-     3.5,
-     3.7,
-     1.75
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 6.34,
-   "diff": 0.36,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 6.7,
+      "s10": 16,
+      "s01": 10.5,
+      "had": [
+       3.5,
+       3.7,
+       1.75
+      ]
+     },
+     "optimized": 6.34,
+     "diff": 0.36
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": true,
+   "isSingleHandicap": false
   },
   {
    "matchId": 2041606,
@@ -764,23 +1235,29 @@
    "away": "埃沃斯堡",
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 7.5,
-    "s10": 12,
-    "s01": 16,
-    "had": [
-     1.9,
-     3.6,
-     3.08
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 6.857,
-   "diff": 0.643,
-   "matchDate": "2026-09-20"
+   "matchDate": "2026-09-20",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 7.5,
+      "s10": 12,
+      "s01": 16,
+      "had": [
+       1.9,
+       3.6,
+       3.08
+      ]
+     },
+     "optimized": 6.857,
+     "diff": 0.643
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": false,
+   "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-20T14:32:26+08:00"
+ "updatedAt": "2026-09-20T19:05:58+08:00"
 }

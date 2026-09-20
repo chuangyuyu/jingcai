@@ -10,23 +10,29 @@
    "away": "菲律宾女",
    "matchTime": "15:00:00",
    "matchStatus": "Selling",
-   "odds": {
-    "ttg1": 8.5,
-    "s10": 9.25,
-    "s01": 55,
-    "had": [
-     null,
-     null,
-     null
-    ]
-   },
-   "oddsAt": "2026-09-20T14:32:26+08:00",
-   "captureCount": 6,
    "result": null,
-   "optimized": 7.918,
-   "diff": 0.582,
-   "matchDate": "2026-09-21"
+   "matchDate": "2026-09-21",
+   "captures": [
+    {
+     "at": "2026-09-20T14:32:26+08:00",
+     "odds": {
+      "ttg1": 8.5,
+      "s10": 9.25,
+      "s01": 55,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 7.918,
+     "diff": 0.582
+    }
+   ],
+   "totalCaptures": 6,
+   "isSingleWin": null,
+   "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-20T14:32:26+08:00"
+ "updatedAt": "2026-09-20T19:05:58+08:00"
 }

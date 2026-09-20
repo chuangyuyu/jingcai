@@ -170,6 +170,10 @@ table.grid th[data-sort] { cursor: pointer; user-select: none; }
 table.grid th[data-sort]:hover { color: var(--ink-1); }
 td.diff-pos { color: var(--pos); font-weight: 600; }
 td.diff-neg { color: var(--neg); font-weight: 600; }
+td.dir-up { color: var(--neg); font-weight: 700; }
+td.dir-down { color: var(--pos); font-weight: 700; }
+td.dir-flat { color: var(--ink-muted); }
+td.single-yes { color: #b85c00; font-weight: 700; }
 td.one-yes { color: var(--pos); font-weight: 700; }
 td.one-no { color: var(--ink-muted); }
 .match-cell .vs { color: var(--ink-muted); padding: 0 4px; }
