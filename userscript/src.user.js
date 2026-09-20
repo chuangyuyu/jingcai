@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.0.0
+// @version      2.0.1
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -280,9 +280,12 @@
       '#jcq-panel .pos{color:#0a7a2f;font-weight:700}',
       '#jcq-panel .neg{color:#c0392b;font-weight:700}',
       '#jcq-panel .single{color:#b85c00;font-weight:700}',
-      '#jcq-panel .pill{position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#1f4e79;color:#fff;',
-      'border-radius:20px;padding:8px 14px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);',
-      'font:12px/1 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}'
+      '#jcq-pill{position:fixed;right:16px;bottom:16px;z-index:2147483000;background:#1f4e79;color:#fff;',
+      'border-radius:20px;padding:9px 15px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.25);',
+      'font:12px/1 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;user-select:none;',
+      'display:flex;align-items:center;gap:6px}',
+      '#jcq-pill:hover{background:#2a6296}',
+      '#jcq-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:#7fd1a8}'
     ].join('');
     document.head.appendChild(style);
 
@@ -294,7 +297,7 @@
       '<button data-act="res">回填赛果</button>' +
       '<button data-act="sync">同步</button>' +
       '<button data-act="set">设置</button>' +
-      '<button data-act="fold">—</button></div>' +
+      '<button data-act="fold" title="最小化为右下角浮标">—</button></div>' +
       '<div class="bd"><div class="stat" id="jcq-status"></div><div id="jcq-list"></div></div>';
     document.body.appendChild(panel);
 
@@ -327,8 +330,9 @@
       panel.style.display = 'none';
       if (!pill) {
         pill = document.createElement('div');
-        pill.className = 'pill';
+        pill.id = 'jcq-pill';
         pill.textContent = '竞彩1球差值';
+        pill.title = '点击展开面板';
         pill.onclick = function () { fold(false); renderPanel(); };
         document.body.appendChild(pill);
       }
@@ -336,6 +340,28 @@
     } else {
       panel.style.display = '';
       if (pill) pill.style.display = 'none';
+    }
+  }
+
+  // 有些官网页面是 SPA，路由切换/重绘时可能把我们的面板和浮标从 DOM 里清掉；
+  // 监听 body 变化，发现被移除就自动挂回去（不影响页面本身）
+  function keepAlive() {
+    if (!window.MutationObserver || !document.body) return;
+    var scheduled = false;
+    var check = function () {
+      if (scheduled) return;
+      scheduled = true;
+      setTimeout(function () {
+        scheduled = false;
+        try {
+          if (panel && !document.body.contains(panel)) document.body.appendChild(panel);
+          if (pill && pill.style.display !== 'none' && !document.body.contains(pill)) document.body.appendChild(pill);
+        } catch (e) { /* 忽略 */ }
+      }, 400);
+    };
+    new MutationObserver(check).observe(document.body, { childList: true });
+    if (document.documentElement) {
+      new MutationObserver(check).observe(document.documentElement, { childList: true });
     }
   }
 
@@ -386,6 +412,7 @@
   GM_registerMenuCommand('清除本机数据', clearAll);
 
   ensurePanel();
+  keepAlive();
   renderPanel();
 
   // 每天首次访问自动抓取一次
