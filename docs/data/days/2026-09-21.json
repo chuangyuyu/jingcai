@@ -27,12 +27,27 @@
      },
      "optimized": 7.918,
      "diff": 0.582
+    },
+    {
+     "at": "2026-09-21T11:00:03+08:00",
+     "odds": {
+      "ttg1": 8.2,
+      "s10": 9.25,
+      "s01": 50,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 7.806,
+     "diff": 0.394
     }
    ],
-   "totalCaptures": 6,
+   "totalCaptures": 7,
    "isSingleWin": null,
    "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-20T19:17:17+08:00"
+ "updatedAt": "2026-09-21T11:00:03+08:00"
 }

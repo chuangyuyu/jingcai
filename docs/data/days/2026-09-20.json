@@ -438,7 +438,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-20T19:05:58+08:00"
+    "at": "2026-09-21T11:00:03+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -476,7 +476,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-20T19:05:58+08:00"
+    "at": "2026-09-21T11:00:03+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -509,7 +509,13 @@
    "away": "神户胜利",
    "matchTime": "16:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -541,7 +547,13 @@
    "away": "大田市民",
    "matchTime": "18:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -573,7 +585,13 @@
    "away": "日本亚",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:7",
+    "halfScore": "0:3",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -605,7 +623,13 @@
    "away": "那不勒斯",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -637,7 +661,13 @@
    "away": "西布罗姆",
    "matchTime": "19:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -669,7 +699,13 @@
    "away": "马拉加",
    "matchTime": "20:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -716,7 +752,13 @@
    "away": "埃因霍温",
    "matchTime": "20:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:2",
+    "halfScore": "1:2",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -763,7 +805,13 @@
    "away": "水晶宫",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -810,7 +858,13 @@
    "away": "利物浦",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -842,7 +896,13 @@
    "away": "桑德兰",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "5:3",
+    "halfScore": "3:2",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -889,7 +949,13 @@
    "away": "热那亚",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:1",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -936,7 +1002,13 @@
    "away": "科莫",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:0",
+    "halfScore": "2:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -983,7 +1055,13 @@
    "away": "莱红牛",
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:0",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1030,7 +1108,13 @@
    "away": "皇马",
    "matchTime": "22:15:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:1",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1077,7 +1161,13 @@
    "away": "盖斯",
    "matchTime": "22:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:3",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1109,7 +1199,13 @@
    "away": "利勒斯特",
    "matchTime": "23:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:0",
+    "halfScore": "2:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1156,7 +1252,13 @@
    "away": "里尔",
    "matchTime": "23:15:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:1",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1203,7 +1305,13 @@
    "away": "曼联",
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1235,7 +1343,13 @@
    "away": "埃沃斯堡",
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T11:00:03+08:00"
+   },
    "matchDate": "2026-09-20",
    "captures": [
     {
@@ -1259,5 +1373,5 @@
    "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-20T19:17:17+08:00"
+ "updatedAt": "2026-09-21T11:00:03+08:00"
 }
