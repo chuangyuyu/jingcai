@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.2.1
+// @version      2.2.2
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -259,7 +259,7 @@
 
   // ---------------------------------------------------------------- 编号追踪提醒
 
-  var alertInfo = null; // { alerts, alertDays, lastDate, days }
+  var alertInfo = null; // { alerts, alertCount, lastDate, days }
 
   function repoRawPath(path) {
     var s = getSettings();
@@ -276,7 +276,7 @@
       .then(function (doc) {
         if (!doc) return;
         var st = JC.numbersStats(doc, {});
-        alertInfo = { alerts: st.alerts, alertDays: st.alertDays, lastDate: st.lastDate, days: st.days };
+        alertInfo = { alerts: st.alerts, alertCount: st.alertCount, lastDate: st.lastDate, days: st.days };
         renderPanel();
       })
       .catch(function () { /* 网络不可用时静默 */ });
@@ -286,12 +286,12 @@
     if (!alertInfo) { say('正在获取编号追踪数据…'); refreshAlerts(); return; }
     var a = alertInfo.alerts;
     if (!a.length) {
-      window.alert('编号追踪：当前没有 ≥' + alertInfo.alertDays + ' 天未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
+      window.alert('编号追踪：当前没有连续 ≥' + alertInfo.alertCount + ' 次未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
       return;
     }
-    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertDays + ' 天）\n\n' +
+    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertCount + ' 次）\n\n' +
       a.slice(0, 15).map(function (x) {
-        return '编号 ' + x.num + ' 的 ' + x.label + '：已 ' + x.daysSince + ' 天未出现（最近 ' + x.lastDate + '，连续 ' + x.streak + ' 次）';
+        return '编号 ' + x.num + ' 的 ' + x.label + '：已连续 ' + x.streak + ' 次未出现（最近 ' + x.lastDate + '，历史 ' + x.count + ' 次）';
       }).join('\n') +
       (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
   }
@@ -423,7 +423,7 @@
     statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
     if (alertInfo && alertInfo.alerts.length) {
-      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项未出≥' + alertInfo.alertDays + '天';
+      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项连续未出≥' + alertInfo.alertCount + '次';
       statEl.style.color = '#c0392b';
     } else {
       statEl.style.color = '#666';

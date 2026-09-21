@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.2.1
+// @version      2.2.2
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.2.1';
+  var VERSION = '2.2.2';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -667,23 +667,23 @@
   }
 
   // 编号 × 进球数 的历史统计与"连续未出现"追踪。
-  // doc: { updatedAt, alertDays?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
+  // doc: { updatedAt, alertCount?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
   //   · nums    —— 关注范围（编号列表；不设则统计全部编号）
   //   · buckets —— 进球数分档（不设则用 DEFAULT_NUM_BUCKETS：0~6 各自 + 7+）
-  // 返回 { days, firstDate, lastDate, alertDays, nums, buckets, alerts:[...], ... }
-  //   · 「距今」= 最近一次出现（该编号打出该档进球数）到最近数据日的日历天数；
-  //   · 「该出指数」= 距今 ÷ 历史平均间隔（越大概率上越"该出"）；
+  // 预警口径（用户确认）：按「连续未出现次数」——该编号每出现一次（有比赛）而没打出该档进球数就 +1，
+  //   编号没有比赛的日子不计入（023 不天天有，按自然天数会虚高）。达到 alertCount 次 → 警戒。
+  // 返回 { days, firstDate, lastDate, alertCount, nums, buckets, alerts:[...] }
   //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的分档；
   //   · 从未出现过的分档以 never:true 标出（查询器可见，不进警戒）。
   function numbersStats(doc, opts) {
     opts = opts || {};
     var days = (doc && doc.days) || {};
     var dates = Object.keys(days).sort();
-    var alertDays = opts.alertDays || (doc && doc.alertDays) || 30;
+    var alertCount = opts.alertCount || (doc && doc.alertCount) || 30;
     var activeWithin = opts.activeWithinDays || 7;
     var buckets = opts.buckets || (doc && doc.buckets) || DEFAULT_NUM_BUCKETS;
     var watchNums = opts.nums || (doc && doc.nums) || null;
-    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], buckets: buckets, alerts: [] };
+    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertCount: alertCount, nums: [], buckets: buckets, alerts: [] };
     var lastDate = dates[dates.length - 1];
     var numSet = {};
     dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
@@ -733,23 +733,18 @@
     nums.forEach(function (n) {
       if (!n.active) return;
       n.combos.forEach(function (c) {
-        if (!c.never && c.daysSince != null && c.daysSince >= alertDays) {
+        if (!c.never && c.streak >= alertCount) {
           alerts.push({
-            num: n.num, bucket: c.bucket, label: c.label, daysSince: c.daysSince,
-            lastDate: c.lastDate, streak: c.streak, count: c.count,
-            avgGap: c.avgGap, anomaly: c.anomaly
+            num: n.num, bucket: c.bucket, label: c.label,
+            streak: c.streak,           // 连续未出现次数（预警依据）
+            lastDate: c.lastDate, count: c.count, daysSince: c.daysSince
           });
         }
       });
     });
-    // 按「该出指数」排序（距今 ÷ 平均间隔），罕见组合自然沉底；无指数时退回按距今天数
-    alerts.sort(function (a, b) {
-      var ra = a.anomaly != null ? a.anomaly : 0;
-      var rb = b.anomaly != null ? b.anomaly : 0;
-      if (rb !== ra) return rb - ra;
-      return b.daysSince - a.daysSince;
-    });
-    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, buckets: buckets, alerts: alerts };
+    // 按连续未出现次数降序
+    alerts.sort(function (a, b) { return b.streak - a.streak; });
+    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertCount: alertCount, nums: nums, buckets: buckets, alerts: alerts };
   }
 
   // ---------------------------------------------------------------- 数据文件名
@@ -1038,7 +1033,7 @@
 
   // ---------------------------------------------------------------- 编号追踪提醒
 
-  var alertInfo = null; // { alerts, alertDays, lastDate, days }
+  var alertInfo = null; // { alerts, alertCount, lastDate, days }
 
   function repoRawPath(path) {
     var s = getSettings();
@@ -1055,7 +1050,7 @@
       .then(function (doc) {
         if (!doc) return;
         var st = JC.numbersStats(doc, {});
-        alertInfo = { alerts: st.alerts, alertDays: st.alertDays, lastDate: st.lastDate, days: st.days };
+        alertInfo = { alerts: st.alerts, alertCount: st.alertCount, lastDate: st.lastDate, days: st.days };
         renderPanel();
       })
       .catch(function () { /* 网络不可用时静默 */ });
@@ -1065,12 +1060,12 @@
     if (!alertInfo) { say('正在获取编号追踪数据…'); refreshAlerts(); return; }
     var a = alertInfo.alerts;
     if (!a.length) {
-      window.alert('编号追踪：当前没有 ≥' + alertInfo.alertDays + ' 天未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
+      window.alert('编号追踪：当前没有连续 ≥' + alertInfo.alertCount + ' 次未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
       return;
     }
-    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertDays + ' 天）\n\n' +
+    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertCount + ' 次）\n\n' +
       a.slice(0, 15).map(function (x) {
-        return '编号 ' + x.num + ' 的 ' + x.label + '：已 ' + x.daysSince + ' 天未出现（最近 ' + x.lastDate + '，连续 ' + x.streak + ' 次）';
+        return '编号 ' + x.num + ' 的 ' + x.label + '：已连续 ' + x.streak + ' 次未出现（最近 ' + x.lastDate + '，历史 ' + x.count + ' 次）';
       }).join('\n') +
       (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
   }
@@ -1202,7 +1197,7 @@
     statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
     if (alertInfo && alertInfo.alerts.length) {
-      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项未出≥' + alertInfo.alertDays + '天';
+      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项连续未出≥' + alertInfo.alertCount + '次';
       statEl.style.color = '#c0392b';
     } else {
       statEl.style.color = '#666';

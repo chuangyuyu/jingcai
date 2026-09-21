@@ -412,8 +412,7 @@
     var alerts = st ? st.alerts : [];
     if (!alerts.length || state.alertDismissed) { banner.hidden = true; return; }
     var top = alerts.slice(0, 4).map(function (a) {
-      return '编号 <b>' + a.num + '</b> 的 <b>' + a.label + '</b> 已 <b>' + a.daysSince + ' 天</b>未出现' +
-        (a.avgGap ? '（该组合历史约 ' + a.avgGap + ' 天/次，最近 ' + a.lastDate + '）' : '（最近 ' + a.lastDate + '）');
+      return '编号 <b>' + a.num + '</b> 的 <b>' + a.label + '</b> 已连续 <b>' + a.streak + ' 次</b>未出现（最近 ' + a.lastDate + '）';
     }).join('；');
     $('#alert-text').innerHTML = '编号追踪提醒：' + top +
       (alerts.length > 4 ? '；等共 <b>' + alerts.length + '</b> 项达到警戒线' : '（共 ' + alerts.length + ' 项达到警戒线）') +
@@ -470,18 +469,17 @@
     if (c.never) {
       res += '在已有数据中从未出现（该编号共出现 ' + n.occurrences + ' 天，自 ' + n.firstSeen + ' 起）';
     } else {
-      res += '最近出现 ' + c.lastDate + '，距今 ' + c.daysSince + ' 天；连续未出现 ' + c.streak + ' 次；历史出现 ' + c.count + ' 次';
-      if (c.daysSince >= st.alertDays) res += '　【已超过 ' + st.alertDays + ' 天警戒线】';
+      res += '已连续 ' + c.streak + ' 次未出现（最近 ' + c.lastDate + '，历史出现 ' + c.count + ' 次）';
+      if (c.streak >= st.alertCount) res += '　【已达到 ' + st.alertCount + ' 次警戒线】';
     }
     el.textContent = res;
-    el.className = 'num-result' + (!c.never && c.daysSince >= st.alertDays ? ' st-alert' : '');
+    el.className = 'num-result' + (!c.never && c.streak >= st.alertCount ? ' st-alert' : '');
     $('#num-dist-table tbody').innerHTML = n.combos.map(function (b) {
       var cls = '';
-      if (!b.never && b.daysSince >= st.alertDays) cls = 'st-alert';
-      else if (!b.never && b.daysSince >= st.alertDays * 0.6) cls = 'st-near';
-      return '<tr><td>' + b.label + (b.bucket === bucket ? ' ◀' : '') + '</td><td class="num">' + b.count +
-        '</td><td>' + (b.lastDate || '从未出现') + '</td><td class="num ' + cls + '">' + (b.daysSince != null ? b.daysSince : '—') +
-        '</td><td class="num">' + b.streak + '</td></tr>';
+      if (!b.never && b.streak >= st.alertCount) cls = 'st-alert';
+      else if (!b.never && b.streak >= st.alertCount * 0.6) cls = 'st-near';
+      return '<tr><td>' + b.label + (b.bucket === bucket ? ' ◀' : '') + '</td><td class="num ' + cls + '">' + b.streak +
+        '</td><td>' + (b.lastDate || '从未出现') + '</td><td class="num">' + b.count + '</td></tr>';
     }).join('');
   }
 
@@ -493,27 +491,26 @@
       if (!n.active) return;
       n.combos.forEach(function (c) {
         if (c.never || c.count === 0) return;
-        if (onlyAlerts && c.daysSince < st.alertDays) return;
+        if (onlyAlerts && c.streak < st.alertCount) return;
         rows.push({ num: n.num, c: c });
       });
     });
-    rows.sort(function (a, b) { return b.c.daysSince - a.c.daysSince; });
+    rows.sort(function (a, b) { return b.c.streak - a.c.streak; });
     var shown = rows.slice(0, 60);
     var tbody = $('#tracker-table tbody');
     if (!shown.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="muted">' + (onlyAlerts ? '当前没有达到警戒线的项目' : '暂无数据') + '</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="muted">' + (onlyAlerts ? '当前没有达到警戒线的项目' : '暂无数据') + '</td></tr>';
       return;
     }
     tbody.innerHTML = shown.map(function (x) {
       var c = x.c;
-      var stCls = c.daysSince >= st.alertDays ? 'st-alert' : (c.daysSince >= st.alertDays * 0.6 ? 'st-near' : 'st-ok');
-      var stTxt = c.daysSince >= st.alertDays ? '超警戒' : (c.daysSince >= st.alertDays * 0.6 ? '接近警戒' : '正常');
-      var rowCls = c.daysSince >= st.alertDays ? 'row-alert' : (c.daysSince >= st.alertDays * 0.6 ? 'row-near' : '');
-      return '<tr class="' + rowCls + '"><td>' + x.num + '</td><td>' + c.label + '</td><td>' + c.lastDate +
-        '</td><td class="num ' + stCls + '">' + c.daysSince + '</td><td class="num">' + (c.avgGap != null ? c.avgGap : '—') +
-        '</td><td class="num">' + c.streak +
-        '</td><td class="num">' + c.count + '</td><td class="' + stCls + '">' + stTxt + '</td></tr>';
-    }).join('') + (rows.length > shown.length ? '<tr><td colspan="8" class="muted">仅显示 60 项（按距今天数排序，共 ' + rows.length + ' 项）</td></tr>' : '');
+      var stCls = c.streak >= st.alertCount ? 'st-alert' : (c.streak >= st.alertCount * 0.6 ? 'st-near' : 'st-ok');
+      var stTxt = c.streak >= st.alertCount ? '超警戒' : (c.streak >= st.alertCount * 0.6 ? '接近警戒' : '正常');
+      var rowCls = c.streak >= st.alertCount ? 'row-alert' : (c.streak >= st.alertCount * 0.6 ? 'row-near' : '');
+      return '<tr class="' + rowCls + '"><td>' + x.num + '</td><td>' + c.label +
+        '</td><td class="num ' + stCls + '">' + c.streak +
+        '</td><td>' + c.lastDate + '</td><td class="' + stCls + '">' + stTxt + '</td></tr>';
+    }).join('') + (rows.length > shown.length ? '<tr><td colspan="5" class="muted">仅显示 60 项（按连续未出现次数排序，共 ' + rows.length + ' 项）</td></tr>' : '');
   }
 
   function renderLeagueOptions() {

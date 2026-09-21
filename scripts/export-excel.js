@@ -223,11 +223,10 @@ function addHelpSheet(wb) {
     '',
     '【编号追踪】',
     '  · 每场比赛按编号（001 起）记录赛后实际总进球数（见「编号统计」表）。',
-    '  · 当某个编号的某个进球数连续超过警戒线（config.json 的 alertDays，默认 30 天）没有出现时，',
-    '    网页顶部会弹出横幅提醒，运行日志也会记录 —— 用于持续关注"该出了"的编号 × 进球数组合。',
-    '  · 「距今」按日历天计（到最近数据日）；「连续未出现」按该编号实际出现的次数计；',
-    '    只对近期仍活跃（近 7 天出现过）的编号、且历史上出现过至少一次的组合进入警戒。',
-    '  · 「编号追踪」表中：红色 = 超警戒，橙色 = 接近警戒（60%），从未 = 历史数据中未出现过。',
+    '  · 预警口径为「连续未出现次数」：该编号每踢一场而没打出该档进球数计 1 次（编号当天没有比赛不计入），',
+    '    达到警戒线（config.json 的 alertCount，默认 30 次）即触发提醒（网页横幅/运行日志/油猴浮窗）。',
+    '  · 只对近期仍活跃（近 7 天出现过）的编号、且历史上出现过至少一次的分档进入警戒。',
+    '  · 「编号追踪」表中：数字 = 连续未出现次数；红色 = 超警戒，橙色 = 接近警戒（60%），从未 = 历史数据中未出现过。',
     '',
     '【数据来源与口径】',
     '  · 赔率、赛果均来自中国体育彩票官方 Web API，定时抓取；赛果于比赛结束后回填。',
@@ -273,10 +272,10 @@ function addNumbersSheets(wb, numsDoc) {
   // —— 编号追踪：间隔矩阵 + 警戒列表 ——
   const ws2 = wb.addWorksheet('编号追踪');
   ws2.columns = [{ width: 12 }].concat(st.buckets.map(() => ({ width: 9 })));
-  ws2.addRow(['编号追踪：单元格 = 该编号该进球数"距今未出现天数"（截至 ' + st.lastDate + '，警戒线 ' + st.alertDays + ' 天）']).font = { bold: true, size: 12 };
+  ws2.addRow(['编号追踪：单元格 = 该编号该档进球数的"连续未出现次数"（该编号每踢一场未出该档 +1；截至 ' + st.lastDate + '，警戒线 ' + st.alertCount + ' 次）']).font = { bold: true, size: 12 };
   ws2.addRow([]);
-  ws2.addRow(['⚠ 达到警戒线的项目（按"该出指数"排序：距今 ÷ 历史平均间隔，越大概率上越"该出"）']).font = { bold: true, size: 12 };
-  const hh = ws2.addRow(['编号', '进球数', '距今天数', '历史平均间隔(天)', '该出指数', '最近出现', '连续未出现(次)', '历史次数']);
+  ws2.addRow(['⚠ 达到警戒线的项目（按连续未出现次数排序）']).font = { bold: true, size: 12 };
+  const hh = ws2.addRow(['编号', '进球数', '连续未出现(次)', '最近出现', '历史次数']);
   hh.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   hh.eachCell(c => {
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
@@ -284,7 +283,7 @@ function addNumbersSheets(wb, numsDoc) {
   });
   if (st.alerts.length) {
     st.alerts.forEach(a => {
-      const r = ws2.addRow([a.num, a.label, a.daysSince, a.avgGap, a.anomaly, a.lastDate, a.streak, a.count]);
+      const r = ws2.addRow([a.num, a.label, a.streak, a.lastDate, a.count]);
       r.font = { bold: true, color: { argb: COLOR_NEGATIVE } };
       [1, 2].forEach(i => { r.getCell(i).alignment = { horizontal: 'center' }; });
     });
@@ -292,7 +291,7 @@ function addNumbersSheets(wb, numsDoc) {
     ws2.addRow(['（当前没有项目超过警戒线）']);
   }
   ws2.addRow([]);
-  ws2.addRow(['全部编号 × 进球数矩阵（数字=距今未出现天数；"从未"=历史数据中未出现过）']).font = { italic: true, size: 11 };
+  ws2.addRow(['全部编号 × 进球数矩阵（数字=连续未出现次数；"从未"=历史数据中未出现过）']).font = { italic: true, size: 11 };
   const mh = ws2.addRow(['编号'].concat(st.buckets.map(b => b.label)));
   mh.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   mh.eachCell(c => {
@@ -300,16 +299,16 @@ function addNumbersSheets(wb, numsDoc) {
     c.alignment = { horizontal: 'center' };
   });
   st.nums.forEach(n => {
-    const row = ws2.addRow([n.num + (n.active ? '' : '(停用)')].concat(n.combos.map(c => c.never ? '从未' : c.daysSince)));
+    const row = ws2.addRow([n.num + (n.active ? '' : '(停用)')].concat(n.combos.map(c => c.never ? '从未' : c.streak)));
     row.getCell(1).alignment = { horizontal: 'center' };
     n.combos.forEach((c, i) => {
       const cell = row.getCell(i + 2);
       cell.alignment = { horizontal: 'center' };
       if (!c.never) {
-        if (c.daysSince >= st.alertDays) {
+        if (c.streak >= st.alertCount) {
           cell.font = { bold: true, color: { argb: COLOR_NEGATIVE } };
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7D7' } };
-        } else if (c.daysSince >= st.alertDays * 0.6) {
+        } else if (c.streak >= st.alertCount * 0.6) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDEBD0' } };
         }
       } else {

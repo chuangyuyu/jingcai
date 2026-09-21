@@ -62,8 +62,9 @@ function saveJson(file, obj) {
 
 function loadConfig() {
   return Object.assign({
-    autoPush: true, backfillDays: 10, gitProxy: '', alertDays: 30,
+    autoPush: true, backfillDays: 10, gitProxy: '', alertCount: 30,
     // 编号追踪的关注范围：编号 001~010；进球数 0/1/2/3/4 各自统计，5 及以上合并为 5+
+    // 预警口径：连续未出现「次数」（该编号有比赛但没打出该档进球数）达到 alertCount → 警戒
     numTrack: { nums: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010'], goalGroups: '0,1,2,3,4,5+' }
   }, loadJson(path.join(ROOT, 'config.json'), {}));
 }
@@ -245,7 +246,8 @@ function loadNumbers() {
 async function runNumbers(config, opts) {
   opts = opts || {};
   const doc = loadNumbers();
-  doc.alertDays = config.alertDays || doc.alertDays || 30;
+  doc.alertCount = config.alertCount || doc.alertCount || 30;
+  delete doc.alertDays; // 旧口径字段，清理
   // 关注范围与分档（写入 numbers.json，网页/油猴/Excel 均按此口径统计）
   const track = config.numTrack || {};
   doc.nums = (Array.isArray(track.nums) && track.nums.length) ? track.nums : null;
@@ -278,14 +280,14 @@ async function runNumbers(config, opts) {
   doc.updatedAt = JC.nowIso();
   saveJson(NUMBERS_FILE, doc);
 
-  const st = JC.numbersStats(doc, { alertDays: doc.alertDays });
+  const st = JC.numbersStats(doc, { alertCount: doc.alertCount });
   log(`编号历史：共 ${st.days} 天（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
   if (st.alerts.length) {
-    log(`⚠ 编号追踪：${st.alerts.length} 项已 ≥${st.alertDays} 天未出现 —— ` +
-      st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（${a.daysSince}天，最近 ${a.lastDate}）`).join('；') +
+    log(`⚠ 编号追踪：${st.alerts.length} 项已连续 ≥${st.alertCount} 次未出现 —— ` +
+      st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（连续 ${a.streak} 次，最近 ${a.lastDate}）`).join('；') +
       (st.alerts.length > 5 ? ' 等' : ''));
   } else {
-    log(`编号追踪：当前没有 ≥${st.alertDays} 天未出现的项目`);
+    log(`编号追踪：当前没有连续 ≥${st.alertCount} 次未出现的项目`);
   }
   return { days: st.days, fetched, written, alerts: st.alerts };
 }
@@ -367,7 +369,7 @@ async function runCheck() {
   ok('本地数据', true, dates.length ? (dates.length + ' 天（' + dates[0] + ' ~ ' + dates[dates.length - 1] + '），共 ' + total + ' 场') : '暂无数据：双击 手动执行.cmd 即可开始抓取');
 
   try {
-    const nst = JC.numbersStats(loadNumbers(), { alertDays: loadConfig().alertDays });
+    const nst = JC.numbersStats(loadNumbers(), { alertCount: loadConfig().alertCount });
     ok('编号追踪数据', true, nst.days
       ? (nst.days + ' 天（' + nst.firstDate + ' ~ ' + nst.lastDate + '），当前警戒 ' + nst.alerts.length + ' 项')
       : '暂无：运行 node scripts\\daily.js numbers --backfill 400 回补历史');

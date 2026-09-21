@@ -176,7 +176,7 @@ console.log('== 编号追踪（编号 × 进球数）==');
   ok('numOf 提取编号', JC.numOf('周日001') === '001' && JC.numOf('周一030') === '030' && JC.numOf('') === null);
   ok('goalsFromScore', JC.goalsFromScore('2:1') === 3 && JC.goalsFromScore('0:0') === 0 && JC.goalsFromScore('5:2') === 7 && JC.goalsFromScore('') === null);
 
-  const doc = { alertDays: 2, days: {
+  const doc = { alertCount: 2, days: {
     '2026-09-01': { '001': 2, '002': 0, '003': 4 },
     '2026-09-02': { '001': 0, '002': 1 },                 // 003 当天没有这个编号
     '2026-09-03': { '001': 3, '002': 2, '003': 1 },
@@ -184,7 +184,7 @@ console.log('== 编号追踪（编号 × 进球数）==');
   } };
   const st = JC.numbersStats(doc);
   ok('共 4 天、3 个编号', st.days === 4 && st.nums.length === 3);
-  ok('警戒线来自 doc.alertDays = 2', st.alertDays === 2);
+  ok('警戒线来自 doc.alertCount = 2', st.alertCount === 2);
   const n1 = st.nums.find(n => n.num === '001');
   ok('001 各进球桶次数', n1.counts[0] === 1 && n1.counts[1] === 1 && n1.counts[2] === 1 && n1.counts[3] === 1, JSON.stringify(n1.counts));
   const c2 = n1.combos[2]; // 2球
@@ -194,9 +194,11 @@ console.log('== 编号追踪（编号 × 进球数）==');
   ok('003 出现 2 天（缺失日不计数）', n3.occurrences === 2 && n3.lastSeen === '2026-09-03');
   ok('003的4球 距今 3 天', n3.combos[4].lastDate === '2026-09-01' && n3.combos[4].daysSince === 3);
   ok('从未出现的桶标记 never', n3.combos[7].never === true && n3.combos[7].count === 0);
-  ok('警戒项共 5 个（2+2+1）', st.alerts.length === 5, JSON.stringify(st.alerts.map(a => a.num + a.label + a.daysSince)));
-  ok('警戒按距今天数降序', st.alerts[0].daysSince === 3);
-  ok('从未出现的组合不进警戒', !st.alerts.some(a => a.num === '003' && a.label === '7+球'));
+  // 预警按「连续未出现次数」：001的2球(3次)、002的0球(3次)、001的0球(2次)、002的1球(2次)
+  ok('警戒项共 4 个（按次数口径）', st.alerts.length === 4, JSON.stringify(st.alerts.map(a => a.num + a.label + ':' + a.streak)));
+  ok('警戒按连续未出现次数降序', st.alerts[0].streak === 3, 'first streak=' + st.alerts[0].streak);
+  ok('003的4球 仅 1 次未出，不进警戒', !st.alerts.some(a => a.num === '003'));
+  ok('从未出现的组合不进警戒', !st.alerts.some(a => a.num === '001' && a.label === '7+球'));
   // 停用编号不进警戒：让 003 最后出现停在 09-01，数据延续到 09-12（间隔 11 天 > 7）
   const doc2 = JSON.parse(JSON.stringify(doc));
   delete doc2.days['2026-09-03']['003'];
@@ -214,7 +216,7 @@ console.log('== 编号追踪（编号 × 进球数）==');
   // 自定义分档（0~4 各自 + 5+ 合并）与关注范围
   ok('parseGoalGroups 解析', JSON.stringify(JC.parseGoalGroups('0,1,2,3,4,5+').map(b => b.label)) ===
     JSON.stringify(['0球', '1球', '2球', '3球', '4球', '5+球']));
-  const docB = { nums: ['001', '002'], buckets: JC.parseGoalGroups('0,1,2,3,4,5+'), alertDays: 2, days: {
+  const docB = { nums: ['001', '002'], buckets: JC.parseGoalGroups('0,1,2,3,4,5+'), alertCount: 2, days: {
     '2026-09-01': { '001': 5, '002': 0, '009': 6 },   // 009 不在关注范围
     '2026-09-02': { '001': 6, '002': 1 },
     '2026-09-03': { '001': 7, '002': 2 },

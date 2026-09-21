@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.2.1';
+  var VERSION = '2.2.2';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -641,23 +641,23 @@
   }
 
   // 编号 × 进球数 的历史统计与"连续未出现"追踪。
-  // doc: { updatedAt, alertDays?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
+  // doc: { updatedAt, alertCount?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
   //   · nums    —— 关注范围（编号列表；不设则统计全部编号）
   //   · buckets —— 进球数分档（不设则用 DEFAULT_NUM_BUCKETS：0~6 各自 + 7+）
-  // 返回 { days, firstDate, lastDate, alertDays, nums, buckets, alerts:[...], ... }
-  //   · 「距今」= 最近一次出现（该编号打出该档进球数）到最近数据日的日历天数；
-  //   · 「该出指数」= 距今 ÷ 历史平均间隔（越大概率上越"该出"）；
+  // 预警口径（用户确认）：按「连续未出现次数」——该编号每出现一次（有比赛）而没打出该档进球数就 +1，
+  //   编号没有比赛的日子不计入（023 不天天有，按自然天数会虚高）。达到 alertCount 次 → 警戒。
+  // 返回 { days, firstDate, lastDate, alertCount, nums, buckets, alerts:[...] }
   //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的分档；
   //   · 从未出现过的分档以 never:true 标出（查询器可见，不进警戒）。
   function numbersStats(doc, opts) {
     opts = opts || {};
     var days = (doc && doc.days) || {};
     var dates = Object.keys(days).sort();
-    var alertDays = opts.alertDays || (doc && doc.alertDays) || 30;
+    var alertCount = opts.alertCount || (doc && doc.alertCount) || 30;
     var activeWithin = opts.activeWithinDays || 7;
     var buckets = opts.buckets || (doc && doc.buckets) || DEFAULT_NUM_BUCKETS;
     var watchNums = opts.nums || (doc && doc.nums) || null;
-    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], buckets: buckets, alerts: [] };
+    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertCount: alertCount, nums: [], buckets: buckets, alerts: [] };
     var lastDate = dates[dates.length - 1];
     var numSet = {};
     dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
@@ -707,23 +707,18 @@
     nums.forEach(function (n) {
       if (!n.active) return;
       n.combos.forEach(function (c) {
-        if (!c.never && c.daysSince != null && c.daysSince >= alertDays) {
+        if (!c.never && c.streak >= alertCount) {
           alerts.push({
-            num: n.num, bucket: c.bucket, label: c.label, daysSince: c.daysSince,
-            lastDate: c.lastDate, streak: c.streak, count: c.count,
-            avgGap: c.avgGap, anomaly: c.anomaly
+            num: n.num, bucket: c.bucket, label: c.label,
+            streak: c.streak,           // 连续未出现次数（预警依据）
+            lastDate: c.lastDate, count: c.count, daysSince: c.daysSince
           });
         }
       });
     });
-    // 按「该出指数」排序（距今 ÷ 平均间隔），罕见组合自然沉底；无指数时退回按距今天数
-    alerts.sort(function (a, b) {
-      var ra = a.anomaly != null ? a.anomaly : 0;
-      var rb = b.anomaly != null ? b.anomaly : 0;
-      if (rb !== ra) return rb - ra;
-      return b.daysSince - a.daysSince;
-    });
-    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, buckets: buckets, alerts: alerts };
+    // 按连续未出现次数降序
+    alerts.sort(function (a, b) { return b.streak - a.streak; });
+    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertCount: alertCount, nums: nums, buckets: buckets, alerts: alerts };
   }
 
   // ---------------------------------------------------------------- 数据文件名

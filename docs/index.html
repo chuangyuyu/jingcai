@@ -94,7 +94,7 @@
       <p class="card-sub">「单场胜平负」是官方精挑细选、开放单关的场次（接口 HAD.single=1）。对比两组的 1 球出现率与平均差值。勾选上方「只看单关」可把全部图表切换为单关视角。</p>
       <div class="table-scroll">
         <table class="grid" id="single-table">
-          <thead><tr><th>分组</th><th>场次</th><th>已出赛果</th><th>1球场次</th><th>1球占比</th><th>平均差值</th></tr></thead>
+          <thead><tr><th>分组</th><th class="num">场次</th><th class="num">已出赛果</th><th class="num">1球场次</th><th class="num">1球占比</th><th class="num">平均差值</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -104,7 +104,7 @@
       <div class="card-head"><h2>差值变化分档明细 ①→②</h2></div>
       <div class="table-scroll">
         <table class="grid" id="delta-table">
-          <thead><tr><th>变化区间</th><th>场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均变化量</th></tr></thead>
+          <thead><tr><th>变化区间</th><th class="num">场次</th><th class="num">1球场次</th><th class="num">非1球场次</th><th class="num">1球占比</th><th class="num">平均变化量</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -112,7 +112,7 @@
 
     <div class="card" id="numbers-card">
       <div class="card-head"><h2>编号追踪（编号 × 总进球数）</h2></div>
-      <p class="card-sub">每场比赛按编号记录赛后的实际总进球数。当关注范围内某个编号的某一档进球数连续超过警戒线（默认 30 天）没有出现时，页面顶部会弹出横幅提醒。<span id="num-scope" class="muted"></span>。数据截至 <b id="num-last-date">—</b>，共 <b id="num-days">0</b> 天（自动回补一年历史）。</p>
+      <p class="card-sub">每场比赛按编号记录赛后的实际总进球数。预警口径为<b>连续未出现次数</b>：该编号每踢一场而没打出该档进球数计 1 次（编号当天没有比赛不计入），达到警戒线即弹横幅提醒。<span id="num-scope" class="muted"></span>。数据截至 <b id="num-last-date">—</b>，共 <b id="num-days">0</b> 天（自动回补一年历史）。</p>
       <div class="filters">
         <label class="chk">编号
           <select id="num-select"></select>
@@ -124,7 +124,7 @@
       </div>
       <div class="table-scroll">
         <table class="grid" id="num-dist-table">
-          <thead><tr><th>该编号的进球数</th><th>历史出现次数</th><th>最近出现</th><th>距今（天）</th><th>连续未出现（次）</th></tr></thead>
+          <thead><tr><th>进球数</th><th class="num">连续未出现（次）</th><th>最近出现</th><th class="num">历史次数</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -134,7 +134,7 @@
       </div>
       <div class="table-scroll">
         <table class="grid" id="tracker-table">
-          <thead><tr><th>编号</th><th>进球数</th><th>最近出现</th><th>距今（天）</th><th>历史平均间隔（天）</th><th>连续未出现（次）</th><th>历史次数</th><th>状态</th></tr></thead>
+          <thead><tr><th>编号</th><th>进球数</th><th class="num">连续未出现（次）</th><th>最近出现</th><th>状态</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -144,7 +144,7 @@
       <div class="card-head"><h2>分箱明细（差值取最新一次，箱宽 0.05）</h2></div>
       <div class="table-scroll">
         <table class="grid" id="bins-table">
-          <thead><tr><th>差值区间</th><th>总场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均差值</th></tr></thead>
+          <thead><tr><th>差值区间</th><th class="num">总场次</th><th class="num">1球场次</th><th class="num">非1球场次</th><th class="num">1球占比</th><th class="num">平均差值</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
