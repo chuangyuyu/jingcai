@@ -176,6 +176,27 @@ console.log('== 编号追踪（编号 × 进球数）==');
   ok('numOf 提取编号', JC.numOf('周日001') === '001' && JC.numOf('周一030') === '030' && JC.numOf('') === null);
   ok('goalsFromScore', JC.goalsFromScore('2:1') === 3 && JC.goalsFromScore('0:0') === 0 && JC.goalsFromScore('5:2') === 7 && JC.goalsFromScore('') === null);
 
+  ok('slateDateOf 同日场次归当天', JC.slateDateOf('周三004', '2026-09-02') === '2026-09-02');
+  ok('slateDateOf 凌晨场归前一天', JC.slateDateOf('周二004', '2026-09-02') === '2026-09-01');
+  ok('slateDateOf 跨周正确', JC.slateDateOf('周六030', '2026-09-06') === '2026-09-05' && JC.slateDateOf('周日001', '2026-09-06') === '2026-09-06');
+  ok('slateDateOf 无前缀回退', JC.slateDateOf('004', '2026-09-02') === '2026-09-02');
+
+  // 撞号场景（用户实测发现）：同一天真实日期里 周三004 与 周二004 是两场比赛，必须归属不同销售日
+  {
+    const rows = [
+      { matchNumStr: '周三004', date: '2026-09-02', score: '2:1' },
+      { matchNumStr: '周二004', date: '2026-09-02', score: '0:2' }
+    ];
+    const bySlate = {};
+    rows.forEach(r => {
+      const s = JC.slateDateOf(r.matchNumStr, r.date);
+      bySlate[s] = bySlate[s] || {};
+      bySlate[s][JC.numOf(r.matchNumStr)] = JC.goalsFromScore(r.score);
+    });
+    ok('撞号修复：周三004 → 09-02 销售日 = 3球', bySlate['2026-09-02'] && bySlate['2026-09-02']['004'] === 3);
+    ok('撞号修复：周二004 → 09-01 销售日 = 2球（互不覆盖）', bySlate['2026-09-01'] && bySlate['2026-09-01']['004'] === 2);
+  }
+
   const doc = { alertCount: 2, days: {
     '2026-09-01': { '001': 2, '002': 0, '003': 4 },
     '2026-09-02': { '001': 0, '002': 1 },                 // 003 当天没有这个编号

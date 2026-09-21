@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.2.2';
+  var VERSION = '2.2.3';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -640,6 +640,21 @@
     return -1;
   }
 
+  // 场次编号只在「销售日」内唯一：如周三的场次包含凌晨开赛的比赛（真实开赛日是周四）。
+  // 由编号前缀的星期与真实开赛日推出该场次所属的销售日：
+  //   前缀星期 == 真实开赛日的星期 → 销售日就是当天；否则（凌晨场）→ 前一天。
+  // 例：周三004 于 2026-09-02（周三）→ 销售日 2026-09-02；
+  //     周二004 于 2026-09-02（周三，凌晨场）→ 销售日 2026-09-01。
+  var WEEK_CHARS = { '日': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
+  function slateDateOf(matchNumStr, matchDate) {
+    if (!matchDate) return null;
+    var m = /^周([日一二三四五六])\s*\d{3}\s*$/.exec(String(matchNumStr || '').trim());
+    if (!m) return matchDate; // 前缀异常时回退为真实开赛日
+    var p = String(matchDate).split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return d.getDay() === WEEK_CHARS[m[1]] ? matchDate : addDays(matchDate, -1);
+  }
+
   // 编号 × 进球数 的历史统计与"连续未出现"追踪。
   // doc: { updatedAt, alertCount?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
   //   · nums    —— 关注范围（编号列表；不设则统计全部编号）
@@ -761,6 +776,7 @@
     GOAL_LABELS: GOAL_LABELS,
     DEFAULT_NUM_BUCKETS: DEFAULT_NUM_BUCKETS,
     parseGoalGroups: parseGoalGroups,
+    slateDateOf: slateDateOf,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,

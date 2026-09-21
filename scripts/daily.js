@@ -239,13 +239,21 @@ function loadNumbers() {
   return doc;
 }
 
-// 维护 docs/data/numbers.json：每天记录 { 编号: 总进球数 }
-//   · 每次运行保证最近 3 天（昨天/今天/明天，结果会持续变化）为最新；
-//   · 更早的日期已抓过就跳过（历史结果不会变）；
+// 维护 docs/data/numbers.json：每天（按"销售日"）记录 { 编号: 总进球数 }
+//   · 编号只在销售日内唯一（周三004 与 周二004 可能是两场比赛），因此一天的数据 =
+//     真实日期 s 的日间场 + 真实日期 s+1 的凌晨场；一次查询 [s, s+1] 后按销售日归属；
+//   · 每次运行保证最近 3 个销售日为最新；更早的销售日已定稿就跳过；
 //   · --backfill N 时向后回补 N 天（一次性种子历史，限速请求）。
+const NUMBERS_SCHEMA = 2;
+
 async function runNumbers(config, opts) {
   opts = opts || {};
   const doc = loadNumbers();
+  if (doc.schema !== NUMBERS_SCHEMA) {
+    if (Object.keys(doc.days || {}).length) log('编号历史升级为「按销售日」口径（修复跨日同号覆盖问题），重新回补…');
+    doc.days = {};
+    doc.schema = NUMBERS_SCHEMA;
+  }
   doc.alertCount = config.alertCount || doc.alertCount || 30;
   delete doc.alertDays; // 旧口径字段，清理
   // 关注范围与分档（写入 numbers.json，网页/油猴/Excel 均按此口径统计）
@@ -253,27 +261,29 @@ async function runNumbers(config, opts) {
   doc.nums = (Array.isArray(track.nums) && track.nums.length) ? track.nums : null;
   doc.buckets = JC.parseGoalGroups(track.goalGroups) || undefined;
   if (!doc.buckets) delete doc.buckets;
+
   const today = JC.localDateStr();
+  // 销售日 s 的数据 = 真实日期 s（日间场）+ s+1（凌晨场）；查询后按前缀星期归属
   const from = opts.backfillDays ? JC.addDays(today, -opts.backfillDays) : JC.addDays(today, -2);
-  const to = JC.addDays(today, 1);
   let fetched = 0, written = 0;
-  for (let d = from; d <= to; d = JC.addDays(d, 1)) {
-    const recent = d >= JC.addDays(today, -1); // 昨天起的结果仍可能新增，重取
-    if (!recent && doc.days[d]) continue;
+  for (let s = from; s <= today; s = JC.addDays(s, 1)) {
+    const settled = s <= JC.addDays(today, -2); // 销售日过去两天后数据已定稿
+    if (settled && doc.days[s]) continue;
     let rs;
     try {
-      rs = await JC.fetchAllResults(d, d, true);
+      rs = await JC.fetchAllResults(s, JC.addDays(s, 1), true);
     } catch (e) {
-      log(`  编号历史 ${d}: 接口出错 — ${e.message}`);
+      log(`  编号历史 ${s}: 接口出错 — ${e.message}`);
       continue;
     }
     const map = {};
     rs.forEach(r => {
+      if (JC.slateDateOf(r.matchNumStr, r.date) !== s) return; // 凌晨场归前一个销售日
       const num = JC.numOf(r.matchNumStr);
       const g = r.score ? JC.goalsFromScore(r.score) : null;
       if (num && g != null) map[num] = g;
     });
-    if (Object.keys(map).length) { doc.days[d] = map; written++; }
+    if (Object.keys(map).length) { doc.days[s] = map; written++; }
     fetched++;
     if (opts.backfillDays) await new Promise(r => setTimeout(r, 120)); // 回补历史时限速
   }
@@ -281,7 +291,7 @@ async function runNumbers(config, opts) {
   saveJson(NUMBERS_FILE, doc);
 
   const st = JC.numbersStats(doc, { alertCount: doc.alertCount });
-  log(`编号历史：共 ${st.days} 天（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
+  log(`编号历史：共 ${st.days} 个销售日（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
   if (st.alerts.length) {
     log(`⚠ 编号追踪：${st.alerts.length} 项已连续 ≥${st.alertCount} 次未出现 —— ` +
       st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（连续 ${a.streak} 次，最近 ${a.lastDate}）`).join('；') +
