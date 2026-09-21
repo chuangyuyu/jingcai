@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.1.0';
+  var VERSION = '2.2.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -585,6 +585,108 @@
     return { summary: summary, bins: bins, deltaBins: deltaBins, binWidth: binWidth };
   }
 
+  // ---------------------------------------------------------------- 编号追踪（编号 × 总进球数）
+
+  // 场次编号的数字部分：'周日001' → '001'
+  function numOf(matchNumStr) {
+    var m = /(\d{3})\s*$/.exec(String(matchNumStr || ''));
+    return m ? m[1] : null;
+  }
+
+  // 全场比分 → 总进球数：'2:1' → 3
+  function goalsFromScore(score) {
+    var m = /^(\d{1,2}):(\d{1,2})$/.exec(String(score || '').trim());
+    return m ? Number(m[1]) + Number(m[2]) : null;
+  }
+
+  // 两个 yyyy-mm-dd 之间的日历天数（b − a）
+  function daysBetween(a, b) {
+    if (!a || !b) return null;
+    var pa = a.split('-'), pb = b.split('-');
+    var ta = Date.UTC(Number(pa[0]), Number(pa[1]) - 1, Number(pa[2]));
+    var tb = Date.UTC(Number(pb[0]), Number(pb[1]) - 1, Number(pb[2]));
+    return Math.round((tb - ta) / 86400000);
+  }
+
+  var GOAL_LABELS = ['0球', '1球', '2球', '3球', '4球', '5球', '6球', '7+球'];
+
+  // 编号 × 进球数 的历史统计与"连续未出现"追踪。
+  // doc: { updatedAt, alertDays?, days: { '2026-09-20': { '001': 2, '002': 5, ... } } }
+  // 返回 { days, firstDate, lastDate, alertDays, nums:[...], alerts:[...] }
+  //   · 「距今」= 最近一次出现（该编号打出该进球数）到最近数据日的日历天数；
+  //   · 「连续未出现次数」= 该编号此后又出现了几次、但都不是该进球数；
+  //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的组合；
+  //   · 从未出现过的组合在 combos 里以 never:true 标出（查询器可见，不进警戒）。
+  function numbersStats(doc, opts) {
+    opts = opts || {};
+    var days = (doc && doc.days) || {};
+    var dates = Object.keys(days).sort();
+    var alertDays = opts.alertDays || (doc && doc.alertDays) || 30;
+    var activeWithin = opts.activeWithinDays || 7;
+    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], alerts: [] };
+    var lastDate = dates[dates.length - 1];
+    var numSet = {};
+    dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
+    var nums = Object.keys(numSet).sort().map(function (num) {
+      var counts = [0, 0, 0, 0, 0, 0, 0, 0];
+      var lastHit = [null, null, null, null, null, null, null, null];
+      var streak = [0, 0, 0, 0, 0, 0, 0, 0];
+      var occ = 0, firstSeen = null, lastSeen = null;
+      dates.forEach(function (d) {
+        var g = (days[d] || {})[num];
+        if (g == null) return;
+        occ++;
+        if (!firstSeen) firstSeen = d;
+        lastSeen = d;
+        var b = Math.min(g, 7);
+        counts[b]++;
+        lastHit[b] = d;
+        for (var k = 0; k < 8; k++) streak[k] = (k === b) ? 0 : streak[k] + 1;
+      });
+      var active = lastSeen != null && daysBetween(lastSeen, lastDate) <= activeWithin;
+      var span = firstSeen && lastSeen ? Math.max(1, daysBetween(firstSeen, lastDate)) : null;
+      var combos = GOAL_LABELS.map(function (label, k) {
+        var lh = lastHit[k];
+        var avgGap = (span && counts[k] > 0) ? Math.max(1, Math.round(span / counts[k])) : null;
+        var daysSince = lh ? daysBetween(lh, lastDate) : (firstSeen ? daysBetween(firstSeen, lastDate) : null);
+        return {
+          bucket: k,
+          label: label,
+          count: counts[k],
+          lastDate: lh,
+          daysSince: daysSince,
+          never: !lh,
+          streak: streak[k],
+          avgGap: avgGap,   // 该组合历史上平均多少天出现一次（近似值）
+          anomaly: (avgGap && lh && daysSince != null) ? Math.round(daysSince / avgGap * 10) / 10 : null, // 该出指数
+          active: active
+        };
+      });
+      return { num: num, occurrences: occ, firstSeen: firstSeen, lastSeen: lastSeen, active: active, counts: counts, combos: combos };
+    });
+    var alerts = [];
+    nums.forEach(function (n) {
+      if (!n.active) return;
+      n.combos.forEach(function (c) {
+        if (!c.never && c.daysSince != null && c.daysSince >= alertDays) {
+          alerts.push({
+            num: n.num, bucket: c.bucket, label: c.label, daysSince: c.daysSince,
+            lastDate: c.lastDate, streak: c.streak, count: c.count,
+            avgGap: c.avgGap, anomaly: c.anomaly
+          });
+        }
+      });
+    });
+    // 按「该出指数」排序（距今 ÷ 平均间隔），罕见组合自然沉底；无指数时退回按距今天数
+    alerts.sort(function (a, b) {
+      var ra = a.anomaly != null ? a.anomaly : 0;
+      var rb = b.anomaly != null ? b.anomaly : 0;
+      if (rb !== ra) return rb - ra;
+      return b.daysSince - a.daysSince;
+    });
+    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, alerts: alerts };
+  }
+
   // ---------------------------------------------------------------- 数据文件名
 
   function dayFileName(date) { return 'days/' + date + '.json'; }
@@ -618,6 +720,11 @@
     toCSV: toCSV,
     stats: stats,
     DELTA_BUCKETS: DELTA_BUCKETS,
+    numOf: numOf,
+    goalsFromScore: goalsFromScore,
+    daysBetween: daysBetween,
+    numbersStats: numbersStats,
+    GOAL_LABELS: GOAL_LABELS,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,

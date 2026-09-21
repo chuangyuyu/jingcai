@@ -159,6 +159,25 @@ select {
 .xlabels { display: flex; gap: 3px; padding-left: 40px; margin-top: 6px; width: max-content; min-width: 100%; }
 .xlabels .xl { width: 34px; flex: 1 0 auto; font-size: 10.5px; color: var(--ink-muted); text-align: center; transform: rotate(-42deg); transform-origin: top center; white-space: nowrap; height: 34px; font-variant-numeric: tabular-nums; }
 
+/* ---------------- 警戒横幅 / 编号追踪 ---------------- */
+.banner {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff7e0; border: 1px solid #f0d48a; color: #5c4708;
+  border-radius: 12px; padding: 10px 14px; margin: 8px 0 14px;
+}
+.banner .banner-icon { font-size: 18px; flex: none; }
+.banner .banner-body { flex: 1; font-size: 13.5px; line-height: 1.6; }
+.banner .banner-actions { display: flex; gap: 8px; flex: none; }
+@media (prefers-color-scheme: dark) {
+  .banner { background: #3a2f10; border-color: #6b5619; color: #f0e2b6; }
+}
+tr.row-alert td { background: rgba(208, 59, 59, .10); }
+tr.row-near td { background: rgba(250, 178, 25, .12); }
+.st-alert { color: var(--neg); font-weight: 700; }
+.st-near { color: #B85C00; font-weight: 600; }
+.st-ok { color: var(--ink-muted); }
+.num-result { font-weight: 600; color: var(--ink-1); }
+
 /* ---------------- 表格 ---------------- */
 .table-scroll { overflow-x: auto; }
 table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }

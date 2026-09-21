@@ -17,6 +17,8 @@
   var state = {
     days: {},          // date -> dayDoc（云端 + 本地未同步，已合并）
     dirty: {},         // date -> dayDoc（本地未同步的整份日数据）
+    numbers: null,     // 编号历史（docs/data/numbers.json）
+    alertDismissed: false,
     settings: loadSettings(),
     rows: [],          // 展平后的全部行
     filters: { range: '30', league: '', onlySettled: false, onlyValue: false, onlySingle: false },
@@ -114,6 +116,7 @@
     setStatus('正在加载云端数据…', 'busy');
     var local = loadDirty();
     state.dirty = local;
+    var numbersPromise = fetchJsonRel('data/numbers.json').then(function (d) { return d; }, function () { return null; });
     return fetchJsonRel('data/index.json').catch(function () { return { dates: {} }; })
       .then(function (index) {
         var dates = Object.keys(index.dates || {});
@@ -136,6 +139,10 @@
         state.days = {};
         (pairs || []).forEach(function (p) { if (p && p[1]) state.days[p[0]] = p[1]; });
         rebuildRows();
+        return numbersPromise;
+      })
+      .then(function (numsDoc) {
+        state.numbers = numsDoc;
         render();
         updateStatusLine();
       })
@@ -393,6 +400,114 @@
     renderBinsTable(rows);
     renderDataTable(rows);
     renderLeagueOptions();
+    renderAlerts();
+    renderNumbers();
+  }
+
+  // ---------------------------------------------------------------- 编号追踪
+
+  function renderAlerts() {
+    var banner = $('#alert-banner');
+    var st = state.numbers ? JC.numbersStats(state.numbers, {}) : null;
+    var alerts = st ? st.alerts : [];
+    if (!alerts.length || state.alertDismissed) { banner.hidden = true; return; }
+    var top = alerts.slice(0, 4).map(function (a) {
+      return '编号 <b>' + a.num + '</b> 的 <b>' + a.label + '</b> 已 <b>' + a.daysSince + ' 天</b>未出现' +
+        (a.avgGap ? '（该组合历史约 ' + a.avgGap + ' 天/次，最近 ' + a.lastDate + '）' : '（最近 ' + a.lastDate + '）');
+    }).join('；');
+    $('#alert-text').innerHTML = '编号追踪提醒：' + top +
+      (alerts.length > 4 ? '；等共 <b>' + alerts.length + '</b> 项达到警戒线' : '（共 ' + alerts.length + ' 项达到警戒线）') +
+      '，建议持续关注。';
+    banner.hidden = false;
+  }
+
+  function renderNumbers() {
+    var doc = state.numbers;
+    var st = doc ? JC.numbersStats(doc, {}) : null;
+    if (!st || !st.days) {
+      $('#num-last-date').textContent = '—';
+      $('#num-days').textContent = '0';
+      $('#num-select').innerHTML = '<option value="">（暂无数据）</option>';
+      $('#bucket-select').innerHTML = JC.GOAL_LABELS.map(function (l, i) { return '<option value="' + i + '">' + l + '</option>'; }).join('');
+      $('#num-dist-table tbody').innerHTML = '<tr><td colspan="5" class="muted">编号历史尚未生成：本机任务下一次运行后自动出现</td></tr>';
+      $('#tracker-table tbody').innerHTML = '';
+      return;
+    }
+    $('#num-last-date').textContent = st.lastDate;
+    $('#num-days').textContent = st.days;
+
+    var sel = $('#num-select');
+    if (sel.dataset.filled !== 'v1') {
+      sel.innerHTML = st.nums.map(function (n) {
+        return '<option value="' + n.num + '">' + n.num + (n.active ? '' : '（已停用）') + '</option>';
+      }).join('');
+      sel.dataset.filled = 'v1';
+    }
+    var bs = $('#bucket-select');
+    if (!bs.options.length) {
+      bs.innerHTML = JC.GOAL_LABELS.map(function (l, i) { return '<option value="' + i + '">' + l + '</option>'; }).join('');
+    }
+    renderNumQuery(st);
+    renderTracker(st);
+  }
+
+  function renderNumQuery(st) {
+    if (!st) st = JC.numbersStats(state.numbers || {}, {});
+    var num = $('#num-select').value;
+    var bucket = Number($('#bucket-select').value || 0);
+    var n = null;
+    st.nums.forEach(function (x) { if (x.num === num) n = x; });
+    var el = $('#num-query-result');
+    if (!n) { el.textContent = '—'; $('#num-dist-table tbody').innerHTML = ''; return; }
+    var c = n.combos[bucket];
+    var res = '编号 ' + n.num + ' · ' + c.label + '：';
+    if (c.never) {
+      res += '在已有数据中从未出现（该编号共出现 ' + n.occurrences + ' 天，自 ' + n.firstSeen + ' 起）';
+    } else {
+      res += '最近出现 ' + c.lastDate + '，距今 ' + c.daysSince + ' 天；连续未出现 ' + c.streak + ' 次；历史出现 ' + c.count + ' 次';
+      if (c.daysSince >= st.alertDays) res += '　【已超过 ' + st.alertDays + ' 天警戒线】';
+    }
+    el.textContent = res;
+    el.className = 'num-result' + (!c.never && c.daysSince >= st.alertDays ? ' st-alert' : '');
+    $('#num-dist-table tbody').innerHTML = n.combos.map(function (b) {
+      var cls = '';
+      if (!b.never && b.daysSince >= st.alertDays) cls = 'st-alert';
+      else if (!b.never && b.daysSince >= st.alertDays * 0.6) cls = 'st-near';
+      return '<tr><td>' + b.label + (b.bucket === bucket ? ' ◀' : '') + '</td><td class="num">' + b.count +
+        '</td><td>' + (b.lastDate || '从未出现') + '</td><td class="num ' + cls + '">' + (b.daysSince != null ? b.daysSince : '—') +
+        '</td><td class="num">' + b.streak + '</td></tr>';
+    }).join('');
+  }
+
+  function renderTracker(st) {
+    if (!st) st = JC.numbersStats(state.numbers || {}, {});
+    var onlyAlerts = $('#only-alerts').checked;
+    var rows = [];
+    st.nums.forEach(function (n) {
+      if (!n.active) return;
+      n.combos.forEach(function (c) {
+        if (c.never || c.count === 0) return;
+        if (onlyAlerts && c.daysSince < st.alertDays) return;
+        rows.push({ num: n.num, c: c });
+      });
+    });
+    rows.sort(function (a, b) { return b.c.daysSince - a.c.daysSince; });
+    var shown = rows.slice(0, 60);
+    var tbody = $('#tracker-table tbody');
+    if (!shown.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="muted">' + (onlyAlerts ? '当前没有达到警戒线的项目' : '暂无数据') + '</td></tr>';
+      return;
+    }
+    tbody.innerHTML = shown.map(function (x) {
+      var c = x.c;
+      var stCls = c.daysSince >= st.alertDays ? 'st-alert' : (c.daysSince >= st.alertDays * 0.6 ? 'st-near' : 'st-ok');
+      var stTxt = c.daysSince >= st.alertDays ? '超警戒' : (c.daysSince >= st.alertDays * 0.6 ? '接近警戒' : '正常');
+      var rowCls = c.daysSince >= st.alertDays ? 'row-alert' : (c.daysSince >= st.alertDays * 0.6 ? 'row-near' : '');
+      return '<tr class="' + rowCls + '"><td>' + x.num + '</td><td>' + c.label + '</td><td>' + c.lastDate +
+        '</td><td class="num ' + stCls + '">' + c.daysSince + '</td><td class="num">' + (c.avgGap != null ? c.avgGap : '—') +
+        '</td><td class="num">' + c.streak +
+        '</td><td class="num">' + c.count + '</td><td class="' + stCls + '">' + stTxt + '</td></tr>';
+    }).join('') + (rows.length > shown.length ? '<tr><td colspan="8" class="muted">仅显示 60 项（按距今天数排序，共 ' + rows.length + ' 项）</td></tr>' : '');
   }
 
   function renderLeagueOptions() {
@@ -838,6 +953,20 @@
     $('#only-single').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single2').checked = this.checked; render(); };
     $('#only-single2').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single').checked = this.checked; render(); };
     $('#only-value').onchange = function () { state.filters.onlyValue = this.checked; render(); };
+
+    // 编号追踪
+    $('#num-select').onchange = function () { renderNumQuery(); };
+    $('#bucket-select').onchange = function () { renderNumQuery(); };
+    $('#only-alerts').onchange = function () { renderTracker(); };
+    $('#btn-alert-dismiss').onclick = function () { state.alertDismissed = true; $('#alert-banner').hidden = true; };
+    $('#btn-alert-view').onclick = function () {
+      state.alertDismissed = true; $('#alert-banner').hidden = true;
+      $$('.tab').forEach(function (x) { x.classList.toggle('active', x.dataset.view === 'stats'); });
+      $('#view-stats').hidden = false;
+      $('#view-data').hidden = true;
+      var card = $('#numbers-card');
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     // 表头排序
     $$('#data-table th[data-sort]').forEach(function (th) {

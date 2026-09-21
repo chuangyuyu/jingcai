@@ -38,6 +38,14 @@
 </nav>
 
 <main>
+  <div id="alert-banner" class="banner" hidden>
+    <div class="banner-icon">⚠️</div>
+    <div class="banner-body" id="alert-text"></div>
+    <div class="banner-actions">
+      <button id="btn-alert-view">查看全部</button>
+      <button id="btn-alert-dismiss" class="ghost">知道了</button>
+    </div>
+  </div>
   <!-- ============================ 统计视图 ============================ -->
   <section id="view-stats" class="view">
     <div class="filters">
@@ -97,6 +105,36 @@
       <div class="table-scroll">
         <table class="grid" id="delta-table">
           <thead><tr><th>变化区间</th><th>场次</th><th>1球场次</th><th>非1球场次</th><th>1球占比</th><th>平均变化量</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" id="numbers-card">
+      <div class="card-head"><h2>编号追踪（编号 × 总进球数）</h2></div>
+      <p class="card-sub">每场比赛按编号（001 起）记录赛后的实际总进球数。当某个编号的某个进球数连续超过警戒线（默认 30 天）没有出现时，页面顶部会弹出横幅提醒。数据截至 <b id="num-last-date">—</b>，共 <b id="num-days">0</b> 天（自动回补一年历史）。</p>
+      <div class="filters">
+        <label class="chk">编号
+          <select id="num-select"></select>
+        </label>
+        <label class="chk">进球数
+          <select id="bucket-select"></select>
+        </label>
+        <span id="num-query-result" class="num-result">选择编号与进球数查看间隔</span>
+      </div>
+      <div class="table-scroll">
+        <table class="grid" id="num-dist-table">
+          <thead><tr><th>该编号的进球数</th><th>历史出现次数</th><th>最近出现</th><th>距今（天）</th><th>连续未出现（次）</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="card-head" style="margin-top:16px">
+        <h2>警戒追踪列表</h2>
+        <label class="chk"><input type="checkbox" id="only-alerts"> 只看达到警戒线的</label>
+      </div>
+      <div class="table-scroll">
+        <table class="grid" id="tracker-table">
+          <thead><tr><th>编号</th><th>进球数</th><th>最近出现</th><th>距今（天）</th><th>历史平均间隔（天）</th><th>连续未出现（次）</th><th>历史次数</th><th>状态</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

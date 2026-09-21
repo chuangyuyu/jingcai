@@ -9,8 +9,10 @@
  *   node scripts/daily.js both --push  # 完成后 git 提交并推送（--push 也可省略，默认读 config.json）
  *   node scripts/daily.js odds --no-push --no-excel   # 只抓数据，不推送、不生成 Excel
  *   node scripts/daily.js check        # 环境自检（迁移/排障用）
+ *   node scripts/daily.js numbers --backfill 400   # 一次性回补编号历史（默认回补 180 天）
  *
- * 说明：无论哪种模式都会回填赛果（含凌晨场：查询范围自动 +1 天），保证"每次执行都同步更新结果"。
+ * 说明：无论哪种模式都会回填赛果（含凌晨场：查询范围自动 +1 天），
+ *       并维护"编号 × 进球数"历史（docs/data/numbers.json，用于编号追踪警戒）。
  *
  * 写入位置：
  *   docs/data/days/YYYY-MM-DD.json   每天一个数据文件（每场比赛一行）
@@ -222,6 +224,63 @@ async function runResults(config) {
   return { changed: totalChanged, filled: totalFilled, dates: touchedDates };
 }
 
+// ---------------------------------------------------------------- 编号追踪（编号 × 总进球数 历史）
+
+const NUMBERS_FILE = path.join(DATA_DIR, 'numbers.json');
+
+function loadNumbers() {
+  const doc = loadJson(NUMBERS_FILE, null);
+  if (!doc || typeof doc !== 'object' || !doc.days) return { updatedAt: null, days: {} };
+  return doc;
+}
+
+// 维护 docs/data/numbers.json：每天记录 { 编号: 总进球数 }
+//   · 每次运行保证最近 3 天（昨天/今天/明天，结果会持续变化）为最新；
+//   · 更早的日期已抓过就跳过（历史结果不会变）；
+//   · --backfill N 时向后回补 N 天（一次性种子历史，限速请求）。
+async function runNumbers(config, opts) {
+  opts = opts || {};
+  const doc = loadNumbers();
+  doc.alertDays = config.alertDays || doc.alertDays || 30;
+  const today = JC.localDateStr();
+  const from = opts.backfillDays ? JC.addDays(today, -opts.backfillDays) : JC.addDays(today, -2);
+  const to = JC.addDays(today, 1);
+  let fetched = 0, written = 0;
+  for (let d = from; d <= to; d = JC.addDays(d, 1)) {
+    const recent = d >= JC.addDays(today, -1); // 昨天起的结果仍可能新增，重取
+    if (!recent && doc.days[d]) continue;
+    let rs;
+    try {
+      rs = await JC.fetchAllResults(d, d, true);
+    } catch (e) {
+      log(`  编号历史 ${d}: 接口出错 — ${e.message}`);
+      continue;
+    }
+    const map = {};
+    rs.forEach(r => {
+      const num = JC.numOf(r.matchNumStr);
+      const g = r.score ? JC.goalsFromScore(r.score) : null;
+      if (num && g != null) map[num] = g;
+    });
+    if (Object.keys(map).length) { doc.days[d] = map; written++; }
+    fetched++;
+    if (opts.backfillDays) await new Promise(r => setTimeout(r, 120)); // 回补历史时限速
+  }
+  doc.updatedAt = JC.nowIso();
+  saveJson(NUMBERS_FILE, doc);
+
+  const st = JC.numbersStats(doc, { alertDays: doc.alertDays });
+  log(`编号历史：共 ${st.days} 天（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
+  if (st.alerts.length) {
+    log(`⚠ 编号追踪：${st.alerts.length} 项已 ≥${st.alertDays} 天未出现 —— ` +
+      st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（${a.daysSince}天，最近 ${a.lastDate}）`).join('；') +
+      (st.alerts.length > 5 ? ' 等' : ''));
+  } else {
+    log(`编号追踪：当前没有 ≥${st.alertDays} 天未出现的项目`);
+  }
+  return { days: st.days, fetched, written, alerts: st.alerts };
+}
+
 // ---------------------------------------------------------------- 环境自检
 
 function withTimeout(promise, ms, label) {
@@ -298,6 +357,13 @@ async function runCheck() {
   const total = dates.reduce(function (s, d) { return s + (index.dates[d].count || 0); }, 0);
   ok('本地数据', true, dates.length ? (dates.length + ' 天（' + dates[0] + ' ~ ' + dates[dates.length - 1] + '），共 ' + total + ' 场') : '暂无数据：双击 手动执行.cmd 即可开始抓取');
 
+  try {
+    const nst = JC.numbersStats(loadNumbers(), { alertDays: loadConfig().alertDays });
+    ok('编号追踪数据', true, nst.days
+      ? (nst.days + ' 天（' + nst.firstDate + ' ~ ' + nst.lastDate + '），当前警戒 ' + nst.alerts.length + ' 项')
+      : '暂无：运行 node scripts\\daily.js numbers --backfill 400 回补历史');
+  } catch (e) { ok('编号追踪数据', false, e.message); }
+
   console.log('\n结果：' + (fails ? fails + ' 项需要处理（见上方 [需处理] 项）' : '全部通过 ✓'));
   if (fails) process.exitCode = 1;
 }
@@ -307,12 +373,15 @@ async function runCheck() {
 async function main() {
   const args = process.argv.slice(2);
   if (args.includes('check')) { await runCheck(); return; }
-  const mode = args.includes('odds') ? 'odds' : args.includes('results') ? 'results' : 'both';
+  const mode = args.includes('odds') ? 'odds' : args.includes('results') ? 'results' :
+    args.includes('numbers') ? 'numbers' : 'both';
+  const bfIdx = args.indexOf('--backfill');
+  const backfillDays = bfIdx >= 0 ? (Number(args[bfIdx + 1]) || 180) : 0;
   const config = loadConfig();
   const doPush = args.includes('--push') || (!args.includes('--no-push') && config.autoPush);
   const doExcel = !args.includes('--no-excel');
 
-  log(`=== 任务开始（模式：${mode}${doPush ? '，完成后推送' : ''}）===`);
+  log(`=== 任务开始（模式：${mode}${backfillDays ? '，回补 ' + backfillDays + ' 天历史' : ''}${doPush ? '，完成后推送' : ''}）===`);
   if (doPush && hasRemote()) {
     await gitEnsureProxy(); // 每次执行前自动探测代理（端口可能变化）
     gitPullRebase();        // 先同步远端，避免冲突
@@ -324,9 +393,14 @@ async function main() {
     if (r.added || r.updated || r.captured) parts.push(`赔率 新增${r.added} 变化${r.updated} 快照+${r.captured}（${r.dates.join(' ')}）`);
   }
   // 每次执行都回填赛果（包括下午的 odds 任务和手动执行），保证结果及时更新
-  {
+  if (mode !== 'numbers') {
     const r = await runResults(config);
     if (r.changed) parts.push(`赛果回填 ${r.changed} 场（${r.dates.join(' ')}）`);
+  }
+  // 维护编号历史（编号追踪数据），并检查警戒项
+  {
+    const r = await runNumbers(config, { backfillDays });
+    if (r.alerts.length) parts.push(`编号警戒 ${r.alerts.length} 项`);
   }
 
   if (doExcel) {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.1.0
+// @version      2.2.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.1.0';
+  var VERSION = '2.2.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -611,6 +611,108 @@
     return { summary: summary, bins: bins, deltaBins: deltaBins, binWidth: binWidth };
   }
 
+  // ---------------------------------------------------------------- 编号追踪（编号 × 总进球数）
+
+  // 场次编号的数字部分：'周日001' → '001'
+  function numOf(matchNumStr) {
+    var m = /(\d{3})\s*$/.exec(String(matchNumStr || ''));
+    return m ? m[1] : null;
+  }
+
+  // 全场比分 → 总进球数：'2:1' → 3
+  function goalsFromScore(score) {
+    var m = /^(\d{1,2}):(\d{1,2})$/.exec(String(score || '').trim());
+    return m ? Number(m[1]) + Number(m[2]) : null;
+  }
+
+  // 两个 yyyy-mm-dd 之间的日历天数（b − a）
+  function daysBetween(a, b) {
+    if (!a || !b) return null;
+    var pa = a.split('-'), pb = b.split('-');
+    var ta = Date.UTC(Number(pa[0]), Number(pa[1]) - 1, Number(pa[2]));
+    var tb = Date.UTC(Number(pb[0]), Number(pb[1]) - 1, Number(pb[2]));
+    return Math.round((tb - ta) / 86400000);
+  }
+
+  var GOAL_LABELS = ['0球', '1球', '2球', '3球', '4球', '5球', '6球', '7+球'];
+
+  // 编号 × 进球数 的历史统计与"连续未出现"追踪。
+  // doc: { updatedAt, alertDays?, days: { '2026-09-20': { '001': 2, '002': 5, ... } } }
+  // 返回 { days, firstDate, lastDate, alertDays, nums:[...], alerts:[...] }
+  //   · 「距今」= 最近一次出现（该编号打出该进球数）到最近数据日的日历天数；
+  //   · 「连续未出现次数」= 该编号此后又出现了几次、但都不是该进球数；
+  //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的组合；
+  //   · 从未出现过的组合在 combos 里以 never:true 标出（查询器可见，不进警戒）。
+  function numbersStats(doc, opts) {
+    opts = opts || {};
+    var days = (doc && doc.days) || {};
+    var dates = Object.keys(days).sort();
+    var alertDays = opts.alertDays || (doc && doc.alertDays) || 30;
+    var activeWithin = opts.activeWithinDays || 7;
+    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], alerts: [] };
+    var lastDate = dates[dates.length - 1];
+    var numSet = {};
+    dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
+    var nums = Object.keys(numSet).sort().map(function (num) {
+      var counts = [0, 0, 0, 0, 0, 0, 0, 0];
+      var lastHit = [null, null, null, null, null, null, null, null];
+      var streak = [0, 0, 0, 0, 0, 0, 0, 0];
+      var occ = 0, firstSeen = null, lastSeen = null;
+      dates.forEach(function (d) {
+        var g = (days[d] || {})[num];
+        if (g == null) return;
+        occ++;
+        if (!firstSeen) firstSeen = d;
+        lastSeen = d;
+        var b = Math.min(g, 7);
+        counts[b]++;
+        lastHit[b] = d;
+        for (var k = 0; k < 8; k++) streak[k] = (k === b) ? 0 : streak[k] + 1;
+      });
+      var active = lastSeen != null && daysBetween(lastSeen, lastDate) <= activeWithin;
+      var span = firstSeen && lastSeen ? Math.max(1, daysBetween(firstSeen, lastDate)) : null;
+      var combos = GOAL_LABELS.map(function (label, k) {
+        var lh = lastHit[k];
+        var avgGap = (span && counts[k] > 0) ? Math.max(1, Math.round(span / counts[k])) : null;
+        var daysSince = lh ? daysBetween(lh, lastDate) : (firstSeen ? daysBetween(firstSeen, lastDate) : null);
+        return {
+          bucket: k,
+          label: label,
+          count: counts[k],
+          lastDate: lh,
+          daysSince: daysSince,
+          never: !lh,
+          streak: streak[k],
+          avgGap: avgGap,   // 该组合历史上平均多少天出现一次（近似值）
+          anomaly: (avgGap && lh && daysSince != null) ? Math.round(daysSince / avgGap * 10) / 10 : null, // 该出指数
+          active: active
+        };
+      });
+      return { num: num, occurrences: occ, firstSeen: firstSeen, lastSeen: lastSeen, active: active, counts: counts, combos: combos };
+    });
+    var alerts = [];
+    nums.forEach(function (n) {
+      if (!n.active) return;
+      n.combos.forEach(function (c) {
+        if (!c.never && c.daysSince != null && c.daysSince >= alertDays) {
+          alerts.push({
+            num: n.num, bucket: c.bucket, label: c.label, daysSince: c.daysSince,
+            lastDate: c.lastDate, streak: c.streak, count: c.count,
+            avgGap: c.avgGap, anomaly: c.anomaly
+          });
+        }
+      });
+    });
+    // 按「该出指数」排序（距今 ÷ 平均间隔），罕见组合自然沉底；无指数时退回按距今天数
+    alerts.sort(function (a, b) {
+      var ra = a.anomaly != null ? a.anomaly : 0;
+      var rb = b.anomaly != null ? b.anomaly : 0;
+      if (rb !== ra) return rb - ra;
+      return b.daysSince - a.daysSince;
+    });
+    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, alerts: alerts };
+  }
+
   // ---------------------------------------------------------------- 数据文件名
 
   function dayFileName(date) { return 'days/' + date + '.json'; }
@@ -644,6 +746,11 @@
     toCSV: toCSV,
     stats: stats,
     DELTA_BUCKETS: DELTA_BUCKETS,
+    numOf: numOf,
+    goalsFromScore: goalsFromScore,
+    daysBetween: daysBetween,
+    numbersStats: numbersStats,
+    GOAL_LABELS: GOAL_LABELS,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,
@@ -888,6 +995,45 @@
     renderPanel();
   }
 
+  // ---------------------------------------------------------------- 编号追踪提醒
+
+  var alertInfo = null; // { alerts, alertDays, lastDate, days }
+
+  function repoRawPath(path) {
+    var s = getSettings();
+    var owner = s.owner || 'chuangyuyu';
+    var repo = s.repo || 'jingcai';
+    var branch = s.branch || 'main';
+    return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + branch + '/' + path;
+  }
+
+  // 从仓库读取编号历史（只读，无需令牌），计算警戒项
+  function refreshAlerts() {
+    fetch(repoRawPath('docs/data/numbers.json'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        if (!doc) return;
+        var st = JC.numbersStats(doc, {});
+        alertInfo = { alerts: st.alerts, alertDays: st.alertDays, lastDate: st.lastDate, days: st.days };
+        renderPanel();
+      })
+      .catch(function () { /* 网络不可用时静默 */ });
+  }
+
+  function showAlerts() {
+    if (!alertInfo) { say('正在获取编号追踪数据…'); refreshAlerts(); return; }
+    var a = alertInfo.alerts;
+    if (!a.length) {
+      window.alert('编号追踪：当前没有 ≥' + alertInfo.alertDays + ' 天未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
+      return;
+    }
+    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertDays + ' 天）\n\n' +
+      a.slice(0, 15).map(function (x) {
+        return '编号 ' + x.num + ' 的 ' + x.label + '：已 ' + x.daysSince + ' 天未出现（最近 ' + x.lastDate + '，连续 ' + x.streak + ' 次）';
+      }).join('\n') +
+      (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
+  }
+
   // ---------------------------------------------------------------- 浮窗
 
   var panel, body, listEl, statEl;
@@ -1014,6 +1160,12 @@
     var complete = rows.filter(function (r) { return r.diff != null; }).length;
     statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
+    if (alertInfo && alertInfo.alerts.length) {
+      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项未出≥' + alertInfo.alertDays + '天';
+      statEl.style.color = '#c0392b';
+    } else {
+      statEl.style.color = '#666';
+    }
 
     var body = rows.map(function (r) {
       var cls = r.diff == null ? '' : (r.diff > 0 ? 'pos' : 'neg');
@@ -1039,6 +1191,7 @@
   GM_registerMenuCommand('立即抓取赔率', function () { capture(true); });
   GM_registerMenuCommand('回填赛果', backfill);
   GM_registerMenuCommand('同步到 GitHub', sync);
+  GM_registerMenuCommand('查看编号追踪提醒', showAlerts);
   GM_registerMenuCommand('设置 GitHub 仓库/令牌', openSettings);
   GM_registerMenuCommand('导出数据 JSON', exportJson);
   GM_registerMenuCommand('清除本机数据', clearAll);
@@ -1046,6 +1199,7 @@
   ensurePanel();
   keepAlive();
   renderPanel();
+  refreshAlerts();
 
   // 每天首次访问自动抓取一次（抓完接着回填赛果，保证结果及时更新）
   var today = JC.localDateStr();

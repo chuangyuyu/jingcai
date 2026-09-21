@@ -221,6 +221,14 @@ function addHelpSheet(wb) {
     '  机构精挑细选的对阵。本表记录「单关胜平负」列，统计表中单独对比单关/非单关场次的',
     '  1 球出现率与差值表现，供交叉参考。',
     '',
+    '【编号追踪】',
+    '  · 每场比赛按编号（001 起）记录赛后实际总进球数（见「编号统计」表）。',
+    '  · 当某个编号的某个进球数连续超过警戒线（config.json 的 alertDays，默认 30 天）没有出现时，',
+    '    网页顶部会弹出横幅提醒，运行日志也会记录 —— 用于持续关注"该出了"的编号 × 进球数组合。',
+    '  · 「距今」按日历天计（到最近数据日）；「连续未出现」按该编号实际出现的次数计；',
+    '    只对近期仍活跃（近 7 天出现过）的编号、且历史上出现过至少一次的组合进入警戒。',
+    '  · 「编号追踪」表中：红色 = 超警戒，橙色 = 接近警戒（60%），从未 = 历史数据中未出现过。',
+    '',
     '【数据来源与口径】',
     '  · 赔率、赛果均来自中国体育彩票官方 Web API，定时抓取；赛果于比赛结束后回填。',
     '  · 只有 1球、1:0、0:1 三个赔率齐全的场次才计算优化赔率与差值（缺失的显示为空）。',
@@ -237,6 +245,78 @@ function addHelpSheet(wb) {
     if (/^【.*】$/.test(t)) row.font = { bold: true, size: 12 };
   });
   return ws;
+}
+
+function addNumbersSheets(wb, numsDoc) {
+  const st = JC.numbersStats(numsDoc || {}, {});
+  if (!st.days) return;
+
+  // —— 编号统计：每个编号的进球数分布 ——
+  const ws1 = wb.addWorksheet('编号统计');
+  ws1.columns = [{ header: '编号', width: 8 }, { header: '出现天数', width: 10 }]
+    .concat(JC.GOAL_LABELS.map(l => ({ header: l, width: 8 })));
+  st.nums.forEach(n => {
+    const r = ws1.addRow([n.num, n.occurrences].concat(n.counts));
+    r.getCell(1).alignment = { horizontal: 'center' };
+    if (!n.active) r.font = { color: { argb: COLOR_MUTED } };
+  });
+  const h1 = ws1.getRow(1);
+  h1.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  h1.eachCell(c => {
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
+    c.alignment = { horizontal: 'center' };
+  });
+  ws1.views = [{ state: 'frozen', ySplit: 1, xSplit: 1 }];
+  ws1.addRow([]);
+  ws1.addRow(['数据范围：' + st.firstDate + ' ~ ' + st.lastDate + '（共 ' + st.days + ' 天）；灰色编号 = 近 7 天未出现（已停用）。']);
+
+  // —— 编号追踪：间隔矩阵 + 警戒列表 ——
+  const ws2 = wb.addWorksheet('编号追踪');
+  ws2.columns = [{ width: 12 }].concat(JC.GOAL_LABELS.map(() => ({ width: 9 })));
+  ws2.addRow(['编号追踪：单元格 = 该编号该进球数"距今未出现天数"（截至 ' + st.lastDate + '，警戒线 ' + st.alertDays + ' 天）']).font = { bold: true, size: 12 };
+  ws2.addRow([]);
+  ws2.addRow(['⚠ 达到警戒线的项目（按"该出指数"排序：距今 ÷ 历史平均间隔，越大概率上越"该出"）']).font = { bold: true, size: 12 };
+  const hh = ws2.addRow(['编号', '进球数', '距今天数', '历史平均间隔(天)', '该出指数', '最近出现', '连续未出现(次)', '历史次数']);
+  hh.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  hh.eachCell(c => {
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
+    c.alignment = { horizontal: 'center' };
+  });
+  if (st.alerts.length) {
+    st.alerts.forEach(a => {
+      const r = ws2.addRow([a.num, a.label, a.daysSince, a.avgGap, a.anomaly, a.lastDate, a.streak, a.count]);
+      r.font = { bold: true, color: { argb: COLOR_NEGATIVE } };
+      [1, 2].forEach(i => { r.getCell(i).alignment = { horizontal: 'center' }; });
+    });
+  } else {
+    ws2.addRow(['（当前没有项目超过警戒线）']);
+  }
+  ws2.addRow([]);
+  ws2.addRow(['全部编号 × 进球数矩阵（数字=距今未出现天数；"从未"=历史数据中未出现过）']).font = { italic: true, size: 11 };
+  const mh = ws2.addRow(['编号'].concat(JC.GOAL_LABELS));
+  mh.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  mh.eachCell(c => {
+    c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };
+    c.alignment = { horizontal: 'center' };
+  });
+  st.nums.forEach(n => {
+    const row = ws2.addRow([n.num + (n.active ? '' : '(停用)')].concat(n.combos.map(c => c.never ? '从未' : c.daysSince)));
+    row.getCell(1).alignment = { horizontal: 'center' };
+    n.combos.forEach((c, i) => {
+      const cell = row.getCell(i + 2);
+      cell.alignment = { horizontal: 'center' };
+      if (!c.never) {
+        if (c.daysSince >= st.alertDays) {
+          cell.font = { bold: true, color: { argb: COLOR_NEGATIVE } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7D7' } };
+        } else if (c.daysSince >= st.alertDays * 0.6) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDEBD0' } };
+        }
+      } else {
+        cell.font = { color: { argb: COLOR_MUTED } };
+      }
+    });
+  });
 }
 
 async function generateExcel() {
@@ -256,6 +336,7 @@ async function generateExcel() {
   });
   Object.keys(months).sort().forEach(m => addMonthSheet(wb, m, months[m]));
   if (!rows.length) wb.addWorksheet('数据（暂无）');
+  addNumbersSheets(wb, loadJson(path.join(DATA_DIR, 'numbers.json'), null));
   addStatsSheet(wb, rows);
   addHelpSheet(wb);
 

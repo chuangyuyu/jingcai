@@ -2,5 +2,6 @@
   "autoPush": true,
   "backfillDays": 10,
   "times": ["11:00", "17:00"],
-  "gitProxy": ""
+  "gitProxy": "",
+  "alertDays": 30
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.1.0
+// @version      2.2.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -257,6 +257,45 @@
     renderPanel();
   }
 
+  // ---------------------------------------------------------------- 编号追踪提醒
+
+  var alertInfo = null; // { alerts, alertDays, lastDate, days }
+
+  function repoRawPath(path) {
+    var s = getSettings();
+    var owner = s.owner || 'chuangyuyu';
+    var repo = s.repo || 'jingcai';
+    var branch = s.branch || 'main';
+    return 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + branch + '/' + path;
+  }
+
+  // 从仓库读取编号历史（只读，无需令牌），计算警戒项
+  function refreshAlerts() {
+    fetch(repoRawPath('docs/data/numbers.json'), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        if (!doc) return;
+        var st = JC.numbersStats(doc, {});
+        alertInfo = { alerts: st.alerts, alertDays: st.alertDays, lastDate: st.lastDate, days: st.days };
+        renderPanel();
+      })
+      .catch(function () { /* 网络不可用时静默 */ });
+  }
+
+  function showAlerts() {
+    if (!alertInfo) { say('正在获取编号追踪数据…'); refreshAlerts(); return; }
+    var a = alertInfo.alerts;
+    if (!a.length) {
+      window.alert('编号追踪：当前没有 ≥' + alertInfo.alertDays + ' 天未出现的项目\n（数据截至 ' + alertInfo.lastDate + '，共 ' + alertInfo.days + ' 天）');
+      return;
+    }
+    window.alert('编号追踪提醒（数据截至 ' + alertInfo.lastDate + '，警戒线 ' + alertInfo.alertDays + ' 天）\n\n' +
+      a.slice(0, 15).map(function (x) {
+        return '编号 ' + x.num + ' 的 ' + x.label + '：已 ' + x.daysSince + ' 天未出现（最近 ' + x.lastDate + '，连续 ' + x.streak + ' 次）';
+      }).join('\n') +
+      (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
+  }
+
   // ---------------------------------------------------------------- 浮窗
 
   var panel, body, listEl, statEl;
@@ -383,6 +422,12 @@
     var complete = rows.filter(function (r) { return r.diff != null; }).length;
     statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
+    if (alertInfo && alertInfo.alerts.length) {
+      statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项未出≥' + alertInfo.alertDays + '天';
+      statEl.style.color = '#c0392b';
+    } else {
+      statEl.style.color = '#666';
+    }
 
     var body = rows.map(function (r) {
       var cls = r.diff == null ? '' : (r.diff > 0 ? 'pos' : 'neg');
@@ -408,6 +453,7 @@
   GM_registerMenuCommand('立即抓取赔率', function () { capture(true); });
   GM_registerMenuCommand('回填赛果', backfill);
   GM_registerMenuCommand('同步到 GitHub', sync);
+  GM_registerMenuCommand('查看编号追踪提醒', showAlerts);
   GM_registerMenuCommand('设置 GitHub 仓库/令牌', openSettings);
   GM_registerMenuCommand('导出数据 JSON', exportJson);
   GM_registerMenuCommand('清除本机数据', clearAll);
@@ -415,6 +461,7 @@
   ensurePanel();
   keepAlive();
   renderPanel();
+  refreshAlerts();
 
   // 每天首次访问自动抓取一次（抓完接着回填赛果，保证结果及时更新）
   var today = JC.localDateStr();
