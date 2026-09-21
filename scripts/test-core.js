@@ -24,6 +24,13 @@ console.log('== 公式 ==');
   ok('1:0 / 0:1 判定', JC.isOneGoalScore('1:0') && JC.isOneGoalScore('0:1') && !JC.isOneGoalScore('2:0'));
 }
 
+console.log('== 赛果查询范围（凌晨场真实开赛日=次日，需 +1 天）==');
+{
+  const r = JC.resultRangeFor('2026-09-20');
+  ok('resultRangeFor = [当天, 次日]', r[0] === '2026-09-20' && r[1] === '2026-09-21', JSON.stringify(r));
+  ok('跨月正确', JC.resultRangeFor('2026-09-30')[1] === '2026-10-01');
+}
+
 console.log('== 解析官方赔率 JSON（v2：单关标记 + 快照）==');
 const mkMatch = (over) => Object.assign({
   matchId: 1, businessDate: '2026-09-20', matchDate: '2026-09-20', matchNumStr: '周日001',

@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -94,6 +94,11 @@
   }
 
   function dateOf(iso) { return String(iso || '').slice(0, 10); }
+
+  // 赛果接口按「真实开赛日」过滤（凌晨场的真实开赛日 = 次日，例如周日晚 00:00 欧战属于周六销售日）。
+  // 因此回填某天数据文件的赛果时，必须多查一天，否则凌晨场永远匹配不到。
+  // 返回 [date, date+1]，三端（定时脚本/网页/油猴）统一使用。
+  function resultRangeFor(date) { return [date, addDays(date, 1)]; }
 
   // 抓取时段：上午(<14点) / 下午 —— 用于判断"同一天同一时段重复抓取"不重复记快照
   function slotOf(iso) {
@@ -593,6 +598,7 @@
     API_BASE: API_BASE,
     ODDS_URL: ODDS_URL,
     resultUrl: resultUrl,
+    resultRangeFor: resultRangeFor,
     NODE_HEADERS: NODE_HEADERS,
     fetchJson: fetchJson,
     fetchAllResults: fetchAllResults,

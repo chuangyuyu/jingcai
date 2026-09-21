@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.0.1
+// @version      2.1.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.0.0';
+  var VERSION = '2.1.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -120,6 +120,11 @@
   }
 
   function dateOf(iso) { return String(iso || '').slice(0, 10); }
+
+  // 赛果接口按「真实开赛日」过滤（凌晨场的真实开赛日 = 次日，例如周日晚 00:00 欧战属于周六销售日）。
+  // 因此回填某天数据文件的赛果时，必须多查一天，否则凌晨场永远匹配不到。
+  // 返回 [date, date+1]，三端（定时脚本/网页/油猴）统一使用。
+  function resultRangeFor(date) { return [date, addDays(date, 1)]; }
 
   // 抓取时段：上午(<14点) / 下午 —— 用于判断"同一天同一时段重复抓取"不重复记快照
   function slotOf(iso) {
@@ -619,6 +624,7 @@
     API_BASE: API_BASE,
     ODDS_URL: ODDS_URL,
     resultUrl: resultUrl,
+    resultRangeFor: resultRangeFor,
     NODE_HEADERS: NODE_HEADERS,
     fetchJson: fetchJson,
     fetchAllResults: fetchAllResults,
@@ -734,7 +740,8 @@
     var chain = Promise.resolve();
     dates.forEach(function (d) {
       chain = chain.then(function () {
-        return JC.fetchAllResults(d, d, false).then(function (results) {
+        var range = JC.resultRangeFor(d); // 凌晨场真实开赛日=次日，范围 +1 天
+        return JC.fetchAllResults(range[0], range[1], false).then(function (results) {
           var r = JC.applyResults(days[d], results, JC.nowIso());
           if (r.changed > 0) { markDirty(d); changed += r.changed; }
         }).catch(function (e) { say(d + ' 赛果失败：' + e.message, true); });
@@ -1040,11 +1047,11 @@
   keepAlive();
   renderPanel();
 
-  // 每天首次访问自动抓取一次
+  // 每天首次访问自动抓取一次（抓完接着回填赛果，保证结果及时更新）
   var today = JC.localDateStr();
   if (GM_getValue(K_LAST, '') !== today) {
     capture(false).then(function (ok) {
-      if (ok) GM_setValue(K_LAST, today);
+      if (ok) { GM_setValue(K_LAST, today); return backfill(); }
       renderPanel();
     });
   }

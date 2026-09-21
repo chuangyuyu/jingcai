@@ -4,10 +4,13 @@
  * ============================================================
  * 用法：
  *   node scripts/daily.js              # 抓赔率 + 回填赛果（默认，等价于 both）
- *   node scripts/daily.js odds         # 只抓取/刷新赔率（当天 + 在售场次）
- *   node scripts/daily.js results      # 只回填最近未出结果的场次赛果
+ *   node scripts/daily.js odds         # 抓取赔率（当天 + 在售场次）+ 回填赛果
+ *   node scripts/daily.js results      # 只回填赛果
  *   node scripts/daily.js both --push  # 完成后 git 提交并推送（--push 也可省略，默认读 config.json）
  *   node scripts/daily.js odds --no-push --no-excel   # 只抓数据，不推送、不生成 Excel
+ *   node scripts/daily.js check        # 环境自检（迁移/排障用）
+ *
+ * 说明：无论哪种模式都会回填赛果（含凌晨场：查询范围自动 +1 天），保证"每次执行都同步更新结果"。
  *
  * 写入位置：
  *   docs/data/days/YYYY-MM-DD.json   每天一个数据文件（每场比赛一行）
@@ -196,7 +199,9 @@ async function runResults(config) {
     if (!day || !day.matches.some(m => !m.result)) continue; // 全部已有赛果，跳过
     let results;
     try {
-      results = await JC.fetchAllResults(date, date, true);
+      // 赛果接口按"真实开赛日"过滤：凌晨场属于次日，必须多查一天（否则凌晨场永远回填不上）
+      const [begin, end] = JC.resultRangeFor(date);
+      results = await JC.fetchAllResults(begin, end, true);
     } catch (e) {
       log(`  ${date}: 赛果接口出错 — ${e.message}`);
       continue;
@@ -318,7 +323,8 @@ async function main() {
     const r = await runOdds();
     if (r.added || r.updated || r.captured) parts.push(`赔率 新增${r.added} 变化${r.updated} 快照+${r.captured}（${r.dates.join(' ')}）`);
   }
-  if (mode === 'results' || mode === 'both') {
+  // 每次执行都回填赛果（包括下午的 odds 任务和手动执行），保证结果及时更新
+  {
     const r = await runResults(config);
     if (r.changed) parts.push(`赛果回填 ${r.changed} 场（${r.dates.join(' ')}）`);
   }

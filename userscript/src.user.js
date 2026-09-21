@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.0.1
+// @version      2.1.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -109,7 +109,8 @@
     var chain = Promise.resolve();
     dates.forEach(function (d) {
       chain = chain.then(function () {
-        return JC.fetchAllResults(d, d, false).then(function (results) {
+        var range = JC.resultRangeFor(d); // 凌晨场真实开赛日=次日，范围 +1 天
+        return JC.fetchAllResults(range[0], range[1], false).then(function (results) {
           var r = JC.applyResults(days[d], results, JC.nowIso());
           if (r.changed > 0) { markDirty(d); changed += r.changed; }
         }).catch(function (e) { say(d + ' 赛果失败：' + e.message, true); });
@@ -415,11 +416,11 @@
   keepAlive();
   renderPanel();
 
-  // 每天首次访问自动抓取一次
+  // 每天首次访问自动抓取一次（抓完接着回填赛果，保证结果及时更新）
   var today = JC.localDateStr();
   if (GM_getValue(K_LAST, '') !== today) {
     capture(false).then(function (ok) {
-      if (ok) GM_setValue(K_LAST, today);
+      if (ok) { GM_setValue(K_LAST, today); return backfill(); }
       renderPanel();
     });
   }

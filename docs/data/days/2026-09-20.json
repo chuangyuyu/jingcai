@@ -10,7 +10,13 @@
    "away": "亚特兰大",
    "matchTime": "00:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:0",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -57,7 +63,13 @@
    "away": "莱万特",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:1",
+    "halfScore": "1:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -104,7 +116,13 @@
    "away": "贝蒂斯",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -151,7 +169,13 @@
    "away": "霍芬海姆",
    "matchTime": "01:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:1",
+    "halfScore": "2:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -198,7 +222,13 @@
    "away": "莱切",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:0",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -245,7 +275,13 @@
    "away": "巴黎圣曼",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "1:2",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -292,7 +328,13 @@
    "away": "皇家社会",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:3",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -339,7 +381,13 @@
    "away": "本菲卡",
    "matchTime": "03:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "3:1",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -386,7 +434,13 @@
    "away": "巴伊亚",
    "matchTime": "06:30:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "2:1",
+    "halfScore": "1:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-21T18:12:48+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -438,7 +492,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -476,7 +530,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -514,7 +568,7 @@
     "halfScore": "0:0",
     "isOneGoal": true,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -552,7 +606,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -590,7 +644,7 @@
     "halfScore": "0:3",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -628,7 +682,7 @@
     "halfScore": "0:1",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -666,7 +720,7 @@
     "halfScore": "0:0",
     "isOneGoal": true,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -704,7 +758,7 @@
     "halfScore": "0:0",
     "isOneGoal": true,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -757,7 +811,7 @@
     "halfScore": "1:2",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -810,7 +864,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -863,7 +917,7 @@
     "halfScore": "0:0",
     "isOneGoal": true,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -901,7 +955,7 @@
     "halfScore": "3:2",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -954,7 +1008,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1007,7 +1061,7 @@
     "halfScore": "2:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1060,7 +1114,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1113,7 +1167,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1166,7 +1220,7 @@
     "halfScore": "0:1",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1204,7 +1258,7 @@
     "halfScore": "2:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1257,7 +1311,7 @@
     "halfScore": "1:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1310,7 +1364,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1348,7 +1402,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-21T11:00:03+08:00"
+    "at": "2026-09-21T18:12:48+08:00"
    },
    "matchDate": "2026-09-20",
    "captures": [
@@ -1373,5 +1427,5 @@
    "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-21T11:00:03+08:00"
+ "updatedAt": "2026-09-21T18:12:48+08:00"
 }

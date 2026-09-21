@@ -219,7 +219,9 @@
     var chain = Promise.resolve();
     dates.forEach(function (d) {
       chain = chain.then(function () {
-        return JC.fetchAllResults(d, d, false).then(function (results) {
+        // 赛果接口按真实开赛日过滤：凌晨场属于次日，查询范围 +1 天
+        var range = JC.resultRangeFor(d);
+        return JC.fetchAllResults(range[0], range[1], false).then(function (results) {
           var r = JC.applyResults(state.days[d], results, JC.nowIso());
           if (r.changed > 0) { markDirty(d); changedTotal += r.changed; }
         }).catch(function (e) {
