@@ -251,10 +251,10 @@ function addNumbersSheets(wb, numsDoc) {
   const st = JC.numbersStats(numsDoc || {}, {});
   if (!st.days) return;
 
-  // —— 编号统计：每个编号的进球数分布 ——
+  // —— 编号统计：每个编号的进球数分布（分档跟随 numbers.json 的 buckets）——
   const ws1 = wb.addWorksheet('编号统计');
   ws1.columns = [{ header: '编号', width: 8 }, { header: '出现天数', width: 10 }]
-    .concat(JC.GOAL_LABELS.map(l => ({ header: l, width: 8 })));
+    .concat(st.buckets.map(b => ({ header: b.label, width: 9 })));
   st.nums.forEach(n => {
     const r = ws1.addRow([n.num, n.occurrences].concat(n.counts));
     r.getCell(1).alignment = { horizontal: 'center' };
@@ -272,7 +272,7 @@ function addNumbersSheets(wb, numsDoc) {
 
   // —— 编号追踪：间隔矩阵 + 警戒列表 ——
   const ws2 = wb.addWorksheet('编号追踪');
-  ws2.columns = [{ width: 12 }].concat(JC.GOAL_LABELS.map(() => ({ width: 9 })));
+  ws2.columns = [{ width: 12 }].concat(st.buckets.map(() => ({ width: 9 })));
   ws2.addRow(['编号追踪：单元格 = 该编号该进球数"距今未出现天数"（截至 ' + st.lastDate + '，警戒线 ' + st.alertDays + ' 天）']).font = { bold: true, size: 12 };
   ws2.addRow([]);
   ws2.addRow(['⚠ 达到警戒线的项目（按"该出指数"排序：距今 ÷ 历史平均间隔，越大概率上越"该出"）']).font = { bold: true, size: 12 };
@@ -293,7 +293,7 @@ function addNumbersSheets(wb, numsDoc) {
   }
   ws2.addRow([]);
   ws2.addRow(['全部编号 × 进球数矩阵（数字=距今未出现天数；"从未"=历史数据中未出现过）']).font = { italic: true, size: 11 };
-  const mh = ws2.addRow(['编号'].concat(JC.GOAL_LABELS));
+  const mh = ws2.addRow(['编号'].concat(st.buckets.map(b => b.label)));
   mh.font = { bold: true, color: { argb: 'FFFFFFFF' } };
   mh.eachCell(c => {
     c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLOR_HEADER_BG } };

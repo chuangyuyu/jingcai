@@ -210,6 +210,25 @@ console.log('== 编号追踪（编号 × 进球数）==');
   // 空数据安全
   const st0 = JC.numbersStats({ days: {} });
   ok('空数据安全', st0.days === 0 && st0.alerts.length === 0);
+
+  // 自定义分档（0~4 各自 + 5+ 合并）与关注范围
+  ok('parseGoalGroups 解析', JSON.stringify(JC.parseGoalGroups('0,1,2,3,4,5+').map(b => b.label)) ===
+    JSON.stringify(['0球', '1球', '2球', '3球', '4球', '5+球']));
+  const docB = { nums: ['001', '002'], buckets: JC.parseGoalGroups('0,1,2,3,4,5+'), alertDays: 2, days: {
+    '2026-09-01': { '001': 5, '002': 0, '009': 6 },   // 009 不在关注范围
+    '2026-09-02': { '001': 6, '002': 1 },
+    '2026-09-03': { '001': 7, '002': 2 },
+    '2026-09-04': { '001': 1, '002': 9 }
+  } };
+  const stB = JC.numbersStats(docB);
+  ok('关注范围过滤（不含009）', stB.nums.length === 2 && !stB.nums.some(n => n.num === '009'));
+  ok('分档共 6 组', stB.buckets.length === 6 && stB.nums[0].combos.length === 6);
+  const n1B = stB.nums.find(n => n.num === '001');
+  ok('5+ 合并统计（001 的 5+ = 3 次：5/6/7球）', n1B.combos[5].count === 3, JSON.stringify(n1B.counts));
+  ok('5+ 最近出现 09-03（7球）', n1B.combos[5].lastDate === '2026-09-03');
+  const n2B = stB.nums.find(n => n.num === '002');
+  ok('002 的 5+ 含 9 球', n2B.combos[5].count === 1 && n2B.combos[5].lastDate === '2026-09-04');
+  ok('002 的 2球 距今 1 天', n2B.combos[2].count === 1 && n2B.combos[2].daysSince === 1);
 }
 
 console.log('== CSV（25 列）==');

@@ -427,14 +427,19 @@
     if (!st || !st.days) {
       $('#num-last-date').textContent = '—';
       $('#num-days').textContent = '0';
+      $('#num-scope').textContent = '';
       $('#num-select').innerHTML = '<option value="">（暂无数据）</option>';
-      $('#bucket-select').innerHTML = JC.GOAL_LABELS.map(function (l, i) { return '<option value="' + i + '">' + l + '</option>'; }).join('');
+      $('#bucket-select').innerHTML = JC.DEFAULT_NUM_BUCKETS.map(function (b) { return '<option>' + b.label + '</option>'; }).join('');
       $('#num-dist-table tbody').innerHTML = '<tr><td colspan="5" class="muted">编号历史尚未生成：本机任务下一次运行后自动出现</td></tr>';
       $('#tracker-table tbody').innerHTML = '';
       return;
     }
     $('#num-last-date').textContent = st.lastDate;
     $('#num-days').textContent = st.days;
+    $('#num-scope').textContent = st.nums.length
+      ? ('追踪范围：编号 ' + st.nums[0].num + '~' + st.nums[st.nums.length - 1].num + '（' + st.nums.length + ' 个）｜ 分档：' +
+        st.buckets.map(function (b) { return b.label; }).join(' / ') + '（可在 config.json 调整）')
+      : '';
 
     var sel = $('#num-select');
     if (sel.dataset.filled !== 'v1') {
@@ -444,8 +449,9 @@
       sel.dataset.filled = 'v1';
     }
     var bs = $('#bucket-select');
-    if (!bs.options.length) {
-      bs.innerHTML = JC.GOAL_LABELS.map(function (l, i) { return '<option value="' + i + '">' + l + '</option>'; }).join('');
+    if (bs.options.length !== st.buckets.length || bs.dataset.filled !== 'v1') {
+      bs.innerHTML = st.buckets.map(function (b, i) { return '<option value="' + i + '">' + b.label + '</option>'; }).join('');
+      bs.dataset.filled = 'v1';
     }
     renderNumQuery(st);
     renderTracker(st);

@@ -61,7 +61,11 @@ function saveJson(file, obj) {
 }
 
 function loadConfig() {
-  return Object.assign({ autoPush: true, backfillDays: 10, gitProxy: '' }, loadJson(path.join(ROOT, 'config.json'), {}));
+  return Object.assign({
+    autoPush: true, backfillDays: 10, gitProxy: '', alertDays: 30,
+    // 编号追踪的关注范围：编号 001~010；进球数 0/1/2/3/4 各自统计，5 及以上合并为 5+
+    numTrack: { nums: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010'], goalGroups: '0,1,2,3,4,5+' }
+  }, loadJson(path.join(ROOT, 'config.json'), {}));
 }
 
 function loadDay(date) {
@@ -242,6 +246,11 @@ async function runNumbers(config, opts) {
   opts = opts || {};
   const doc = loadNumbers();
   doc.alertDays = config.alertDays || doc.alertDays || 30;
+  // 关注范围与分档（写入 numbers.json，网页/油猴/Excel 均按此口径统计）
+  const track = config.numTrack || {};
+  doc.nums = (Array.isArray(track.nums) && track.nums.length) ? track.nums : null;
+  doc.buckets = JC.parseGoalGroups(track.goalGroups) || undefined;
+  if (!doc.buckets) delete doc.buckets;
   const today = JC.localDateStr();
   const from = opts.backfillDays ? JC.addDays(today, -opts.backfillDays) : JC.addDays(today, -2);
   const to = JC.addDays(today, 1);

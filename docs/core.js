@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.2.0';
+  var VERSION = '2.2.1';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
@@ -610,27 +610,65 @@
 
   var GOAL_LABELS = ['0球', '1球', '2球', '3球', '4球', '5球', '6球', '7+球'];
 
+  // 默认进球数分档（0~6 各自 + 7+ 合并，通用默认）；
+  // 用户的追踪口径在 numbers.json 的 buckets 字段里（由 config.json 的 numTrack.goalGroups 生成）
+  var DEFAULT_NUM_BUCKETS = [
+    { label: '0球', lo: 0, hi: 0 }, { label: '1球', lo: 1, hi: 1 }, { label: '2球', lo: 2, hi: 2 },
+    { label: '3球', lo: 3, hi: 3 }, { label: '4球', lo: 4, hi: 4 }, { label: '5球', lo: 5, hi: 5 },
+    { label: '6球', lo: 6, hi: 6 }, { label: '7+球', lo: 7, hi: null }
+  ];
+
+  // 解析分档配置："0,1,2,3,4,5+" → [{label:'0球',lo:0,hi:0},...,{label:'5+球',lo:5,hi:null}]
+  function parseGoalGroups(spec) {
+    if (!spec) return null;
+    var parts = String(spec).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    var out = [];
+    parts.forEach(function (p) {
+      var m = /^(\d+)\s*\+$/.exec(p);
+      if (m) { out.push({ label: m[1] + '+球', lo: Number(m[1]), hi: null }); return; }
+      var n = Number(p);
+      if (isFinite(n)) out.push({ label: n + '球', lo: n, hi: n });
+    });
+    return out.length ? out : null;
+  }
+
+  function bucketIndexOf(buckets, goals) {
+    for (var i = 0; i < buckets.length; i++) {
+      var b = buckets[i];
+      if (goals >= b.lo && (b.hi == null || goals <= b.hi)) return i;
+    }
+    return -1;
+  }
+
   // 编号 × 进球数 的历史统计与"连续未出现"追踪。
-  // doc: { updatedAt, alertDays?, days: { '2026-09-20': { '001': 2, '002': 5, ... } } }
-  // 返回 { days, firstDate, lastDate, alertDays, nums:[...], alerts:[...] }
-  //   · 「距今」= 最近一次出现（该编号打出该进球数）到最近数据日的日历天数；
-  //   · 「连续未出现次数」= 该编号此后又出现了几次、但都不是该进球数；
-  //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的组合；
-  //   · 从未出现过的组合在 combos 里以 never:true 标出（查询器可见，不进警戒）。
+  // doc: { updatedAt, alertDays?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
+  //   · nums    —— 关注范围（编号列表；不设则统计全部编号）
+  //   · buckets —— 进球数分档（不设则用 DEFAULT_NUM_BUCKETS：0~6 各自 + 7+）
+  // 返回 { days, firstDate, lastDate, alertDays, nums, buckets, alerts:[...], ... }
+  //   · 「距今」= 最近一次出现（该编号打出该档进球数）到最近数据日的日历天数；
+  //   · 「该出指数」= 距今 ÷ 历史平均间隔（越大概率上越"该出"）；
+  //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的分档；
+  //   · 从未出现过的分档以 never:true 标出（查询器可见，不进警戒）。
   function numbersStats(doc, opts) {
     opts = opts || {};
     var days = (doc && doc.days) || {};
     var dates = Object.keys(days).sort();
     var alertDays = opts.alertDays || (doc && doc.alertDays) || 30;
     var activeWithin = opts.activeWithinDays || 7;
-    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], alerts: [] };
+    var buckets = opts.buckets || (doc && doc.buckets) || DEFAULT_NUM_BUCKETS;
+    var watchNums = opts.nums || (doc && doc.nums) || null;
+    if (!dates.length) return { days: 0, firstDate: null, lastDate: null, alertDays: alertDays, nums: [], buckets: buckets, alerts: [] };
     var lastDate = dates[dates.length - 1];
     var numSet = {};
     dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
-    var nums = Object.keys(numSet).sort().map(function (num) {
-      var counts = [0, 0, 0, 0, 0, 0, 0, 0];
-      var lastHit = [null, null, null, null, null, null, null, null];
-      var streak = [0, 0, 0, 0, 0, 0, 0, 0];
+    var numList = Object.keys(numSet).sort();
+    if (watchNums && watchNums.length) {
+      numList = watchNums.filter(function (n) { return numSet[n]; }); // 只看关注编号（数据里出现过的）
+    }
+    var nums = numList.map(function (num) {
+      var counts = buckets.map(function () { return 0; });
+      var lastHit = buckets.map(function () { return null; });
+      var streak = buckets.map(function () { return 0; });
       var occ = 0, firstSeen = null, lastSeen = null;
       dates.forEach(function (d) {
         var g = (days[d] || {})[num];
@@ -638,20 +676,21 @@
         occ++;
         if (!firstSeen) firstSeen = d;
         lastSeen = d;
-        var b = Math.min(g, 7);
-        counts[b]++;
-        lastHit[b] = d;
-        for (var k = 0; k < 8; k++) streak[k] = (k === b) ? 0 : streak[k] + 1;
+        var b = bucketIndexOf(buckets, g);
+        for (var k = 0; k < buckets.length; k++) {
+          if (k === b) { counts[k]++; lastHit[k] = d; streak[k] = 0; }
+          else streak[k] += 1;
+        }
       });
       var active = lastSeen != null && daysBetween(lastSeen, lastDate) <= activeWithin;
       var span = firstSeen && lastSeen ? Math.max(1, daysBetween(firstSeen, lastDate)) : null;
-      var combos = GOAL_LABELS.map(function (label, k) {
+      var combos = buckets.map(function (bk, k) {
         var lh = lastHit[k];
         var avgGap = (span && counts[k] > 0) ? Math.max(1, Math.round(span / counts[k])) : null;
         var daysSince = lh ? daysBetween(lh, lastDate) : (firstSeen ? daysBetween(firstSeen, lastDate) : null);
         return {
           bucket: k,
-          label: label,
+          label: bk.label,
           count: counts[k],
           lastDate: lh,
           daysSince: daysSince,
@@ -684,7 +723,7 @@
       if (rb !== ra) return rb - ra;
       return b.daysSince - a.daysSince;
     });
-    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, alerts: alerts };
+    return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertDays: alertDays, nums: nums, buckets: buckets, alerts: alerts };
   }
 
   // ---------------------------------------------------------------- 数据文件名
@@ -725,6 +764,8 @@
     daysBetween: daysBetween,
     numbersStats: numbersStats,
     GOAL_LABELS: GOAL_LABELS,
+    DEFAULT_NUM_BUCKETS: DEFAULT_NUM_BUCKETS,
+    parseGoalGroups: parseGoalGroups,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,
