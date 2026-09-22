@@ -28,9 +28,24 @@
      },
      "optimized": 7.765,
      "diff": 0.585
+    },
+    {
+     "at": "2026-09-22T11:00:07+08:00",
+     "odds": {
+      "ttg1": 8.35,
+      "s10": 12,
+      "s01": 22,
+      "had": [
+       1.4,
+       4.5,
+       5.2
+      ]
+     },
+     "optimized": 7.765,
+     "diff": 0.585
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -60,9 +75,24 @@
      },
      "optimized": 5.809,
      "diff": 0.391
+    },
+    {
+     "at": "2026-09-22T11:00:07+08:00",
+     "odds": {
+      "ttg1": 5.9,
+      "s10": 9.75,
+      "s01": 12,
+      "had": [
+       2.08,
+       3.45,
+       2.79
+      ]
+     },
+     "optimized": 5.379,
+     "diff": 0.521
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -92,11 +122,26 @@
      },
      "optimized": 6.566,
      "diff": 0.434
+    },
+    {
+     "at": "2026-09-22T11:00:07+08:00",
+     "odds": {
+      "ttg1": 7,
+      "s10": 12,
+      "s01": 14.5,
+      "had": [
+       2.1,
+       3.5,
+       2.72
+      ]
+     },
+     "optimized": 6.566,
+     "diff": 0.434
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   }
  ],
- "updatedAt": "2026-09-21T17:00:03+08:00"
+ "updatedAt": "2026-09-22T11:00:07+08:00"
 }

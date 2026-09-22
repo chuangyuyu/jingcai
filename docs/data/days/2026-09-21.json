@@ -10,7 +10,13 @@
    "away": "菲律宾女",
    "matchTime": "15:00:00",
    "matchStatus": "Selling",
-   "result": null,
+   "result": {
+    "score": "5:1",
+    "halfScore": "2:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-22T11:00:07+08:00"
+   },
    "matchDate": "2026-09-21",
    "captures": [
     {
@@ -49,5 +55,5 @@
    "isSingleHandicap": false
   }
  ],
- "updatedAt": "2026-09-21T11:00:03+08:00"
+ "updatedAt": "2026-09-22T11:00:07+08:00"
 }
