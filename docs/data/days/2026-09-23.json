@@ -1,0 +1,70 @@
+{
+ "date": "2026-09-23",
+ "matches": [
+  {
+   "matchId": 2041645,
+   "businessDate": "2026-09-23",
+   "matchDate": "2026-09-23",
+   "matchNumStr": "周三001",
+   "league": "亚运男足",
+   "home": "中国亚",
+   "away": "阿联酋亚",
+   "matchTime": "13:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": true,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-22T17:00:04+08:00",
+     "odds": {
+      "ttg1": 3.9,
+      "s10": 6.5,
+      "s01": 8.75,
+      "had": [
+       2.02,
+       2.9,
+       3.45
+      ]
+     },
+     "optimized": 3.73,
+     "diff": 0.17
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041646,
+   "businessDate": "2026-09-23",
+   "matchDate": "2026-09-23",
+   "matchNumStr": "周三002",
+   "league": "亚运男足",
+   "home": "日本亚",
+   "away": "泰国亚",
+   "matchTime": "18:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": null,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-22T17:00:04+08:00",
+     "odds": {
+      "ttg1": 8.5,
+      "s10": 9,
+      "s01": 50,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 7.627,
+     "diff": 0.873
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  }
+ ],
+ "updatedAt": "2026-09-22T17:00:04+08:00"
+}

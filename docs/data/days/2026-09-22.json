@@ -15,21 +15,6 @@
    "isSingleHandicap": false,
    "captures": [
     {
-     "at": "2026-09-21T17:00:03+08:00",
-     "odds": {
-      "ttg1": 8.35,
-      "s10": 12,
-      "s01": 22,
-      "had": [
-       1.45,
-       4.25,
-       4.88
-      ]
-     },
-     "optimized": 7.765,
-     "diff": 0.585
-    },
-    {
      "at": "2026-09-22T11:00:07+08:00",
      "odds": {
       "ttg1": 8.35,
@@ -43,9 +28,24 @@
      },
      "optimized": 7.765,
      "diff": 0.585
+    },
+    {
+     "at": "2026-09-22T17:00:04+08:00",
+     "odds": {
+      "ttg1": 9,
+      "s10": 11.5,
+      "s01": 26,
+      "had": [
+       1.32,
+       4.87,
+       6
+      ]
+     },
+     "optimized": 7.973,
+     "diff": 1.027
     }
    ],
-   "totalCaptures": 2,
+   "totalCaptures": 3,
    "result": null
   },
   {
@@ -62,21 +62,6 @@
    "isSingleHandicap": false,
    "captures": [
     {
-     "at": "2026-09-21T17:00:03+08:00",
-     "odds": {
-      "ttg1": 6.2,
-      "s10": 10.5,
-      "s01": 13,
-      "had": [
-       2.08,
-       3.45,
-       2.79
-      ]
-     },
-     "optimized": 5.809,
-     "diff": 0.391
-    },
-    {
      "at": "2026-09-22T11:00:07+08:00",
      "odds": {
       "ttg1": 5.9,
@@ -90,9 +75,24 @@
      },
      "optimized": 5.379,
      "diff": 0.521
+    },
+    {
+     "at": "2026-09-22T17:00:04+08:00",
+     "odds": {
+      "ttg1": 5.9,
+      "s10": 9.75,
+      "s01": 12,
+      "had": [
+       2.04,
+       3.45,
+       2.86
+      ]
+     },
+     "optimized": 5.379,
+     "diff": 0.521
     }
    ],
-   "totalCaptures": 2,
+   "totalCaptures": 3,
    "result": null
   },
   {
@@ -109,7 +109,7 @@
    "isSingleHandicap": false,
    "captures": [
     {
-     "at": "2026-09-21T17:00:03+08:00",
+     "at": "2026-09-22T11:00:07+08:00",
      "odds": {
       "ttg1": 7,
       "s10": 12,
@@ -124,24 +124,56 @@
      "diff": 0.434
     },
     {
-     "at": "2026-09-22T11:00:07+08:00",
+     "at": "2026-09-22T17:00:04+08:00",
      "odds": {
-      "ttg1": 7,
-      "s10": 12,
-      "s01": 14.5,
+      "ttg1": 6.7,
+      "s10": 12.5,
+      "s01": 13.5,
       "had": [
-       2.1,
-       3.5,
-       2.72
+       2.28,
+       3.33,
+       2.56
       ]
      },
-     "optimized": 6.566,
-     "diff": 0.434
+     "optimized": 6.49,
+     "diff": 0.21
     }
    ],
-   "totalCaptures": 2,
+   "totalCaptures": 3,
+   "result": null
+  },
+  {
+   "matchId": 2041642,
+   "businessDate": "2026-09-22",
+   "matchDate": "2026-09-22",
+   "matchNumStr": "周二001",
+   "league": "亚运男足",
+   "home": "韩国亚",
+   "away": "沙特亚",
+   "matchTime": "18:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-22T17:00:04+08:00",
+     "odds": {
+      "ttg1": 7.25,
+      "s10": 8.5,
+      "s01": 26,
+      "had": [
+       1.23,
+       5.1,
+       8.3
+      ]
+     },
+     "optimized": 6.406,
+     "diff": 0.844
+    }
+   ],
+   "totalCaptures": 1,
    "result": null
   }
  ],
- "updatedAt": "2026-09-22T11:00:07+08:00"
+ "updatedAt": "2026-09-22T17:00:04+08:00"
 }
