@@ -185,7 +185,9 @@ tr.row-near td { background: rgba(250, 178, 25, .12); }
 table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.grid th, table.grid td { padding: 7px 9px; border-bottom: 1px solid var(--grid); text-align: left; white-space: nowrap; }
 table.grid th { color: var(--ink-2); font-weight: 600; font-size: 12px; border-bottom-color: var(--baseline); }
-table.grid td.num, table.grid th.num, table.grid .num { text-align: right; font-variant-numeric: tabular-nums; }
+/* 对齐规范：全表统一左对齐（表头与内容同侧，避免宽屏下表头/数字右偏悬浮的观感混乱）；
+   .num 仅标记等宽数字，保证数值列纵向整齐 */
+table.grid td.num, table.grid th.num, table.grid .num { font-variant-numeric: tabular-nums; }
 table.grid tbody tr:hover { background: var(--ghost); }
 table.grid th[data-sort] { cursor: pointer; user-select: none; }
 table.grid th[data-sort]:hover { color: var(--ink-1); }
