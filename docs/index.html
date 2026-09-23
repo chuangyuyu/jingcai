@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>竞彩 1球 · 比分双选差值记录</title>
 <meta name="description" content="竞彩足球：总进球1球赔率 与 1:0/0:1比分双选优化赔率 的差值记录与统计（个人数据分析工具）">
 <link rel="stylesheet" href="style.css">
@@ -178,7 +178,7 @@
       <label class="chk"><input type="checkbox" id="only-value"> 只看有差值</label>
     </div>
     <div class="card">
-      <div class="table-scroll">
+      <div class="table-scroll data-desktop">
         <table class="grid data-table" id="data-table">
           <thead><tr>
             <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th><th>单关</th>
@@ -190,6 +190,7 @@
           <tbody></tbody>
         </table>
       </div>
+      <div id="data-cards" class="cards"></div>
       <div id="data-more" class="more" hidden><button id="btn-more-rows">显示更多…</button></div>
     </div>
   </section>

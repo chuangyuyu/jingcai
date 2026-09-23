@@ -43,6 +43,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
 html, body { margin: 0; padding: 0; }
 body {
   background: var(--page);
@@ -83,6 +84,7 @@ button, .menu-list a {
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  touch-action: manipulation;
 }
 button:hover, .menu-list a:hover { border-color: var(--baseline); }
 button.primary { background: var(--btn); border-color: var(--btn); color: var(--btn-ink); font-weight: 600; }
@@ -233,3 +235,74 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
   .tile .v { font-size: 20px; }
   h1 { font-size: 15px; }
 }
+
+/* ============================================================
+   手机端（iPhone Safari 等）——卡片式列表 + 收紧排版
+   ============================================================ */
+.cards { display: none; }
+
+@media (max-width: 680px) {
+  .data-desktop { display: none !important; }
+  .cards { display: flex; flex-direction: column; gap: 8px; }
+  .card { padding: 12px; border-radius: 14px; }
+  main { padding: 8px 12px calc(32px + env(safe-area-inset-bottom)); }
+  .top { padding: 10px 12px; }
+  .tabs { padding: 8px 12px 0; }
+  h1 { font-size: 15px; }
+  h2 { font-size: 14px; }
+  .status { font-size: 11px; line-height: 1.5; }
+  .top-actions { gap: 6px; }
+  .top-actions button, .top-actions .menu > button { padding: 7px 10px; font-size: 13px; }
+  .card-sub { font-size: 12px; }
+  .filters { gap: 8px; margin: 6px 0 10px; }
+  .seg button { padding: 7px 10px; font-size: 12.5px; }
+  .chk { font-size: 12.5px; }
+  select { font-size: 13px; padding: 6px 8px; max-width: 140px; }
+  .tiles { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 10px; }
+  .tile { padding: 10px 11px; border-radius: 10px; }
+  .tile .v { font-size: 19px; }
+  .tile .k { font-size: 11px; }
+  .banner { flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 12px; }
+  .banner .banner-body { font-size: 12.5px; }
+  .banner .banner-actions { align-self: stretch; justify-content: flex-end; }
+  .legend { font-size: 11.5px; gap: 8px; }
+  /* 统计小表：紧凑但仍为表格（列少，可容纳） */
+  table.grid { font-size: 12px; }
+  table.grid th { font-size: 11px; padding: 6px 4px; }
+  table.grid td { padding: 7px 4px; }
+  table.grid th, table.grid td { white-space: normal; }
+  /* 图表：缩小柱宽与标签，减少横向滚动 */
+  .chart { height: 195px; padding-left: 34px; }
+  .chart .bin { width: 27px; }
+  .chart .gl, .ref-line { left: 34px; }
+  .chart .ytick { width: 30px; font-size: 10px; }
+  .xlabels { padding-left: 34px; }
+  .xlabels .xl { width: 27px; font-size: 9px; height: 30px; }
+  .ref-label { font-size: 10px; }
+  #toast { bottom: calc(20px + env(safe-area-inset-bottom)); max-width: 94vw; }
+  .help-body { font-size: 12.5px; }
+  .dlg { padding: 14px 16px; }
+}
+
+/* 手机端「每场一张卡」*/
+.mcard {
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--surface-1); padding: 10px 12px;
+}
+.mcard + .mcard { margin-top: 0; }
+.mc-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
+.mc-num { font-weight: 700; color: var(--ink-1); }
+.mc-lg { color: var(--ink-2); }
+.mc-single { color: #b85c00; font-weight: 700; border: 1px solid rgba(184, 92, 0, .35); border-radius: 5px; padding: 0 4px; font-size: 10.5px; }
+.mc-time { margin-left: auto; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.mc-teams { font-size: 15px; font-weight: 600; margin: 5px 0 7px; line-height: 1.35; }
+.mc-teams .vs { color: var(--ink-muted); font-weight: 400; font-size: 12px; padding: 0 5px; }
+.mc-diff { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+.mc-diff .mc-v { font-size: 16px; font-weight: 700; }
+.mc-diff .mc-dir { font-weight: 700; font-size: 13px; }
+.mc-k { font-size: 11px; color: var(--ink-muted); }
+.mc-odds { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-top: 6px; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.mc-odds .mc-v { color: var(--ink-2); }
+.mc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; padding-top: 7px; border-top: 1px dashed var(--grid); font-size: 12.5px; color: var(--ink-2); }
+.mc-foot b { color: var(--ink-1); font-variant-numeric: tabular-nums; }
+.cards-hint { font-size: 11px; color: var(--ink-muted); padding: 2px 2px 0; }

@@ -794,6 +794,38 @@
         '</tr>';
     }).join('');
     $('#data-more').hidden = sorted.length <= state.shownRows;
+    renderDataCards(shown.concat([]), sorted.length);
+  }
+
+  // 手机端卡片列表（宽表格在 iPhone 上太拥挤，改为每场一张卡片）
+  function renderDataCards(shown, total) {
+    var el = $('#data-cards');
+    if (!shown.length) {
+      el.innerHTML = '<div class="empty">当前筛选下没有数据</div>';
+      return;
+    }
+    el.innerHTML = '<div class="cards-hint">赔率顺序：总进球1球 / 比分1:0 / 比分0:1</div>' + shown.map(function (r) {
+      var d1 = r.o1.diff, d2 = r.o2.diff;
+      var dirCls = r.dir === '↑' ? 'dir-up' : (r.dir === '↓' ? 'dir-down' : 'dir-flat');
+      var oneTxt = r.isOneGoal === true ? '<span class="one-yes">1球 ✓</span>'
+        : (r.isOneGoal === false ? '<span class="one-no">非1球</span>' : '');
+      return '<div class="mcard">' +
+        '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
+        '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
+        (r.isSingleWin ? '<span class="mc-single">单关</span>' : '') +
+        '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
+        '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
+        '<div class="mc-diff"><span class="mc-k">差值①</span><span class="mc-v ' + (d1 == null ? '' : (d1 > 0 ? 'diff-pos' : 'diff-neg')) + '">' + fmtDiff(d1) + '</span>' +
+        (r.o2.at ? '<span class="mc-k">②</span><span class="mc-v ' + (d2 == null ? '' : (d2 > 0 ? 'diff-pos' : 'diff-neg')) + '">' + fmtDiff(d2) + '</span>' +
+          '<span class="mc-dir ' + dirCls + '">' + r.dir + (r.diffDelta != null ? ' ' + fmtDiff(r.diffDelta) : '') + '</span>' : '<span class="mc-k muted">（仅第一次抓取）</span>') +
+        '</div>' +
+        '<div class="mc-odds"><span class="mc-k">赔率①</span>' +
+        '<span class="mc-v">' + fmtOdds(r.o1.ttg1) + ' / ' + fmtOdds(r.o1.s10) + ' / ' + fmtOdds(r.o1.s01) + '</span>' +
+        (r.o2.at ? '<span class="mc-k" style="margin-left:6px">②</span><span class="mc-v">' + fmtOdds(r.o2.ttg1) + ' / ' + fmtOdds(r.o2.s10) + ' / ' + fmtOdds(r.o2.s01) + '</span>' : '') +
+        '</div>' +
+        '<div class="mc-foot"><span>赛果 <b>' + (r.score || '—') + '</b>' + (r.halfScore ? '（半 ' + r.halfScore + '）' : '') + '</span>' + oneTxt + '</div>' +
+        '</div>';
+    }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');
   }
 
   function escapeHtml(s) {
