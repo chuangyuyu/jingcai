@@ -2,6 +2,38 @@
  "date": "2026-09-23",
  "matches": [
   {
+   "matchId": 2041647,
+   "businessDate": "2026-09-23",
+   "matchDate": "2026-09-24",
+   "matchNumStr": "周三003",
+   "league": "美职",
+   "home": "西雅图",
+   "away": "盐湖城",
+   "matchTime": "09:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-23T17:00:05+08:00",
+     "odds": {
+      "ttg1": 6.9,
+      "s10": 10,
+      "s01": 17,
+      "had": [
+       1.68,
+       3.7,
+       3.8
+      ]
+     },
+     "optimized": 6.296,
+     "diff": 0.604
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
    "matchId": 2041645,
    "businessDate": "2026-09-23",
    "matchDate": "2026-09-23",
@@ -46,7 +78,13 @@
     }
    ],
    "totalCaptures": 2,
-   "result": null
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-23T17:00:05+08:00"
+   }
   },
   {
    "matchId": 2041646,
@@ -62,7 +100,7 @@
    "isSingleHandicap": false,
    "captures": [
     {
-     "at": "2026-09-22T17:00:04+08:00",
+     "at": "2026-09-23T11:00:03+08:00",
      "odds": {
       "ttg1": 8.5,
       "s10": 9,
@@ -77,24 +115,24 @@
      "diff": 0.873
     },
     {
-     "at": "2026-09-23T11:00:03+08:00",
+     "at": "2026-09-23T17:00:05+08:00",
      "odds": {
-      "ttg1": 8.5,
-      "s10": 9,
-      "s01": 50,
+      "ttg1": 11,
+      "s10": 11.5,
+      "s01": 75,
       "had": [
        null,
        null,
        null
       ]
      },
-     "optimized": 7.627,
-     "diff": 0.873
+     "optimized": 9.971,
+     "diff": 1.029
     }
    ],
-   "totalCaptures": 2,
+   "totalCaptures": 3,
    "result": null
   }
  ],
- "updatedAt": "2026-09-23T11:00:03+08:00"
+ "updatedAt": "2026-09-23T17:00:05+08:00"
 }
