@@ -140,8 +140,11 @@ select {
 .legend .sw { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
 
 /* ---------------- 图表（纯 CSS 柱状图） ---------------- */
+/* 结构：.chart-wrap(横向滚动) > .chart-inner(内容宽度) > .chart(柱) + .xlabels(横轴标签)
+   柱和标签在同一个滚动容器内，滑动时一起移动；窄屏下不会溢出卡片 */
 .chart-wrap { overflow-x: auto; padding-bottom: 4px; }
-.chart { position: relative; height: 230px; display: flex; align-items: flex-end; gap: 3px; min-width: 100%; width: max-content; padding-left: 40px; }
+.chart-inner { width: max-content; min-width: 100%; }
+.chart { position: relative; height: 230px; display: flex; align-items: flex-end; gap: 3px; padding-left: 40px; }
 .chart .gl { position: absolute; left: 40px; right: 0; border-top: 1px solid var(--grid); pointer-events: none; }
 .chart .gl.zero { border-top-color: var(--baseline); }
 .chart .ytick { position: absolute; left: 0; width: 36px; text-align: right; font-size: 11px; color: var(--ink-muted); transform: translateY(-50%); font-variant-numeric: tabular-nums; }
@@ -158,7 +161,7 @@ select {
 .ref-line { position: absolute; left: 40px; right: 0; border-top: 2px dashed var(--ink-muted); pointer-events: none; }
 .ref-label { position: absolute; right: 2px; transform: translateY(-120%); font-size: 11px; color: var(--ink-2); background: var(--surface-1); padding: 0 4px; }
 .bar-ratio { background: var(--series-1); border-radius: 4px 4px 0 0; }
-.xlabels { display: flex; gap: 3px; padding-left: 40px; margin-top: 6px; width: max-content; min-width: 100%; }
+.xlabels { display: flex; gap: 3px; padding-left: 40px; margin-top: 6px; }
 .xlabels .xl { width: 34px; flex: 1 0 auto; font-size: 10.5px; color: var(--ink-muted); text-align: center; transform: rotate(-42deg); transform-origin: top center; white-space: nowrap; height: 34px; font-variant-numeric: tabular-nums; }
 
 /* ---------------- 警戒横幅 / 编号追踪 ---------------- */
