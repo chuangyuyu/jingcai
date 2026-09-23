@@ -11,7 +11,7 @@
    "away": "阿联酋亚",
    "matchTime": "13:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -28,9 +28,24 @@
      },
      "optimized": 3.73,
      "diff": 0.17
+    },
+    {
+     "at": "2026-09-23T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4,
+      "s10": 6.3,
+      "s01": 9,
+      "had": [
+       1.83,
+       3,
+       4
+      ]
+     },
+     "optimized": 3.706,
+     "diff": 0.294
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -60,11 +75,26 @@
      },
      "optimized": 7.627,
      "diff": 0.873
+    },
+    {
+     "at": "2026-09-23T11:00:03+08:00",
+     "odds": {
+      "ttg1": 8.5,
+      "s10": 9,
+      "s01": 50,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 7.627,
+     "diff": 0.873
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   }
  ],
- "updatedAt": "2026-09-22T17:00:04+08:00"
+ "updatedAt": "2026-09-23T11:00:03+08:00"
 }
