@@ -83,7 +83,7 @@
     "halfScore": "0:0",
     "isOneGoal": false,
     "status": "2",
-    "at": "2026-09-23T17:00:05+08:00"
+    "at": "2026-09-24T11:00:03+08:00"
    }
   },
   {
@@ -131,8 +131,14 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "3:0",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-24T11:00:03+08:00"
+   }
   }
  ],
- "updatedAt": "2026-09-23T17:00:05+08:00"
+ "updatedAt": "2026-09-24T11:00:03+08:00"
 }

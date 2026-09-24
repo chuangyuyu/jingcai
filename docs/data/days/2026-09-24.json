@@ -28,9 +28,24 @@
      },
      "optimized": 3.871,
      "diff": 0.229
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4.1,
+      "s10": 7.5,
+      "s01": 8,
+      "had": [
+       2.38,
+       2.92,
+       2.73
+      ]
+     },
+     "optimized": 3.871,
+     "diff": 0.229
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -60,9 +75,24 @@
      },
      "optimized": 6.27,
      "diff": 0.53
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 6.8,
+      "s10": 8,
+      "s01": 35,
+      "had": [
+       1.12,
+       6.15,
+       13.5
+      ]
+     },
+     "optimized": 6.512,
+     "diff": 0.288
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -75,7 +105,7 @@
    "away": "德国",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -92,9 +122,24 @@
      },
      "optimized": 6.741,
      "diff": 0.509
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 7.25,
+      "s10": 13,
+      "s01": 14,
+      "had": [
+       2.27,
+       3.55,
+       2.46
+      ]
+     },
+     "optimized": 6.741,
+     "diff": 0.509
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -124,9 +169,24 @@
      },
      "optimized": 4.121,
      "diff": 0.379
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4.5,
+      "s10": 8,
+      "s01": 8.5,
+      "had": [
+       2.36,
+       3.03,
+       2.66
+      ]
+     },
+     "optimized": 4.121,
+     "diff": 0.379
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -139,7 +199,7 @@
    "away": "丹麦",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -156,9 +216,24 @@
      },
      "optimized": 5.66,
      "diff": 0.34
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 6.5,
+      "s10": 9.5,
+      "s01": 16,
+      "had": [
+       1.58,
+       3.85,
+       4.22
+      ]
+     },
+     "optimized": 5.961,
+     "diff": 0.539
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -188,9 +263,24 @@
      },
      "optimized": 4.03,
      "diff": 0.17
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4.2,
+      "s10": 6.5,
+      "s01": 11,
+      "had": [
+       1.74,
+       3.25,
+       4.05
+      ]
+     },
+     "optimized": 4.086,
+     "diff": 0.114
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -220,9 +310,24 @@
      },
      "optimized": 3.636,
      "diff": 0.364
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4,
+      "s10": 6.5,
+      "s01": 8.25,
+      "had": [
+       2.08,
+       2.94,
+       3.25
+      ]
+     },
+     "optimized": 3.636,
+     "diff": 0.364
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -236,7 +341,7 @@
    "matchTime": "19:35:00",
    "matchStatus": "Selling",
    "isSingleWin": null,
-   "isSingleHandicap": true,
+   "isSingleHandicap": false,
    "captures": [
     {
      "at": "2026-09-23T17:00:05+08:00",
@@ -252,11 +357,26 @@
      },
      "optimized": 17.872,
      "diff": 2.128
+    },
+    {
+     "at": "2026-09-24T11:00:03+08:00",
+     "odds": {
+      "ttg1": 20,
+      "s10": 21,
+      "s01": 120,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 17.872,
+     "diff": 2.128
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   }
  ],
- "updatedAt": "2026-09-23T17:00:05+08:00"
+ "updatedAt": "2026-09-24T11:00:03+08:00"
 }
