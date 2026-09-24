@@ -1,0 +1,422 @@
+{
+ "date": "2026-09-25",
+ "matches": [
+  {
+   "matchId": 2041689,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五006",
+   "league": "欧国联",
+   "home": "格鲁吉亚",
+   "away": "北爱尔兰",
+   "matchTime": "00:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 4.3,
+      "s10": 6.5,
+      "s01": 10.5,
+      "had": [
+       1.78,
+       3.2,
+       3.92
+      ]
+     },
+     "optimized": 4.015,
+     "diff": 0.285
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041690,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五007",
+   "league": "欧国联",
+   "home": "亚美尼亚",
+   "away": "拉脱维亚",
+   "matchTime": "00:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 4.4,
+      "s10": 6.5,
+      "s01": 11.5,
+      "had": [
+       1.6,
+       3.43,
+       4.7
+      ]
+     },
+     "optimized": 4.153,
+     "diff": 0.247
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041691,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五008",
+   "league": "欧国联",
+   "home": "意大利",
+   "away": "比利时",
+   "matchTime": "02:45:00",
+   "matchStatus": "Selling",
+   "isSingleWin": true,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 5.4,
+      "s10": 9,
+      "s01": 12,
+      "had": [
+       1.98,
+       3.3,
+       3.11
+      ]
+     },
+     "optimized": 5.143,
+     "diff": 0.257
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041692,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五009",
+   "league": "欧国联",
+   "home": "黑山",
+   "away": "塞浦路斯",
+   "matchTime": "02:45:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 4.8,
+      "s10": 7,
+      "s01": 13,
+      "had": [
+       1.58,
+       3.55,
+       4.65
+      ]
+     },
+     "optimized": 4.55,
+     "diff": 0.25
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041693,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五010",
+   "league": "欧国联",
+   "home": "波兰",
+   "away": "波黑",
+   "matchTime": "02:45:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 5.1,
+      "s10": 6.5,
+      "s01": 14.5,
+      "had": [
+       1.46,
+       3.77,
+       5.6
+      ]
+     },
+     "optimized": 4.488,
+     "diff": 0.612
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041694,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五011",
+   "league": "欧国联",
+   "home": "土耳其",
+   "away": "法国",
+   "matchTime": "02:45:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 7.25,
+      "s10": 21,
+      "s01": 9.5,
+      "had": [
+       5.6,
+       4.42,
+       1.38
+      ]
+     },
+     "optimized": 6.541,
+     "diff": 0.709
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041695,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五012",
+   "league": "欧国联",
+   "home": "瑞典",
+   "away": "罗马尼亚",
+   "matchTime": "02:45:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 6.3,
+      "s10": 8,
+      "s01": 19,
+      "had": [
+       1.37,
+       4.25,
+       6.1
+      ]
+     },
+     "optimized": 5.63,
+     "diff": 0.67
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041696,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-26",
+   "matchNumStr": "周五013",
+   "league": "荷乙",
+   "home": "多德勒支",
+   "away": "阿尔梅勒",
+   "matchTime": "03:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 8.75,
+      "s10": 16,
+      "s01": 14,
+      "had": [
+       2.77,
+       3.7,
+       2.01
+      ]
+     },
+     "optimized": 7.467,
+     "diff": 1.283
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041684,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-25",
+   "matchNumStr": "周五001",
+   "league": "亚运男足",
+   "home": "乌兹别亚",
+   "away": "沙特亚",
+   "matchTime": "13:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 4,
+      "s10": 5.6,
+      "s01": 11,
+      "had": [
+       1.61,
+       3.25,
+       5
+      ]
+     },
+     "optimized": 3.711,
+     "diff": 0.289
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041685,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-25",
+   "matchNumStr": "周五002",
+   "league": "亚运女足",
+   "home": "中国女",
+   "away": "越南女",
+   "matchTime": "14:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": null,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 9.75,
+      "s10": 10,
+      "s01": 80,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 8.889,
+     "diff": 0.861
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041686,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-25",
+   "matchNumStr": "周五003",
+   "league": "国际赛",
+   "home": "澳大利亚",
+   "away": "巴西",
+   "matchTime": "18:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 6.5,
+      "s10": 24,
+      "s01": 8,
+      "had": [
+       8.75,
+       4.95,
+       1.23
+      ]
+     },
+     "optimized": 6,
+     "diff": 0.5
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041687,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-25",
+   "matchNumStr": "周五004",
+   "league": "亚运男足",
+   "home": "韩国亚",
+   "away": "越南亚",
+   "matchTime": "18:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 6,
+      "s10": 7,
+      "s01": 24,
+      "had": [
+       1.18,
+       5.22,
+       11
+      ]
+     },
+     "optimized": 5.419,
+     "diff": 0.581
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041688,
+   "businessDate": "2026-09-25",
+   "matchDate": "2026-09-25",
+   "matchNumStr": "周五005",
+   "league": "亚运女足",
+   "home": "韩国女",
+   "away": "乌兹别女",
+   "matchTime": "18:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": null,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-24T17:00:03+08:00",
+     "odds": {
+      "ttg1": 9.25,
+      "s10": 9.5,
+      "s01": 60,
+      "had": [
+       null,
+       null,
+       null
+      ]
+     },
+     "optimized": 8.201,
+     "diff": 1.049
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  }
+ ],
+ "updatedAt": "2026-09-24T17:00:03+08:00"
+}
