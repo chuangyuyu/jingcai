@@ -1,0 +1,70 @@
+{
+ "date": "2026-09-27",
+ "matches": [
+  {
+   "matchId": 2041731,
+   "businessDate": "2026-09-27",
+   "matchDate": "2026-09-27",
+   "matchNumStr": "周日001",
+   "league": "韩职",
+   "home": "江原FC",
+   "away": "仁川联",
+   "matchTime": "18:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-25T17:00:03+08:00",
+     "odds": {
+      "ttg1": 3.7,
+      "s10": 6.5,
+      "s01": 7.7,
+      "had": [
+       2.28,
+       2.75,
+       3.06
+      ]
+     },
+     "optimized": 3.525,
+     "diff": 0.175
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041733,
+   "businessDate": "2026-09-27",
+   "matchDate": "2026-09-27",
+   "matchNumStr": "周日003",
+   "league": "荷乙",
+   "home": "格拉夫",
+   "away": "登博思",
+   "matchTime": "20:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-25T17:00:03+08:00",
+     "odds": {
+      "ttg1": 13,
+      "s10": 22,
+      "s01": 23,
+      "had": [
+       1.88,
+       4.05,
+       2.85
+      ]
+     },
+     "optimized": 11.244,
+     "diff": 1.756
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  }
+ ],
+ "updatedAt": "2026-09-25T17:00:03+08:00"
+}
