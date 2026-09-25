@@ -46,7 +46,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041651,
@@ -93,7 +99,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "1:0",
+    "halfScore": "1:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041652,
@@ -140,7 +152,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041653,
@@ -187,7 +205,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "1:2",
+    "halfScore": "1:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041654,
@@ -234,7 +258,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "3:2",
+    "halfScore": "2:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041648,
@@ -281,7 +311,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "3:1",
+    "halfScore": "1:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041649,
@@ -328,7 +364,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "3:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041656,
@@ -375,8 +417,14 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "3:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-25T11:00:03+08:00"
+   }
   }
  ],
- "updatedAt": "2026-09-24T17:00:03+08:00"
+ "updatedAt": "2026-09-25T11:00:03+08:00"
 }
