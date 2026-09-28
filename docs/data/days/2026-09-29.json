@@ -1,0 +1,70 @@
+{
+ "date": "2026-09-29",
+ "matches": [
+  {
+   "matchId": 2041775,
+   "businessDate": "2026-09-29",
+   "matchDate": "2026-09-29",
+   "matchNumStr": "周二001",
+   "league": "亚运女足",
+   "home": "朝鲜女",
+   "away": "中国女",
+   "matchTime": "14:00:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-28T17:00:07+08:00",
+     "odds": {
+      "ttg1": 5.25,
+      "s10": 6.5,
+      "s01": 18,
+      "had": [
+       1.32,
+       4.25,
+       7.3
+      ]
+     },
+     "optimized": 4.776,
+     "diff": 0.474
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  },
+  {
+   "matchId": 2041780,
+   "businessDate": "2026-09-29",
+   "matchDate": "2026-09-29",
+   "matchNumStr": "周二007",
+   "league": "亚运女足",
+   "home": "日本女",
+   "away": "韩国女",
+   "matchTime": "18:30:00",
+   "matchStatus": "Selling",
+   "isSingleWin": false,
+   "isSingleHandicap": false,
+   "captures": [
+    {
+     "at": "2026-09-28T17:00:07+08:00",
+     "odds": {
+      "ttg1": 6.5,
+      "s10": 8,
+      "s01": 26,
+      "had": [
+       1.15,
+       5.8,
+       11.5
+      ]
+     },
+     "optimized": 6.118,
+     "diff": 0.382
+    }
+   ],
+   "totalCaptures": 1,
+   "result": null
+  }
+ ],
+ "updatedAt": "2026-09-28T17:00:07+08:00"
+}
