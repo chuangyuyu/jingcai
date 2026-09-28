@@ -31,7 +31,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "2:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041735,
@@ -63,7 +69,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "1:2",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041736,
@@ -95,7 +107,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "3:1",
+    "halfScore": "2:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041737,
@@ -127,7 +145,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041738,
@@ -159,7 +183,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "1:2",
+    "halfScore": "0:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041739,
@@ -206,7 +236,13 @@
     }
    ],
    "totalCaptures": 3,
-   "result": null
+   "result": {
+    "score": "2:1",
+    "halfScore": "1:1",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041731,
@@ -253,7 +289,13 @@
     }
    ],
    "totalCaptures": 5,
-   "result": null
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041732,
@@ -285,7 +327,13 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null
+   "result": {
+    "score": "0:3",
+    "halfScore": "0:2",
+    "isOneGoal": false,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   },
   {
    "matchId": 2041733,
@@ -332,8 +380,14 @@
     }
    ],
    "totalCaptures": 5,
-   "result": null
+   "result": {
+    "score": "1:0",
+    "halfScore": "1:0",
+    "isOneGoal": true,
+    "status": "2",
+    "at": "2026-09-28T11:00:04+08:00"
+   }
   }
  ],
- "updatedAt": "2026-09-27T17:00:04+08:00"
+ "updatedAt": "2026-09-28T11:00:04+08:00"
 }
