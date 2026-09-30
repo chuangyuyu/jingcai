@@ -28,9 +28,24 @@
      },
      "optimized": 4.307,
      "diff": 0.393
+    },
+    {
+     "at": "2026-09-30T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4.7,
+      "s10": 5.5,
+      "s01": 30,
+      "had": [
+       1.13,
+       5.5,
+       16
+      ]
+     },
+     "optimized": 4.648,
+     "diff": 0.052
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   },
   {
@@ -43,7 +58,7 @@
    "away": "日本亚",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -60,11 +75,26 @@
      },
      "optimized": 4.11,
      "diff": 0.29
+    },
+    {
+     "at": "2026-09-30T11:00:03+08:00",
+     "odds": {
+      "ttg1": 4.4,
+      "s10": 12,
+      "s01": 6.25,
+      "had": [
+       4.7,
+       3.4,
+       1.61
+      ]
+     },
+     "optimized": 4.11,
+     "diff": 0.29
     }
    ],
-   "totalCaptures": 1,
+   "totalCaptures": 2,
    "result": null
   }
  ],
- "updatedAt": "2026-09-29T17:00:04+08:00"
+ "updatedAt": "2026-09-30T11:00:03+08:00"
 }
