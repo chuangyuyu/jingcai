@@ -58,24 +58,9 @@
    "away": "日本亚",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": false,
+   "isSingleWin": true,
    "isSingleHandicap": false,
    "captures": [
-    {
-     "at": "2026-09-29T17:00:04+08:00",
-     "odds": {
-      "ttg1": 4.4,
-      "s10": 12,
-      "s01": 6.25,
-      "had": [
-       4.45,
-       3.35,
-       1.65
-      ]
-     },
-     "optimized": 4.11,
-     "diff": 0.29
-    },
     {
      "at": "2026-09-30T11:00:03+08:00",
      "odds": {
@@ -90,11 +75,26 @@
      },
      "optimized": 4.11,
      "diff": 0.29
+    },
+    {
+     "at": "2026-09-30T17:00:04+08:00",
+     "odds": {
+      "ttg1": 4.6,
+      "s10": 15,
+      "s01": 6,
+      "had": [
+       6,
+       3.66,
+       1.45
+      ]
+     },
+     "optimized": 4.286,
+     "diff": 0.314
     }
    ],
-   "totalCaptures": 2,
+   "totalCaptures": 3,
    "result": null
   }
  ],
- "updatedAt": "2026-09-30T11:00:03+08:00"
+ "updatedAt": "2026-09-30T17:00:04+08:00"
 }
