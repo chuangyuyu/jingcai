@@ -3,15 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>竞彩 1球 · 比分双选差值记录</title>
-<meta name="description" content="竞彩足球：总进球1球赔率 与 1:0/0:1比分双选优化赔率 的差值记录与统计（个人数据分析工具）">
-<link rel="stylesheet" href="style.css?v=4">
+<title>竞彩进球数差值分析与预测</title>
+<meta name="description" content="竞彩足球：各进球数（0~7+球）赔率与比分优化赔率的差值分析，双轨预测每场比赛的总进球数（个人数据分析工具）">
+<link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
 
 <header class="top">
   <div class="top-left">
-    <h1>竞彩 1球 · 比分双选差值</h1>
+    <h1>竞彩进球数差值分析与预测</h1>
     <div class="status"><span class="dot" id="dot"></span><span id="status">正在加载数据…</span></div>
   </div>
   <div class="top-actions">
@@ -64,44 +64,39 @@
 
     <div class="card">
       <div class="card-head">
-        <h2>差值分布（按赛果分组）</h2>
-        <div class="legend" id="legend-dist"></div>
+        <h2>近30天预测命中率（逐日）</h2>
+        <div class="legend">
+          <span class="chip"><span class="sw" style="background:var(--series-1)"></span>模型A（自修正）</span>
+          <span class="chip"><span class="sw" style="background:var(--series-2)"></span>基线A（差值最小项）</span>
+        </div>
       </div>
-      <p class="card-sub">横轴：差值 = 1球赔率 − 优化赔率；纵轴：场次数。重点关注赛果为 1 球（1:0 / 0:1）的场次集中在哪些差值区间。</p>
-      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-dist"></div><div class="xlabels" id="xlabels-dist"></div></div></div>
-      <div id="chart-dist-empty" class="empty" hidden>暂无已出赛果的数据，等比赛结束后回填赛果即可看到分布。</div>
+      <p class="card-sub">每天所有"赛前已冻结预测且已出赛果"的场次中，命中实际进球数的比例。模型A = 近30天"差值排名×进球数"经验命中率（剔除深冷门）；基线A = 差值最小的进球数。</p>
+      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-daily"></div><div class="xlabels" id="xlabels-daily"></div></div></div>
+      <div id="chart-daily-empty" class="empty" hidden>暂无预测数据：需在售期抓取到含比分矩阵的快照，且比赛出结果后自动冻结预测。</div>
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>各差值区间的 1 球命中率</h2></div>
-      <p class="card-sub">每个差值区间内，赛果恰好为 1 球的场次占比（虚线为总体 1 球占比）。样本少于 5 场的区间仅供参考。</p>
-      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-ratio"></div><div class="xlabels" id="xlabels-ratio"></div></div></div>
-      <div id="chart-ratio-empty" class="empty" hidden>暂无已出赛果的数据。</div>
+      <div class="card-head"><h2>各进球数的实际出现分布</h2></div>
+      <p class="card-sub">当前筛选下已出赛果场次的实际总进球数分布（作为预测的基准概率参考）。</p>
+      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-goaldist"></div><div class="xlabels" id="xlabels-goaldist"></div></div></div>
+      <div id="chart-goaldist-empty" class="empty" hidden>暂无已出赛果的数据。</div>
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>差值变化 ①→② 与 1 球命中率</h2></div>
-      <p class="card-sub">按"第二次差值相对第一次的变化方向/幅度"分组，各组内赛果恰为 1 球的占比（虚线为总体 1 球占比）。仅统计两次快照齐全且已出赛果的场次。</p>
-      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-delta"></div><div class="xlabels" id="xlabels-delta"></div></div></div>
-      <div id="chart-delta-empty" class="empty" hidden>暂无"两次快照齐全且已出赛果"的数据，等几次抓取和赛果回填后即可看到。</div>
-    </div>
-
-    <div class="card">
-      <div class="card-head"><h2>单关 vs 非单关 对比</h2></div>
-      <p class="card-sub">「单场胜平负」是官方精挑细选、开放单关的场次（接口 HAD.single=1）。对比两组的 1 球出现率与平均差值。勾选上方「只看单关」可把全部图表切换为单关视角。</p>
+      <div class="card-head"><h2>自修正模型明细：差值排名 × 进球数 命中率</h2></div>
+      <p class="card-sub">口径A（多选优化）近30天：某进球数在它「差值排名第 r」时历史命中的比例（绿=≥50%，括号为命中/样本）。模型预测 = 取当前排名下命中率最高的进球数；赛果排名≥6 的深冷门不参与学习，防止破坏函数。0球差值为全进球数曲线拟合值（在"差值概览"中以 0* 标注）。</p>
+      <div id="model-sample" class="small"></div>
       <div class="table-scroll">
-        <table class="grid" id="single-table">
-          <thead><tr><th>分组</th><th class="num">场次</th><th class="num">已出赛果</th><th class="num">1球场次</th><th class="num">1球占比</th><th class="num">平均差值</th></tr></thead>
-          <tbody></tbody>
-        </table>
+        <table class="grid" id="model-table"><thead></thead><tbody></tbody></table>
       </div>
     </div>
 
     <div class="card">
-      <div class="card-head"><h2>差值变化分档明细 ①→②</h2></div>
+      <div class="card-head"><h2>即将开赛的预测</h2></div>
+      <p class="card-sub">未出结果且已抓到完整比分池的场次（基线A = 差值最小项；B 口径为简单平均）。最后一列为各进球数的差值概览。</p>
       <div class="table-scroll">
-        <table class="grid" id="delta-table">
-          <thead><tr><th>变化区间</th><th class="num">场次</th><th class="num">1球场次</th><th class="num">非1球场次</th><th class="num">1球占比</th><th class="num">平均变化量</th></tr></thead>
+        <table class="grid" id="upcoming-table">
+          <thead><tr><th>日期</th><th>编号</th><th>联赛</th><th>对阵</th><th>开赛</th><th>单关</th><th>基线A</th><th>基线B</th><th>差值概览（A口径）</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -150,12 +145,13 @@
     <details class="card help">
       <summary><h2>计算口径与说明</h2></summary>
       <div class="help-body">
-        <p><b>优化赔率</b> = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)。含义：把 1 元本金按赔率倒数比例拆成两注分别押 1:0 和 0:1，无论哪个比分命中，回报都相同，这个保底回报就是优化赔率。</p>
-        <p><b>差值</b> = 1球赔率 − 优化赔率。<b>正数</b>表示押「总进球 1球」回报更高；<b>负数</b>表示押「1:0 + 0:1 比分双选（等回报拆注）」回报更高。1球赔率与比分双选对应同一个事件（全场恰好进 1 球）。</p>
-        <p><b>两次抓取</b>：每天 11:00 与 17:00 各抓一次，①/② 列分别是第一、第二次抓取时的数据；<b>变化</b>列 = 第二次差值相对第一次：↑变大、↓缩小、→基本不变（±0.03）。第二次抓取时已开赛/停售的比赛只保留第一次数据。分析口径统一取最新一次快照。</p>
-        <p><b>单关维度</b>：「单场胜平负」= 官方开放胜平负单关的场次（精挑细选），统计页可单独对比；勾选「只看单关」可将全部图表切换为单关视角。</p>
-        <p>数据来自中国体育彩票官方接口，每天定时抓取（本机任务）或手动抓取（本页按钮）；赛果于比赛结束后回填。</p>
-        <p class="muted">仅为个人数据分析用途，数据版权归中国体育彩票（sporttery.cn）所有，不构成投注建议，请理性购彩。</p>
+        <p><b>两种口径的差值</b>（对每个进球数 0~7+球）：<br>
+        · <b>口径A（多选优化保底）</b>：优化赔率 = 1 ÷ Σ(1/该进球数每个比分的赔率)——把 1 元按赔率倒数比例拆注押该进球数的所有比分，无论哪个比分命中，保底回报就是优化赔率（1球时即 6.40×10.50÷(6.40+10.50) 这类公式）；差值A = 总进球赔率 − 优化赔率。<br>
+        · <b>口径B（简单平均）</b>：平均赔率 = 该进球数各比分赔率的算术平均；差值B = 总进球赔率 − 平均赔率。</p>
+        <p><b>0球</b>只有 0:0 一个比分，无法优化/平均 → 没有差值；其差值由<b>全进球数二次曲线拟合</b>给出（用 1~7+球的真实差值外推，不按 0 硬填），在差值概览中以 <b>0*</b> 标注。</p>
+        <p><b>预测双轨</b>：<b>基线</b> = 差值最小的进球数（0球用拟合值参与比较）；<b>自修正模型</b> = 近30天"差值排名 × 进球数"的经验命中率，取当前排名下命中率最高者；赛果排名≥6 的深冷门不纳入学习（防爆冷破坏函数）。每场预测在赛果落定时<b>冻结</b>（只用该场之前的数据，杜绝未来数据泄漏），两轨同场对比。</p>
+        <p><b>生效范围</b>：新功能需要快照携带完整比分矩阵——仅对升级后抓取的场次生效（旧快照只有1球数据，显示为空）。每天 11:00 / 17:00 定时抓取，赛果与预测随之自动更新。</p>
+        <p>数据来自中国体育彩票官方接口。仅为个人数据分析用途，数据版权归中国体育彩票（sporttery.cn）所有，不构成投注建议，请理性购彩。</p>
       </div>
     </details>
   </section>
@@ -172,17 +168,16 @@
       <select id="league-filter2"><option value="">全部联赛</option></select>
       <label class="chk"><input type="checkbox" id="only-settled2"> 只看已出赛果</label>
       <label class="chk"><input type="checkbox" id="only-single2"> 只看单关</label>
-      <label class="chk"><input type="checkbox" id="only-value"> 只看有差值</label>
     </div>
     <div class="card">
       <div class="table-scroll data-desktop">
         <table class="grid data-table" id="data-table">
           <thead><tr>
             <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th><th>单关</th>
-            <th class="num">①1球</th><th class="num">①1:0</th><th class="num">①0:1</th><th class="num">①优化</th><th class="num">①差值</th>
-            <th class="num">②1球</th><th class="num">②1:0</th><th class="num">②0:1</th><th class="num">②优化</th><th data-sort="diff" class="num">②差值</th>
-            <th data-sort="diffDelta">变化</th>
-            <th data-sort="score">赛果</th><th>1球?</th><th>抓取时间（①/②）</th>
+            <th data-sort="actual">实际进球</th>
+            <th>基线A</th><th>模型A</th><th>基线B</th><th>模型B</th>
+            <th>模型A命中</th><th>模型B命中</th>
+            <th data-sort="oddsAt">抓取时间</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -217,7 +212,7 @@
 <div id="tooltip" hidden></div>
 
 <script src="vendor/xlsx.full.min.js?v=1"></script>
-<script src="core.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="core.js?v=5"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

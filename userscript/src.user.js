@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.2.3
+// @version      3.0.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -82,8 +82,11 @@
       });
       setDays(days);
       GM_setValue(K_LAST, JC.localDateStr());
-      var complete = matches.filter(function (m) { return m.captures[0].diff != null; }).length;
-      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，快照 +' + captured + '，可算差值 ' + complete + '）');
+      var complete = matches.filter(function (m) {
+        var dd = JC.goalDiffs(m.captures[0].odds);
+        return dd && dd.groups.some(function (x) { return x.diffA != null; });
+      }).length;
+      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，快照 +' + captured + '，含完整比分池 ' + complete + '）');
       renderPanel();
       if (canSync()) return sync();
       if (manual) say('已存本机（未配置 GitHub，暂存于油猴存储）');
@@ -413,14 +416,21 @@
       listEl.innerHTML = '<div style="color:#888;padding:8px 0">还没有数据，点「刷新赔率」开始。</div>';
       return;
     }
-    // 展示最近一个有数据的日期（通常是今天）
     var showDate = dates[dates.length - 1];
     var today = JC.localDateStr();
     if (days[today]) showDate = today;
+
+    // 本地自修正模型（近30天，剔除深冷门）
+    var all = [];
+    dates.forEach(function (d) { (days[d].matches || []).forEach(function (m) { all.push(m); }); });
+    var samples = JC.modelSamples(all, 'diffA', { windowDays: 30, endDate: JC.addDays(today, 1) });
+    var model = JC.modelTrain(samples, { maxActualRank: 6 });
+
     var rows = JC.flatRows([days[showDate]]);
     var dirty = getDirty();
-    var complete = rows.filter(function (r) { return r.diff != null; }).length;
-    statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
+    var withPred = rows.filter(function (r) { return r.diffs; }).length;
+    statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可预测 ' + withPred +
+      ' · 样本 ' + model.used + ' 场' +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
     if (alertInfo && alertInfo.alerts.length) {
       statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项连续未出≥' + alertInfo.alertCount + '次';
@@ -430,17 +440,22 @@
     }
 
     var body = rows.map(function (r) {
-      var cls = r.diff == null ? '' : (r.diff > 0 ? 'pos' : 'neg');
-      var dirCls = r.dir === '↑' ? 'neg' : (r.dir === '↓' ? 'pos' : '');
+      var modelG = null, baseG = r.predBaseA;
+      if (r.predA != null) { modelG = r.predA; }
+      else if (r.diffs) {
+        var diffsA = (r.diffs.groups || []).map(function (x) { return x.diffA; });
+        modelG = JC.modelPredict(model, diffsA, r.predBaseA);
+      }
+      var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
+      var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +
         '<td class="single">' + (r.isSingleWin ? '单' : '') + '</td>' +
-        '<td class="num">' + fmt(r.o1.ttg1) + '</td>' +
-        '<td class="num ' + cls + '">' + fmtDiff(r.diff) + '</td>' +
-        '<td class="' + dirCls + '">' + (r.dir || '') + '</td>' +
-        '<td>' + (r.score || '') + '</td></tr>';
+        '<td class="' + hitCls2 + '"><b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b></td>' +
+        '<td>' + (baseG == null ? '—' : JC.labelG(baseG)) + '</td>' +
+        '<td>' + actualTxt + '</td></tr>';
     }).join('');
-    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>1球①</th><th>差值</th><th>变化</th><th>赛果</th></tr></thead><tbody>' + body + '</tbody></table>';
+    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>模型</th><th>基线</th><th>实际</th></tr></thead><tbody>' + body + '</tbody></table>';
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }

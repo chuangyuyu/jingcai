@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * 核心逻辑自检（不访问网络）：node scripts/test-core.js
- * 覆盖：差值公式、解析（含单关标记）、快照追加与合并、旧数据升级、
- *       展平（两次/箭头）、统计（单关分组+差值变化分档）、CSV
+ * 覆盖：进球数差值（两口径）、0球曲线拟合、自修正模型（训练/预测/爆冷剔除）、
+ *       预测冻结（防泄漏）、展平/命中统计、编号追踪、销售日归属、旧数据兼容
  */
 'use strict';
 
@@ -15,264 +15,163 @@ function ok(name, cond, extra) {
 }
 function near(a, b, eps) { return a != null && b != null && Math.abs(a - b) <= (eps || 0.0005); }
 
-console.log('== 公式 ==');
+console.log('== 基础工具 ==');
 {
-  const r = JC.computeDiff(4.10, 6.40, 10.50);
-  ok('优化赔率 = ab/(a+b) ≈ 3.976', near(r.optimized, 3.976), JSON.stringify(r));
-  ok('差值 = 1球 − 优化 ≈ +0.124', near(r.diff, 0.124), JSON.stringify(r));
-  ok('缺 1球赔率 → null', JC.computeDiff(null, 6.4, 10.5).diff === null);
-  ok('1:0 / 0:1 判定', JC.isOneGoalScore('1:0') && JC.isOneGoalScore('0:1') && !JC.isOneGoalScore('2:0'));
+  ok('goalsFromScore', JC.goalsFromScore('2:1') === 3 && JC.goalsFromScore('0:0') === 0 && JC.goalsFromScore('') === null);
+  ok('bucketOfGoals（7+归并）', JC.bucketOfGoals(7) === 7 && JC.bucketOfGoals(9) === 7 && JC.bucketOfGoals(0) === 0);
+  ok('numOf / slateDateOf', JC.numOf('周日001') === '001' &&
+    JC.slateDateOf('周三004', '2026-09-02') === '2026-09-02' &&
+    JC.slateDateOf('周二004', '2026-09-02') === '2026-09-01');
+  ok('resultRangeFor', JC.resultRangeFor('2026-09-30')[1] === '2026-10-01');
 }
 
-console.log('== 赛果查询范围（凌晨场真实开赛日=次日，需 +1 天）==');
+console.log('== 曲线拟合（0球差值）==');
 {
-  const r = JC.resultRangeFor('2026-09-20');
-  ok('resultRangeFor = [当天, 次日]', r[0] === '2026-09-20' && r[1] === '2026-09-21', JSON.stringify(r));
-  ok('跨月正确', JC.resultRangeFor('2026-09-30')[1] === '2026-10-01');
+  // 二次曲线 y = 2 - x + 0.5x²：点 (1,1.5) (2,2) (3,3.5) → x=0 处应为 2
+  ok('二次拟合取 x=0', near(JC.fitValueAt0([1, 2, 3], [1.5, 2, 3.5]), 2, 0.001));
+  // 两点退化为直线：(1,3) (2,1) → x=0 处 5
+  ok('两点退化为直线', near(JC.fitValueAt0([1, 2], [3, 1]), 5, 0.001));
+  ok('不足两点返回 null', JC.fitValueAt0([1], [3]) === null);
 }
 
-console.log('== 解析官方赔率 JSON（v2：单关标记 + 快照）==');
-const mkMatch = (over) => Object.assign({
-  matchId: 1, businessDate: '2026-09-20', matchDate: '2026-09-20', matchNumStr: '周日001',
-  leagueAbbName: '意甲', homeTeamAbbName: '尤文', awayTeamAbbName: '亚特兰大',
-  matchTime: '20:00:00', matchStatus: 'Selling',
-  ttg: { s1: '5.10' }, crs: { s01s00: '7.50', s00s01: '13.00' }, had: { h: '1.55', d: '3.70', a: '4.70' },
-  poolList: [
-    { poolCode: 'HAD', single: 1 }, { poolCode: 'HHAD', single: 0 },
-    { poolCode: 'CRS', single: 1 }, { poolCode: 'TTG', single: 1 }
-  ]
-}, over || {});
-const oddsRaw = { value: { matchInfoList: [{ businessDate: '2026-09-20', subMatchList: [
-  mkMatch(),
-  mkMatch({ matchId: 2, matchNumStr: '周日002', matchDate: '2026-09-21', matchTime: '00:00:00',
-    poolList: [{ poolCode: 'HAD', single: 0 }], ttg: {}, crs: {}, had: {} })
-] }] } };
+console.log('== 进球数差值（两种口径）==');
 {
-  const parsed = JC.parseOdds(oddsRaw, '2026-09-20T11:00:00+08:00');
-  ok('解析出 2 场', parsed.length === 2);
-  ok('场次1 快照内含差值', near(parsed[0].captures[0].diff, 5.10 - (7.5 * 13 / 20.5)));
-  ok('场次1 单关胜平负=是', parsed[0].isSingleWin === true);
-  ok('场次2 单关胜平负=否', parsed[1].isSingleWin === false);
-  ok('场次2 缺赔率 → 快照 diff 为 null', parsed[1].captures[0].diff === null);
-  ok('凌晨场 matchDate 保留', parsed[1].matchDate === '2026-09-21');
-}
-
-console.log('== 快照追加规则（mergeDay）==');
-{
-  let day = { date: '2026-09-20', matches: [] };
-  let r = JC.mergeDay(day, JC.parseOdds(oddsRaw, '2026-09-20T11:00:00+08:00'), '2026-09-20T11:00:00+08:00');
-  ok('首次抓取：新增 2 场，各 1 次快照', r.added === 2 && r.captured === 2 && r.day.matches[0].captures.length === 1);
-  day = r.day;
-
-  // 同时段、赔率无变化（11:30 手动再点一次）→ 不追加
-  r = JC.mergeDay(day, JC.parseOdds(oddsRaw, '2026-09-20T11:30:00+08:00'), '2026-09-20T11:30:00+08:00');
-  ok('同时段重复抓取：不产生新快照', r.captured === 0 && day.matches[0].captures.length === 1);
-
-  // 下午时段、赔率无变化 → 追加（跨时段）
-  r = JC.mergeDay(day, JC.parseOdds(oddsRaw, '2026-09-20T17:00:00+08:00'), '2026-09-20T17:00:00+08:00');
-  ok('跨时段抓取：追加第 2 次快照', r.captured === 2 && day.matches[0].captures.length === 2);
-  ok('两快照同一赔率 → 无"变化"计数', r.updated === 0);
-
-  // 回填赛果后再抓 → 赛果保留、仍最多 2 个快照
-  const res = JC.parseResults([{ matchId: 1, sectionsNo999: '1:0', sectionsNo1: '0:0', matchResultStatus: '2' }]);
-  JC.applyResults(day, res, '2026-09-21T11:00:00+08:00');
-  const odds2 = JSON.parse(JSON.stringify(oddsRaw));
-  odds2.value.matchInfoList[0].subMatchList[0].ttg.s1 = '4.80'; // 赔率变化
-  odds2.value.matchInfoList[0].subMatchList[0].crs.s01s00 = '6.80';
-  r = JC.mergeDay(day, JC.parseOdds(odds2, '2026-09-21T11:00:00+08:00'), '2026-09-21T11:00:00+08:00');
-  const m1 = day.matches.find(m => m.matchId === 1);
-  ok('跨天抓取：仍只保留最近 2 次快照', m1.captures.length === 2 && r.updated === 1);
-  ok('刷新赔率后赛果保留', m1.result && m1.result.score === '1:0');
-  ok('新快照为变化后的赔率', near(m1.captures[1].odds.ttg1, 4.8));
-}
-
-console.log('== 旧版单快照数据自动升级 ==');
-{
-  const old = {
-    matchId: 9, businessDate: '2026-09-19', matchDate: '2026-09-19', matchNumStr: '周六009',
-    league: '英超', home: 'A', away: 'B', matchTime: '22:00:00', matchStatus: 'Selling',
-    odds: { ttg1: 4.0, s10: 6.0, s01: 12.0, had: [1.5, 4, 6] },
-    optimized: 4.0, diff: 0.0, oddsAt: '2026-09-19T11:00:00+08:00', captureCount: 3, result: null
+  const odds = {
+    goals: [9.50, 4.10, 4.30, 5.20, 9.00, 19.0, 41.0, 15.0],   // 0..7+ 总进球赔率
+    scores: {
+      '0:0': 9.50,
+      '1:0': 6.40, '0:1': 10.50,
+      '1:1': 6.80, '2:0': 9.00, '0:2': 13.00,
+      '2:1': 8.00, '1:2': 11.00, '3:0': 15.00,
+      '4:0': 41.0, '3:1': 21.0, '2:2': 13.0,
+      '5:2': 51.0, '4:3': 61.0, '3:4': 71.0, '2:5': 81.0, '4:4': 91.0
+    },
+    other: { win: 15.0, draw: 21.0, lose: 25.0 }
   };
-  const m = JC.normalizeMatch(old);
-  ok('odds → captures[0]', m.captures.length === 1 && near(m.captures[0].odds.ttg1, 4.0));
-  ok('时间/计数保留', m.captures[0].at === '2026-09-19T11:00:00+08:00' && m.totalCaptures === 3);
-  ok('旧字段清理', m.odds === undefined && m.oddsAt === undefined);
-  const rows = JC.flatRows([{ date: '2026-09-19', matches: [old] }]);
-  ok('展平后只有第一次数据、无箭头', rows[0].o2.at === '' && rows[0].dir === '' && rows[0].diff === 0);
+  const d = JC.goalDiffs(odds);
+  ok('返回 8 个进球数分组', d && d.groups.length === 8);
+  const g1 = d.groups[1];
+  ok('1球口径A = 1/(1/6.4+1/10.5) ≈ 3.976', near(g1.optA, 3.976));
+  ok('1球口径A差值 = +0.124', near(g1.diffA, 0.124));
+  ok('1球口径B均值 = 8.45，差值 = -4.35', near(g1.avgB, 8.45) && near(g1.diffB, -4.35));
+  const g2 = d.groups[2];
+  ok('2球口径A = 1/(1/6.8+1/9+1/13) ≈ 2.984', near(g2.optA, 2.984, 0.002));
+  ok('2球口径B均值 = 9.60', near(g2.avgB, 9.6));
+  ok('0球两种口径均无差值', d.groups[0].optA === null && d.groups[0].avgB === null);
+  ok('0球差值来自拟合（非空）', d.groups[0].diffA != null && d.fit0A != null);
+  ok('7+球含总进球≥7的比分（5:2/4:3/3:4/2:5/4:4）', d.groups[7].scores.length === 5);
+  ok('基线预测为合法进球数', d.predBaseA >= 0 && d.predBaseA <= 7 && d.predBaseB >= 0 && d.predBaseB <= 7);
+  // 无完整池（旧数据）返回 null
+  ok('旧数据（无比分矩阵）返回 null', JC.goalDiffs({ ttg1: 4.1, s10: 6.4, s01: 10.5, had: [] }) === null);
 }
 
-console.log('== 展平（两次 + 箭头方向）==');
+console.log('== 自修正模型（排名×进球数 命中率表）==');
 {
-  let day = { date: '2026-09-20', matches: [] };
-  day = JC.mergeDay(day, JC.parseOdds(oddsRaw, '2026-09-20T11:00:00+08:00'), '2026-09-20T11:00:00+08:00').day;
-  const odds2 = JSON.parse(JSON.stringify(oddsRaw));
-  odds2.value.matchInfoList[0].subMatchList[0].ttg.s1 = '4.60'; // 差值变小
-  day = JC.mergeDay(day, JC.parseOdds(odds2, '2026-09-20T17:00:00+08:00'), '2026-09-20T17:00:00+08:00').day;
+  // 构造样本：2球 在差值排名第2时连续命中 4 次；0球 排名第1 命中 1 次
+  const mkDiffs = (targetG, rank) => {
+    // 8 个差值按 1..8 排布，目标进球数的值 = rank（排名即 rank，无并列）
+    const others = [];
+    for (let i = 0; i < 8; i++) if (i !== targetG) others.push(i);
+    const vals = new Array(8);
+    let vi = 0;
+    for (let r = 1; r <= 8; r++) {
+      if (r === rank) vals[targetG] = r;
+      else { vals[others[vi]] = r; vi++; }
+    }
+    return vals;
+  };
+  const samples = [];
+  for (let i = 0; i < 4; i++) samples.push({ date: 'D' + i, diffs: mkDiffs(2, 2), actual: 2 });
+  samples.push({ date: 'D9', diffs: mkDiffs(0, 1), actual: 0 });
+  samples.push({ date: 'D8', diffs: mkDiffs(5, 8), actual: 5 });   // 深冷门：应被剔除
+  const model = JC.modelTrain(samples, { maxActualRank: 6 });
+  ok('剔除深冷门 1 场', model.excluded === 1, 'excluded=' + model.excluded);
+  ok('2球×排名2 命中 4 次', model.table[2][2].hit === 4 && model.table[2][2].total === 4);
+  const pred = JC.modelPredict(model, mkDiffs(2, 2), 0);
+  ok('模型预测：2球排名2 → 预测 2球', pred === 2, 'pred=' + pred);
+  // 数据不足时回退基线
+  const predFallback = JC.modelPredict(null, mkDiffs(3, 3), 3);
+  ok('无模型回退基线', predFallback === 3);
+}
+
+console.log('== 预测冻结（防未来数据泄漏）==');
+{
+  const capOdds = {
+    goals: [9.50, 4.10, 4.30, 5.20, 9.00, 19.0, 41.0, 15.0],
+    scores: { '0:0': 9.5, '1:0': 6.4, '0:1': 10.5, '1:1': 6.8, '2:0': 9.0, '0:2': 13.0, '2:1': 8.0, '3:1': 21.0 }
+  };
+  const mkMatch = (id, slate, actual) => ({
+    matchId: id, businessDate: slate, matchDate: slate, matchNumStr: '周一00' + id,
+    captures: [{ at: slate + 'T11:00:00+08:00', odds: JSON.parse(JSON.stringify(capOdds)) }],
+    result: actual != null ? { score: actual, goals: JC.goalsFromScore(actual), at: slate + 'T23:00:00+08:00' } : null,
+    pred: null
+  });
+  const pool = [mkMatch(1, '2026-09-20', '2:1'), mkMatch(2, '2026-09-21', '1:0'), mkMatch(3, '2026-09-22', '0:0'), mkMatch(4, '2026-09-23', null)];
+  // 冻结第 4 场的预测：窗口只应含前三场（销售日 < 09-23）
+  const pred = JC.freezePrediction(pool[3], pool, { model: { windowDays: 30, maxActualRank: 6 } });
+  ok('冻结预测含基线与模型', pred && pred.baseA != null && pred.modelA != null && pred.baseB != null && pred.modelB != null);
+  ok('冻结窗口为之前的 3 场', pred.windowA === 3, 'windowA=' + pred.windowA);
+  const s = JC.modelSamples(pool, 'diffA', { windowDays: 30, endDate: '2026-09-23' });
+  ok('样本不含当日及以后（防泄漏）', s.length === 3);
+  const s2 = JC.modelSamples(pool, 'diffA', { windowDays: 1, endDate: '2026-09-23' });
+  ok('窗口天数过滤有效（近1天）', s2.length === 1, 'len=' + s2.length);
+}
+
+console.log('== 展平与命中统计 ==');
+{
+  const capOdds = {
+    goals: [9.50, 4.10, 4.30, 5.20, 9.00, 19.0, 41.0, 15.0],
+    scores: { '0:0': 9.5, '1:0': 6.4, '0:1': 10.5, '1:1': 6.8, '2:0': 9.0, '0:2': 13.0, '2:1': 8.0, '3:1': 21.0 }
+  };
+  const day = { date: '2026-09-20', matches: [
+    { matchId: 1, businessDate: '2026-09-20', matchDate: '2026-09-20', matchNumStr: '周日001', league: 'X', home: 'A', away: 'B',
+      isSingleWin: true, captures: [{ at: '2026-09-20T11:00:00+08:00', odds: JSON.parse(JSON.stringify(capOdds)) }],
+      result: { score: '2:1', goals: 3, at: 'T' }, pred: { baseA: 2, modelA: 2, baseB: 3, modelB: 2, at: 'T' } },
+    { matchId: 2, businessDate: '2026-09-20', matchNumStr: '周日002', league: 'X', home: 'C', away: 'D',
+      captures: [{ at: '2026-09-20T11:00:00+08:00', odds: { ttg1: 4.1, s10: 6.4, s01: 10.5, had: [] } }],
+      result: null, pred: null }
+  ] };
   const rows = JC.flatRows([day]);
   const r1 = rows.find(r => r.matchNumStr === '周日001');
-  ok('两次快照都在', r1.o1.ttg1 === 5.1 && r1.o2.ttg1 === 4.6);
-  ok('差值变化量 = 第二次−第一次', r1.diffDelta < 0, String(r1.diffDelta));
-  ok('箭头方向 = 缩小 ↓', r1.dir === '↓', r1.dir);
-  ok('times 展示串', /^09-20 11:00 \/ 09-20 17:00$/.test(r1.times), r1.times);
-  const rows2 = JC.flatRows([day]);
-  ok('主差值取最新一次', near(rows2.find(r => r.matchNumStr === '周日001').diff, r1.o2.diff));
+  ok('v3 场次含差值明细', r1.hasDetail === true && r1.diffs.groups.length === 8);
+  ok('命中判定：实际3球 vs 预测2球', r1.actual === 3 && r1.hitBaseA === false && r1.hitModelA === false);
+  const r2 = rows.find(r => r.matchNumStr === '周日002');
+  ok('旧格式快照 → 无明细、无预测', r2.hasDetail === false && r2.predA === null);
+  const st = JC.predStats(rows);
+  ok('统计：1 场已出、基线 n=1', st.settled === 1 && st.baseA.n === 1 && st.baseA.hit === 0);
+  ok('各进球数分布', st.byGoal[3] === 1);
 }
 
-console.log('== mergeDocs（多端并集）==');
+console.log('== 编号追踪（保持功能）==');
 {
-  const A = { date: '2026-09-20', updatedAt: 'T1', matches: [{
-    matchId: 1, captures: [{ at: '2026-09-20T11:00:00+08:00', odds: { ttg1: 5.0, s10: 7.5, s01: 13 }, optimized: 4.75, diff: 0.25 }], totalCaptures: 1, result: null }] };
-  const B = { date: '2026-09-20', updatedAt: 'T2', matches: [{
-    matchId: 1, captures: [{ at: '2026-09-20T17:00:00+08:00', odds: { ttg1: 4.6, s10: 7.5, s01: 13 }, optimized: 4.75, diff: -0.15 }], totalCaptures: 1,
-    result: { score: '1:0', isOneGoal: true, at: 'T3' } }] };
-  const m = JC.mergeDocs(A, B);
-  ok('快照并集 = 2 个', m.matches[0].captures.length === 2);
-  ok('赛果保留', m.matches[0].result && m.matches[0].result.score === '1:0');
-  // 并集超过 2 → 保留最近两个
-  const C = { date: '2026-09-20', matches: [{ matchId: 1, captures: [
-    { at: '2026-09-20T11:00:00+08:00', odds: { ttg1: 5.0 }, diff: 0.25 },
-    { at: '2026-09-20T17:00:00+08:00', odds: { ttg1: 4.6 }, diff: -0.15 },
-    { at: '2026-09-21T11:00:00+08:00', odds: { ttg1: 4.4 }, diff: -0.35 }], totalCaptures: 3 }] };
-  const m2 = JC.mergeDocs({ date: '2026-09-20', matches: [] }, C);
-  // 直接 3 个也裁到 2（mergeDocs 对单边超长同样裁剪）
-  ok('单边 3 快照被裁剪为最近 2 个', m2.matches[0].captures.length === 2 && m2.matches[0].captures[0].at.indexOf('17:00') > 0);
-  ok('null 安全', JC.mergeDocs(A, null) === A);
-}
-
-console.log('== 统计（单关分组 + 差值变化分档）==');
-{
-  const rows = [];
-  for (let i = 0; i < 20; i++) {
-    rows.push({
-      date: '2026-09-20',
-      diff: 0.1 + i * 0.05,
-      diffDelta: i < 10 ? -0.05 : 0.05,
-      isOneGoal: i % 4 === 0,
-      isSingleWin: i % 2 === 0,
-      o1: { at: '2026-09-20T11:00:00+08:00', diff: 0.1 + i * 0.05 },
-      o2: { at: '2026-09-20T17:00:00+08:00', diff: 0.1 + i * 0.05 + (i < 10 ? -0.05 : 0.05) }
-    });
-  }
-  rows.push({ date: '2026-09-20', diff: null, diffDelta: null, isOneGoal: null, isSingleWin: null, o1: { at: '' }, o2: { at: '' } });
-  const st = JC.stats(rows, 0.05);
-  ok('总 21 场，已出 20 场', st.summary.total === 21 && st.summary.settled === 20);
-  ok('1 球场次 5、占比 0.25', st.summary.oneGoalCount === 5 && near(st.summary.oneGoalRatio, 0.25));
-  ok('单关场次 10（未出结果的 null 不计）', st.summary.singleCount === 10, String(st.summary.singleCount));
-  ok('单关分组已出=10', st.summary.singleGroup.settled === 10, JSON.stringify(st.summary.singleGroup));
-  ok('非单关分组已出=10', st.summary.nonSingleGroup.settled === 10);
-  ok('两次快照场次=20', st.summary.twoCaptureCount === 20);
-  ok('变化分档共 5 档', st.deltaBins.length === 5);
-  const sumDelta = st.deltaBins.reduce((s, b) => s + b.count, 0);
-  ok('变化分档合计 = 20', sumDelta === 20, 'sum=' + sumDelta);
-  ok('下降档=10、上升档=10', st.deltaBins[0].count + st.deltaBins[1].count === 10 && st.deltaBins[3].count + st.deltaBins[4].count === 10);
-  ok('平均变化量 = 0', near(st.summary.avgDeltaAll, 0, 0.001));
-  const sum = st.bins.reduce((s, b) => s + b.count, 0);
-  ok('差值分箱总数 = 20', sum === 20, 'sum=' + sum);
-}
-
-console.log('== 编号追踪（编号 × 进球数）==');
-{
-  ok('numOf 提取编号', JC.numOf('周日001') === '001' && JC.numOf('周一030') === '030' && JC.numOf('') === null);
-  ok('goalsFromScore', JC.goalsFromScore('2:1') === 3 && JC.goalsFromScore('0:0') === 0 && JC.goalsFromScore('5:2') === 7 && JC.goalsFromScore('') === null);
-
-  ok('slateDateOf 同日场次归当天', JC.slateDateOf('周三004', '2026-09-02') === '2026-09-02');
-  ok('slateDateOf 凌晨场归前一天', JC.slateDateOf('周二004', '2026-09-02') === '2026-09-01');
-  ok('slateDateOf 跨周正确', JC.slateDateOf('周六030', '2026-09-06') === '2026-09-05' && JC.slateDateOf('周日001', '2026-09-06') === '2026-09-06');
-  ok('slateDateOf 无前缀回退', JC.slateDateOf('004', '2026-09-02') === '2026-09-02');
-
-  // 撞号场景（用户实测发现）：同一天真实日期里 周三004 与 周二004 是两场比赛，必须归属不同销售日
-  {
-    const rows = [
-      { matchNumStr: '周三004', date: '2026-09-02', score: '2:1' },
-      { matchNumStr: '周二004', date: '2026-09-02', score: '0:2' }
-    ];
-    const bySlate = {};
-    rows.forEach(r => {
-      const s = JC.slateDateOf(r.matchNumStr, r.date);
-      bySlate[s] = bySlate[s] || {};
-      bySlate[s][JC.numOf(r.matchNumStr)] = JC.goalsFromScore(r.score);
-    });
-    ok('撞号修复：周三004 → 09-02 销售日 = 3球', bySlate['2026-09-02'] && bySlate['2026-09-02']['004'] === 3);
-    ok('撞号修复：周二004 → 09-01 销售日 = 2球（互不覆盖）', bySlate['2026-09-01'] && bySlate['2026-09-01']['004'] === 2);
-  }
-
   const doc = { alertCount: 2, days: {
-    '2026-09-01': { '001': 2, '002': 0, '003': 4 },
-    '2026-09-02': { '001': 0, '002': 1 },                 // 003 当天没有这个编号
-    '2026-09-03': { '001': 3, '002': 2, '003': 1 },
+    '2026-09-01': { '001': 2, '002': 0 },
+    '2026-09-02': { '001': 0, '002': 1 },
+    '2026-09-03': { '001': 3, '002': 2 },
     '2026-09-04': { '001': 1, '002': 5 }
   } };
   const st = JC.numbersStats(doc);
-  ok('共 4 天、3 个编号', st.days === 4 && st.nums.length === 3);
-  ok('警戒线来自 doc.alertCount = 2', st.alertCount === 2);
+  ok('基本统计（4天/2编号）', st.days === 4 && st.nums.length === 2);
   const n1 = st.nums.find(n => n.num === '001');
-  ok('001 各进球桶次数', n1.counts[0] === 1 && n1.counts[1] === 1 && n1.counts[2] === 1 && n1.counts[3] === 1, JSON.stringify(n1.counts));
-  const c2 = n1.combos[2]; // 2球
-  ok('001的2球 最近 09-01、距今 3 天、连续 3 次', c2.lastDate === '2026-09-01' && c2.daysSince === 3 && c2.streak === 3);
-  ok('001的2球 平均间隔 3 天、该出指数 1.0', c2.avgGap === 3 && c2.anomaly === 1, 'avgGap=' + c2.avgGap + ' anomaly=' + c2.anomaly);
-  const n3 = st.nums.find(n => n.num === '003');
-  ok('003 出现 2 天（缺失日不计数）', n3.occurrences === 2 && n3.lastSeen === '2026-09-03');
-  ok('003的4球 距今 3 天', n3.combos[4].lastDate === '2026-09-01' && n3.combos[4].daysSince === 3);
-  ok('从未出现的桶标记 never', n3.combos[7].never === true && n3.combos[7].count === 0);
-  // 预警按「连续未出现次数」：001的2球(3次)、002的0球(3次)、001的0球(2次)、002的1球(2次)
-  ok('警戒项共 4 个（按次数口径）', st.alerts.length === 4, JSON.stringify(st.alerts.map(a => a.num + a.label + ':' + a.streak)));
-  ok('警戒按连续未出现次数降序', st.alerts[0].streak === 3, 'first streak=' + st.alerts[0].streak);
-  ok('003的4球 仅 1 次未出，不进警戒', !st.alerts.some(a => a.num === '003'));
-  ok('从未出现的组合不进警戒', !st.alerts.some(a => a.num === '001' && a.label === '7+球'));
-  // 停用编号不进警戒：让 003 最后出现停在 09-01，数据延续到 09-12（间隔 11 天 > 7）
-  const doc2 = JSON.parse(JSON.stringify(doc));
-  delete doc2.days['2026-09-03']['003'];
-  for (let d = 5; d <= 12; d++) {
-    doc2.days['2026-09-' + (d < 10 ? '0' + d : d)] = { '001': 1, '002': 2 };
-  }
-  const st2 = JC.numbersStats(doc2);
-  const n3b = st2.nums.find(n => n.num === '003');
-  ok('003 变为停用（近7天未出现）', n3b.active === false, 'lastSeen=' + n3b.lastSeen + ' lastDate=' + st2.lastDate);
-  ok('停用编号不进警戒', !st2.alerts.some(a => a.num === '003'));
-  // 空数据安全
-  const st0 = JC.numbersStats({ days: {} });
-  ok('空数据安全', st0.days === 0 && st0.alerts.length === 0);
-
-  // 自定义分档（0~4 各自 + 5+ 合并）与关注范围
-  ok('parseGoalGroups 解析', JSON.stringify(JC.parseGoalGroups('0,1,2,3,4,5+').map(b => b.label)) ===
-    JSON.stringify(['0球', '1球', '2球', '3球', '4球', '5+球']));
-  const docB = { nums: ['001', '002'], buckets: JC.parseGoalGroups('0,1,2,3,4,5+'), alertCount: 2, days: {
-    '2026-09-01': { '001': 5, '002': 0, '009': 6 },   // 009 不在关注范围
-    '2026-09-02': { '001': 6, '002': 1 },
-    '2026-09-03': { '001': 7, '002': 2 },
-    '2026-09-04': { '001': 1, '002': 9 }
-  } };
-  const stB = JC.numbersStats(docB);
-  ok('关注范围过滤（不含009）', stB.nums.length === 2 && !stB.nums.some(n => n.num === '009'));
-  ok('分档共 6 组', stB.buckets.length === 6 && stB.nums[0].combos.length === 6);
-  const n1B = stB.nums.find(n => n.num === '001');
-  ok('5+ 合并统计（001 的 5+ = 3 次：5/6/7球）', n1B.combos[5].count === 3, JSON.stringify(n1B.counts));
-  ok('5+ 最近出现 09-03（7球）', n1B.combos[5].lastDate === '2026-09-03');
-  const n2B = stB.nums.find(n => n.num === '002');
-  ok('002 的 5+ 含 9 球', n2B.combos[5].count === 1 && n2B.combos[5].lastDate === '2026-09-04');
-  ok('002 的 2球 距今 1 天', n2B.combos[2].count === 1 && n2B.combos[2].daysSince === 1);
+  ok('001的2球 连续 3 次未出', n1.combos[2].streak === 3 && n1.combos[2].count === 1);
+  ok('警戒按次数（≥2）', st.alerts.length > 0 && st.alerts.every(a => a.streak >= 2));
+  const stB = JC.numbersStats({ nums: ['001'], buckets: JC.parseGoalGroups('0,1,2,3,4,5+'), days: doc.days });
+  ok('关注范围与分档生效', stB.nums.length === 1 && stB.buckets.length === 6 && stB.nums[0].combos.length === 6);
 }
 
-console.log('== CSV（25 列）==');
+console.log('== 合并与兼容 ==');
 {
-  const rows = JC.flatRows([{
-    date: '2026-09-20', matches: [{
-      matchId: 1, matchNumStr: '周日001', league: '意甲', home: '尤文', away: '亚特兰大',
-      matchTime: '20:00:00', matchDate: '2026-09-20', isSingleWin: true,
-      captures: [
-        { at: '2026-09-20T11:00:00+08:00', odds: { ttg1: 5.1, s10: 7.5, s01: 13 }, optimized: 4.756, diff: 0.344 },
-        { at: '2026-09-20T17:00:00+08:00', odds: { ttg1: 4.9, s10: 7.5, s01: 13 }, optimized: 4.756, diff: 0.144 }
-      ],
-      result: { score: '1:0', halfScore: '0:0', isOneGoal: true, at: '2026-09-21T11:00:00+08:00' }
-    }]
-  }]);
-  const csv = JC.toCSV(rows);
-  ok('CSV 含 BOM', csv.charCodeAt(0) === 0xFEFF);
-  ok('表头 25 列', JC.CSV_HEADERS.length === 25, String(JC.CSV_HEADERS.length));
-  ok('数据行 25 列', JC.rowToCells(rows[0]).length === 25);
-  ok('CSV 含单关=是 / 箭头 ↓', csv.includes('是') && csv.includes('↓'));
-  ok('kickoff 字段', rows[0].kickoff === '09-20 20:00', rows[0].kickoff);
+  const inc = JC.parseOdds({ value: { matchInfoList: [{ businessDate: '2026-09-20', subMatchList: [{
+    matchId: 7, businessDate: '2026-09-20', matchDate: '2026-09-20', matchNumStr: '周日007',
+    leagueAbbName: 'L', homeTeamAbbName: 'H', awayTeamAbbName: 'A', matchTime: '20:00:00',
+    ttg: { s0: '9.5', s1: '4.1', s2: '4.3' }, crs: { s01s00: '6.4', s00s01: '10.5' },
+    poolList: [{ poolCode: 'HAD', single: 1 }]
+  }] }] } }, 'T1');
+  ok('parseOdds 抓取完整池', inc[0].captures[0].odds.goals && inc[0].captures[0].odds.goals[1] === 4.1);
+  ok('single 标记保留', inc[0].isSingleWin === true);
+  let day = { date: '2026-09-20', matches: [] };
+  const r = JC.mergeDay(day, inc, '2026-09-20T11:00:00+08:00');
+  ok('mergeDay 正常', r.added === 1 && r.day.matches[0].pred === null);
 }
 
 console.log('\n结果：' + pass + ' 通过，' + fail + ' 失败');

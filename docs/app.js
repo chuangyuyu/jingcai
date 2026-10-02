@@ -1,9 +1,8 @@
 /* ============================================================
-   竞彩 1球 · 比分双选差值 — 网页应用
+   竞彩进球数差值分析 · 网页应用 v3
    依赖：core.js（业务逻辑）、vendor/xlsx.full.min.js（浏览器端 Excel 导出）
-   数据流：GitHub Pages 上的 data/days/*.json 为云端数据；
-          本页抓取/回填产生的改动先存本机 localStorage（"待同步"），
-          配置 GitHub 令牌后一键同步到云端。
+   数据流：GitHub Pages 上的 data/days/*.json 为云端数据；本页抓取/回填先存本机
+          localStorage（"待同步"），配置 GitHub 令牌后一键同步到云端。
    ============================================================ */
 (function () {
   'use strict';
@@ -12,28 +11,27 @@
   var $ = function (sel) { return document.querySelector(sel); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-  // ---------------------------------------------------------------- 状态
-
   var state = {
-    days: {},          // date -> dayDoc（云端 + 本地未同步，已合并）
-    dirty: {},         // date -> dayDoc（本地未同步的整份日数据）
-    numbers: null,     // 编号历史（docs/data/numbers.json）
+    days: {},
+    dirty: {},
+    numbers: null,
     alertDismissed: false,
     settings: loadSettings(),
-    rows: [],          // 展平后的全部行
-    filters: { range: '30', league: '', onlySettled: false, onlyValue: false, onlySingle: false },
+    rows: [],
+    filters: { range: '30', league: '', onlySettled: false, onlySingle: false },
     sort: { key: 'date', dir: -1 },
     shownRows: 200,
+    modelCfg: { windowDays: 30, maxActualRank: 6 },
     busy: false
   };
 
   var LS_SETTINGS = 'jc_settings_v1';
   var LS_DIRTY = 'jc_dirty_v1';
+  var LS_MODEL = 'jc_model_v1';
 
   function loadSettings() {
     var s = {};
     try { s = JSON.parse(localStorage.getItem(LS_SETTINGS) || '{}'); } catch (e) {}
-    // 在 GitHub Pages 上自动识别仓库
     if (!s.owner && /\.github\.io$/i.test(location.hostname)) {
       s.owner = location.hostname.split('.')[0];
       s.repo = (location.pathname.split('/')[1] || '');
@@ -46,6 +44,10 @@
     try { return JSON.parse(localStorage.getItem(LS_DIRTY) || '{}'); } catch (e) { return {}; }
   }
   function saveDirty() { localStorage.setItem(LS_DIRTY, JSON.stringify(state.dirty)); }
+  function loadModelCfg() {
+    try { return Object.assign(state.modelCfg, JSON.parse(localStorage.getItem(LS_MODEL) || '{}')); }
+    catch (e) { return state.modelCfg; }
+  }
 
   // ---------------------------------------------------------------- 小工具
 
@@ -61,11 +63,16 @@
     $('#status').textContent = text;
     $('#dot').className = 'dot ' + (cls || '');
   }
-  function fmtOdds(v) { return v == null ? '—' : Number(v).toFixed(2); }
-  function fmt3(v) { return v == null ? '—' : Number(v).toFixed(3); }
   function fmtDiff(v) { return v == null ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(3); }
   function fmtPct(v, digits) { return v == null ? '—' : (v * 100).toFixed(digits == null ? 1 : digits) + '%'; }
   function todayStr() { return JC.localDateStr(); }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function hitText(h) { return h == null ? '' : (h ? '✓' : '✗'); }
+  function hitCls(h) { return h == null ? 'muted' : (h ? 'one-yes' : 'one-no'); }
 
   function mapLimit(list, limit, fn) {
     return new Promise(function (resolve) {
@@ -93,7 +100,6 @@
     });
   }
 
-  // 优先经 GitHub API 读取（绕过 Pages 缓存延迟，需令牌）；否则读本站相对路径
   function fetchDayFile(date) {
     var s = state.settings;
     var rel = 'data/days/' + date + '.json';
@@ -116,6 +122,7 @@
     setStatus('正在加载云端数据…', 'busy');
     var local = loadDirty();
     state.dirty = local;
+    loadModelCfg();
     var numbersPromise = fetchJsonRel('data/numbers.json').then(function (d) { return d; }, function () { return null; });
     return fetchJsonRel('data/index.json').catch(function () { return { dates: {} }; })
       .then(function (index) {
@@ -159,10 +166,7 @@
     var dates = Object.keys(state.days).sort();
     var dirtyCount = Object.keys(state.dirty).length;
     var lastAt = '';
-    state.rows.forEach(function (r) {
-      var t = (r.o2 && r.o2.at) || (r.o1 && r.o1.at) || '';
-      if (t > lastAt) lastAt = t;
-    });
+    state.rows.forEach(function (r) { if (r.oddsAt > lastAt) lastAt = r.oddsAt; });
     var txt = '数据 ' + state.rows.length + ' 场 · ' + dates.length + ' 天（' +
       (dates.length ? dates[0] + ' ~ ' + dates[dates.length - 1] : '—') + '）' +
       ' · 最近抓取 ' + (lastAt ? lastAt.replace('T', ' ').slice(0, 16) : '—');
@@ -171,7 +175,7 @@
     setStatus(txt, dirtyCount ? 'warn' : 'ok');
   }
 
-  // ---------------------------------------------------------------- 抓取
+  // ---------------------------------------------------------------- 抓取 / 回填（浏览器端）
 
   function markDirty(date) { state.dirty[date] = state.days[date]; saveDirty(); }
 
@@ -184,7 +188,7 @@
     JC.fetchJson(JC.ODDS_URL, false).then(function (raw) {
       var at = JC.nowIso();
       var matches = JC.parseOdds(raw, at);
-      if (!matches.length) throw new Error('接口未返回任何在售比赛');
+      if (!matches.length) throw new Error('接口未返回任何在售比赛（可能今天没有场次或在休市期）');
       var byDate = {};
       matches.forEach(function (m) { (byDate[m.businessDate] = byDate[m.businessDate] || []).push(m); });
       var dates = Object.keys(byDate).sort();
@@ -196,10 +200,12 @@
         added += r.added; updated += r.updated;
         markDirty(d);
       });
-      matches.forEach(function (m) { if (m.diff != null) complete++; });
+      matches.forEach(function (m) {
+        var dd = JC.goalDiffs(m.captures[0].odds);
+        if (dd && dd.groups.some(function (x) { return x.diffA != null; })) complete++;
+      });
       rebuildRows(); render(); updateStatusLine('刚抓取');
-      toast('已抓取 ' + matches.length + ' 场（' + dates.join('、') + '），其中 ' + complete + ' 场可计算差值' +
-        (added ? '，新增 ' + added + ' 场' : ''));
+      toast('已抓取 ' + matches.length + ' 场（' + dates.join('、') + '），其中 ' + complete + ' 场含完整比分池可参与预测');
       if (canSync()) return syncToGitHub(true);
     }).catch(function (e) {
       setStatus('抓取失败：' + e.message, 'err');
@@ -208,6 +214,24 @@
       state.busy = false;
       btn.disabled = false;
     });
+  }
+
+  // 为本机数据补冻结预测（与服务器端 daily.js 相同的逻辑）
+  function freezeLocalPredictions() {
+    var all = [];
+    Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { all.push(m); }); });
+    var frozen = 0;
+    Object.keys(state.days).forEach(function (d) {
+      var doc = state.days[d];
+      var changed = false;
+      (doc.matches || []).forEach(function (m) {
+        if (!m.result || !m.result.score || m.pred) return;
+        var p = JC.freezePrediction(m, all, { model: state.modelCfg });
+        if (p) { m.pred = p; changed = true; frozen++; }
+      });
+      if (changed) markDirty(d);
+    });
+    return frozen;
   }
 
   function backfillResults() {
@@ -226,7 +250,6 @@
     var chain = Promise.resolve();
     dates.forEach(function (d) {
       chain = chain.then(function () {
-        // 赛果接口按真实开赛日过滤：凌晨场属于次日，查询范围 +1 天
         var range = JC.resultRangeFor(d);
         return JC.fetchAllResults(range[0], range[1], false).then(function (results) {
           var r = JC.applyResults(state.days[d], results, JC.nowIso());
@@ -237,10 +260,11 @@
       });
     });
     chain.then(function () {
+      var frozen = freezeLocalPredictions();
       rebuildRows(); render();
       updateStatusLine('刚回填赛果');
-      toast(changedTotal ? ('已回填 ' + changedTotal + ' 场比赛结果') : '没有新的比赛结果');
-      if (changedTotal && canSync()) return syncToGitHub(true);
+      toast(changedTotal ? ('已回填 ' + changedTotal + ' 场' + (frozen ? '，冻结预测 ' + frozen + ' 场' : '')) : '没有新的比赛结果');
+      if ((changedTotal || frozen) && canSync()) return syncToGitHub(true);
     }).catch(function (e) {
       setStatus('回填失败：' + e.message, 'err');
     }).then(function () {
@@ -261,29 +285,22 @@
     };
   }
   function ghUrl(path) {
-    return 'https://api.github.com/repos/' + state.settings.owner + '/' + state.settings.repo +
-      '/contents/' + path;
+    return 'https://api.github.com/repos/' + state.settings.owner + '/' + state.settings.repo + '/contents/' + path;
   }
-  // 返回 {sha, doc}；文件不存在返回 {sha:null, doc:null}
   function ghGetFile(path) {
     return fetch(ghUrl(path) + '?ref=' + encodeURIComponent(state.settings.branch || 'main'), { headers: ghHeaders(), cache: 'no-store' })
       .then(function (r) {
         if (r.status === 404) return { sha: null, doc: null };
         if (!r.ok) throw new Error('GitHub 读取失败 HTTP ' + r.status + '（检查令牌权限）');
         return r.json().then(function (j) {
-          var text = b64DecodeUtf8(j.content || '');
           var doc = null;
-          try { doc = JSON.parse(text); } catch (e) {}
+          try { doc = JSON.parse(b64DecodeUtf8(j.content || '')); } catch (e) {}
           return { sha: j.sha, doc: doc };
         });
       });
   }
   function ghPutFile(path, doc, message, sha) {
-    var body = {
-      message: message,
-      content: b64EncodeUtf8(JSON.stringify(doc, null, 1)),
-      branch: state.settings.branch || 'main'
-    };
+    var body = { message: message, content: b64EncodeUtf8(JSON.stringify(doc, null, 1)), branch: state.settings.branch || 'main' };
     if (sha) body.sha = sha;
     return fetch(ghUrl(path), {
       method: 'PUT',
@@ -291,34 +308,26 @@
       body: JSON.stringify(body)
     }).then(function (r) {
       if (r.status === 409) throw new Error('CONFLICT');
-      if (!r.ok) {
-        return r.json().catch(function () { return {}; }).then(function (j) {
-          throw new Error('GitHub 写入失败 HTTP ' + r.status + (j.message ? '：' + j.message : ''));
-        });
-      }
+      if (!r.ok) return r.json().catch(function () { return {}; }).then(function (j) {
+        throw new Error('GitHub 写入失败 HTTP ' + r.status + (j.message ? '：' + j.message : ''));
+      });
       return r.json();
     });
   }
   function b64EncodeUtf8(str) {
-    var bytes = new TextEncoder().encode(str);
-    var bin = '';
-    for (var i = 0; i < bytes.length; i += 0x8000) {
-      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-    }
+    var bytes = new TextEncoder().encode(str), bin = '';
+    for (var i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
     return btoa(bin);
   }
   function b64DecodeUtf8(b64) {
-    var bin = atob((b64 || '').replace(/\n/g, ''));
-    var bytes = new Uint8Array(bin.length);
+    var bin = atob((b64 || '').replace(/\n/g, '')), bytes = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     return new TextDecoder().decode(bytes);
   }
 
   function syncToGitHub(silentIfClean) {
     if (!canSync()) {
-      if (!silentIfClean) {
-        toast('尚未配置 GitHub 仓库/令牌：数据已保存在本机浏览器。到「更多 → 设置」配置后可同步到云端。', true);
-      }
+      if (!silentIfClean) toast('尚未配置 GitHub 仓库/令牌：数据已保存在本机浏览器。到「更多 → 设置」配置后可同步到云端。', true);
       return Promise.resolve(false);
     }
     var dates = Object.keys(state.dirty).sort();
@@ -332,13 +341,12 @@
       chain = chain.then(function () {
         var path = 'docs/data/days/' + d + '.json';
         return pushOne(path, d).catch(function (e) {
-          if (e.message === 'CONFLICT') return pushOne(path, d); // 云端被其他设备更新过，重取再合并推一次
+          if (e.message === 'CONFLICT') return pushOne(path, d);
           throw e;
         });
       });
     });
     return chain.then(function () {
-      // 更新索引
       var ipath = 'docs/data/index.json';
       return ghGetFile(ipath).then(function (g) {
         var idx = g.doc || { dates: {} };
@@ -352,7 +360,7 @@
     }).then(function () {
       saveDirty();
       updateStatusLine('已同步云端');
-      toast('已同步 ' + dates.length + ' 天数据到 GitHub（GitHub Pages 刷新可能有 1~2 分钟延迟）');
+      toast('已同步 ' + dates.length + ' 天数据到 GitHub（Pages 刷新有 1~2 分钟延迟）');
       return true;
     }).catch(function (e) {
       setStatus('同步失败：' + e.message + '（数据仍保存在本机，可稍后重试）', 'err');
@@ -372,7 +380,7 @@
     }
   }
 
-  // ---------------------------------------------------------------- 筛选与渲染
+  // ---------------------------------------------------------------- 筛选 / 渲染
 
   function filteredRows() {
     var today = todayStr();
@@ -382,8 +390,7 @@
       if (f.range === '30' && r.date < JC.addDays(today, -29)) return false;
       if (f.range === 'month' && String(r.date).slice(0, 7) !== today.slice(0, 7)) return false;
       if (f.league && r.league !== f.league) return false;
-      if (f.onlySettled && r.isOneGoal == null) return false;
-      if (f.onlyValue && r.diff == null) return false;
+      if (f.onlySettled && r.actual == null) return false;
       if (f.onlySingle && r.isSingleWin !== true) return false;
       return true;
     });
@@ -392,19 +399,250 @@
   function render() {
     var rows = filteredRows();
     renderTiles(rows);
-    renderDistChart(rows);
-    renderRatioChart(rows);
-    renderDeltaChart(rows);
-    renderSingleTable(rows);
-    renderDeltaTable(rows);
-    renderBinsTable(rows);
+    renderDailyHitChart(state.rows);   // 命中率走势用全量（窗口自身控制）
+    renderGoalDistChart(rows);
+    renderModelTable(state.rows);
+    renderUpcomingCard(state.rows);
     renderDataTable(rows);
     renderLeagueOptions();
     renderAlerts();
     renderNumbers();
   }
 
-  // ---------------------------------------------------------------- 编号追踪
+  function renderLeagueOptions() {
+    var set = {};
+    state.rows.forEach(function (r) { if (r.league) set[r.league] = 1; });
+    var leagues = Object.keys(set).sort();
+    [$('#league-filter'), $('#league-filter2')].forEach(function (sel) {
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">全部联赛</option>' +
+        leagues.map(function (l) { return '<option>' + escapeHtml(l) + '</option>'; }).join('');
+      if (leagues.indexOf(cur) >= 0) sel.value = cur;
+    });
+  }
+
+  function renderTiles(rows) {
+    var st = JC.predStats(rows);
+    var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
+    var stW = JC.predStats(rows.filter(function (r) { return r.date >= winFrom; }));
+    var tiles = [
+      { k: '场次（当前筛选）', v: st.settled, sub: '共 ' + st.withPred + ' 场有预测' },
+      { k: '基线A命中率（全部）', v: fmtPct(st.baseA.rate), sub: st.baseA.hit + '/' + st.baseA.n },
+      { k: '模型A命中率（全部）', v: fmtPct(st.modelA.rate), sub: st.modelA.hit + '/' + st.modelA.n },
+      { k: '模型A命中率（近' + (state.modelCfg.windowDays || 30) + '天）', v: fmtPct(stW.modelA.rate), sub: stW.modelA.hit + '/' + stW.modelA.n },
+      { k: '口径B 模型命中率', v: fmtPct(st.modelB.rate), sub: '对比：基线B ' + fmtPct(st.baseB.rate) },
+      { k: '剔除爆冷规则', v: '排名≥' + (state.modelCfg.maxActualRank || 6), sub: '深冷门不参与学习' }
+    ];
+    $('#tiles').innerHTML = tiles.map(function (t) {
+      return '<div class="tile"><div class="v">' + t.v + '</div><div class="k">' + t.k +
+        (t.sub ? ' · <span class="muted">' + t.sub + '</span>' : '') + '</div></div>';
+    }).join('');
+  }
+
+  // 近 N 天每日命中率（基线A vs 模型A，按预测冻结日/比赛日分组）
+  function renderDailyHitChart(rows) {
+    var chart = $('#chart-daily');
+    var labels = $('#xlabels-daily');
+    var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
+    var byDate = {};
+    rows.forEach(function (r) {
+      if (r.date < winFrom || r.actual == null) return;
+      var d = byDate[r.date] = byDate[r.date] || { baseN: 0, baseHit: 0, modelN: 0, modelHit: 0 };
+      if (r.predBaseA != null) { d.baseN++; if (r.hitBaseA) d.baseHit++; }
+      if (r.predA != null) { d.modelN++; if (r.hitModelA) d.modelHit++; }
+    });
+    var dates = Object.keys(byDate).sort();
+    var hasData = dates.some(function (d) { return byDate[d].modelN || byDate[d].baseN; });
+    $('#chart-daily-empty').hidden = hasData;
+    chart.style.display = hasData ? '' : 'none';
+    labels.style.display = hasData ? '' : 'none';
+    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; $('#chart-daily')._info = null; return; }
+
+    var html = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
+      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + (p * 100) + '%"></div>';
+      html += '<div class="ytick" style="bottom:' + (p * 100) + '%">' + Math.round(p * 100) + '%</div>';
+    });
+    var info = [];
+    dates.forEach(function (d) {
+      var x = byDate[d];
+      var baseRate = x.baseN ? x.baseHit / x.baseN : 0;
+      var modelRate = x.modelN ? x.modelHit / x.modelN : 0;
+      info.push({ date: d, baseN: x.baseN, baseHit: x.baseHit, modelN: x.modelN, modelHit: x.modelHit });
+      html += '<div class="bin dbin" data-i="' + (info.length - 1) + '">' +
+        '<div class="seg bar-model" style="height:' + (x.modelN ? modelRate * 100 : 0) + '%"></div>' +
+        '<div class="seg bar-base" style="height:' + (x.baseN ? baseRate * 100 : 0) + '%"></div>' +
+        '</div>';
+    });
+    chart.innerHTML = html;
+    chart._info = info;
+    labels.innerHTML = dates.map(function (d) { return '<div class="xl">' + d.slice(5) + '</div>'; }).join('');
+
+    chart.onmousemove = function (ev) {
+      var binEl = ev.target.closest ? ev.target.closest('.dbin') : null;
+      if (!binEl || !chart._info) { hideTooltip(); return; }
+      var x = chart._info[Number(binEl.dataset.i)];
+      if (!x) { hideTooltip(); return; }
+      showTooltip(ev, x.date + '<br>基线A：' + x.baseHit + '/' + x.baseN + '（' + fmtPct(x.baseN ? x.baseHit / x.baseN : null) + '）' +
+        '<br>模型A：' + x.modelHit + '/' + x.modelN + '（' + fmtPct(x.modelN ? x.modelHit / x.modelN : null) + '）');
+    };
+    chart.onmouseleave = hideTooltip;
+  }
+
+  // 各进球数出现分布（实际频率）
+  function renderGoalDistChart(rows) {
+    var chart = $('#chart-goaldist');
+    var labels = $('#xlabels-goaldist');
+    var counts = [0, 0, 0, 0, 0, 0, 0, 0];
+    var settled = 0;
+    rows.forEach(function (r) { if (r.actual != null) { counts[r.actual]++; settled++; } });
+    var hasData = settled > 0;
+    $('#chart-goaldist-empty').hidden = hasData;
+    chart.style.display = hasData ? '' : 'none';
+    labels.style.display = hasData ? '' : 'none';
+    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; chart._counts = null; return; }
+    var maxC = Math.max.apply(null, counts);
+    var top = Math.max(4, Math.ceil(maxC / 4) * 4);
+    var html = '';
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
+      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + (p * 100) + '%"></div>';
+      html += '<div class="ytick" style="bottom:' + (p * 100) + '%">' + Math.round(top * p) + '</div>';
+    });
+    counts.forEach(function (c, g) {
+      html += '<div class="bin gbin" data-g="' + g + '"><div class="seg bar-g' + (c ? '' : ' zero') + '" style="height:' + (c / top * 100) + '%"></div></div>';
+    });
+    chart.innerHTML = html;
+    chart._counts = counts;
+    chart._settled = settled;
+    labels.innerHTML = JC.GOAL_LABELS.map(function (l) { return '<div class="xl">' + l + '</div>'; }).join('');
+    chart.onmousemove = function (ev) {
+      var binEl = ev.target.closest ? ev.target.closest('.gbin') : null;
+      if (!binEl || !chart._counts) { hideTooltip(); return; }
+      var g = Number(binEl.dataset.g);
+      showTooltip(ev, JC.labelG(g) + '<br>出现 ' + chart._counts[g] + ' 次（' + fmtPct(chart._settled ? chart._counts[g] / chart._settled : null) + '，共 ' + chart._settled + ' 场已出）');
+    };
+    chart.onmouseleave = hideTooltip;
+  }
+
+  // 自修正模型明细：排名 × 进球数 命中率矩阵（口径A，近窗口）
+  function renderModelTable(rows) {
+    var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
+    var samples = [];
+    rows.forEach(function (r) {
+      if (r.date < winFrom || r.actual == null || !r.diffs) return;
+      samples.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.diffA; }), actual: r.actual });
+    });
+    var model = JC.modelTrain(samples, { maxActualRank: state.modelCfg.maxActualRank });
+    var tbody = $('#model-table tbody');
+    var head = '<tr><th>进球数＼排名</th>';
+    for (var r = 1; r <= 8; r++) head += '<th class="num">第' + r + '</th>';
+    head += '</tr>';
+    $('#model-table thead').innerHTML = head;
+    var html = '';
+    for (var g = 0; g <= 7; g++) {
+      html += '<tr><td><b>' + JC.labelG(g) + '</b></td>';
+      for (var r2 = 1; r2 <= 8; r2++) {
+        var cell = model.table[g][r2];
+        var cls = '';
+        if (cell.total >= 3 && cell.hit / cell.total >= 0.5) cls = 'diff-pos';
+        else if (cell.total) cls = 'muted';
+        html += '<td class="num ' + cls + '">' + (cell.total ? (Math.round(cell.hit / cell.total * 100) + '%') : '—') +
+          (cell.total ? '<span class="tiny muted">(' + cell.hit + '/' + cell.total + ')</span>' : '') + '</td>';
+      }
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+    $('#model-sample').textContent = '学习样本 ' + model.used + ' 场（另剔除爆冷 ' + model.excluded +
+      ' 场；窗口 ' + winFrom + ' ~ ' + todayStr() + '，口径A）';
+  }
+
+  // 即将开赛的预测列表（未出结果、有明细）
+  function renderUpcomingCard(rows) {
+    var up = rows.filter(function (r) { return r.actual == null && r.diffs; });
+    up.sort(function (a, b) { return String(a.date + a.kickoff).localeCompare(String(b.date + b.kickoff)); });
+    var tbody = $('#upcoming-table tbody');
+    if (!up.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="muted">暂无可预测的场次（需在售期抓取到含比分矩阵的快照）</td></tr>';
+      return;
+    }
+    tbody.innerHTML = up.slice(0, 40).map(function (r) {
+      return '<tr><td>' + r.date.slice(5) + '</td><td>' + escapeHtml(r.matchNumStr) + '</td><td>' + escapeHtml(r.league) + '</td>' +
+        '<td>' + escapeHtml(r.home) + ' vs ' + escapeHtml(r.away) + '</td><td>' + escapeHtml(r.kickoff) + '</td>' +
+        (r.isSingleWin ? '<td class="single-yes">是</td>' : '<td>—</td>') +
+        '<td><b>' + JC.labelG(r.baseA) + '</b></td><td><b>' + JC.labelG(r.baseB) + '</b></td>' +
+        '<td class="muted">' + (r.diffs.minTwo ? '' : '') + '<span class="tiny">' + diffSummary(r) + '</span></td></tr>';
+    }).join('');
+  }
+  function diffSummary(r) {
+    if (!r.diffs) return '';
+    var parts = [];
+    (r.diffs.groups || []).forEach(function (g) {
+      if (g.diffA != null) parts.push((g.g === 0 ? '0*' : g.g) + ':' + g.diffA.toFixed(2));
+    });
+    return parts.join(' ');
+  }
+
+  function sortRows(rows) {
+    var key = state.sort.key, dir = state.sort.dir;
+    return rows.slice().sort(function (a, b) {
+      var x = a[key], y = b[key];
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      if (typeof x === 'string') return dir * String(x).localeCompare(String(y));
+      return dir * (x - y);
+    });
+  }
+
+  function renderDataTable(rows) {
+    var sorted = sortRows(rows);
+    var shown = sorted.slice(0, state.shownRows);
+    var tbody = $('#data-table tbody');
+    tbody.innerHTML = shown.map(function (r) {
+      return '<tr>' +
+        '<td>' + r.date + '</td>' +
+        '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
+        '<td>' + escapeHtml(r.league) + '</td>' +
+        '<td class="match-cell">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</td>' +
+        '<td>' + escapeHtml(r.kickoff) + '</td>' +
+        '<td class="' + (r.isSingleWin ? 'single-yes' : '') + '">' + (r.isSingleWin ? '是' : '—') + '</td>' +
+        '<td><b>' + JC.labelG(r.actual) + '</b></td>' +
+        '<td>' + JC.labelG(r.predBaseA) + '</td>' +
+        '<td>' + JC.labelG(r.predA) + '</td>' +
+        '<td>' + JC.labelG(r.predBaseB) + '</td>' +
+        '<td>' + JC.labelG(r.predB) + '</td>' +
+        '<td class="' + hitCls(r.hitModelA) + '">' + hitText(r.hitModelA) + '</td>' +
+        '<td class="' + hitCls(r.hitModelB) + '">' + hitText(r.hitModelB) + '</td>' +
+        '<td class="muted">' + JC.fmtAt(r.oddsAt) + '</td>' +
+        '</tr>';
+    }).join('');
+    $('#data-more').hidden = sorted.length <= state.shownRows;
+    renderDataCards(shown, sorted.length);
+  }
+
+  function renderDataCards(shown, total) {
+    var el = $('#data-cards');
+    if (!shown.length) {
+      el.innerHTML = '<div class="empty">当前筛选下没有数据</div>';
+      return;
+    }
+    el.innerHTML = shown.map(function (r) {
+      var hit = r.hitModelA == null ? '' : '<span class="' + hitCls(r.hitModelA) + '">' + (r.hitModelA ? '模型命中 ✓' : '模型未中 ✗') + '</span>';
+      return '<div class="mcard">' +
+        '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
+        '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
+        (r.isSingleWin ? '<span class="mc-single">单关</span>' : '') +
+        '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
+        '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
+        '<div class="mc-diff"><span class="mc-k">预测(基线A)</span><span class="mc-v">' + JC.labelG(r.predBaseA) + '</span>' +
+        '<span class="mc-k">模型A</span><span class="mc-v">' + JC.labelG(r.predA) + '</span>' +
+        '<span class="mc-k">B口径</span><span class="mc-v">' + JC.labelG(r.predB) + '</span></div>' +
+        '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit + '</div>' +
+        '</div>';
+    }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');
+  }
+
+  // ---------------------------------------------------------------- 编号追踪（保持）
 
   function renderAlerts() {
     var banner = $('#alert-banner');
@@ -429,7 +667,7 @@
       $('#num-scope').textContent = '';
       $('#num-select').innerHTML = '<option value="">（暂无数据）</option>';
       $('#bucket-select').innerHTML = JC.DEFAULT_NUM_BUCKETS.map(function (b) { return '<option>' + b.label + '</option>'; }).join('');
-      $('#num-dist-table tbody').innerHTML = '<tr><td colspan="5" class="muted">编号历史尚未生成：本机任务下一次运行后自动出现</td></tr>';
+      $('#num-dist-table tbody').innerHTML = '<tr><td colspan="4" class="muted">编号历史尚未生成：本机任务下一次运行后自动出现</td></tr>';
       $('#tracker-table tbody').innerHTML = '';
       return;
     }
@@ -439,7 +677,6 @@
       ? ('追踪范围：编号 ' + st.nums[0].num + '~' + st.nums[st.nums.length - 1].num + '（' + st.nums.length + ' 个）｜ 分档：' +
         st.buckets.map(function (b) { return b.label; }).join(' / ') + '（可在 config.json 调整）')
       : '';
-
     var sel = $('#num-select');
     if (sel.dataset.filled !== 'v1') {
       sel.innerHTML = st.nums.map(function (n) {
@@ -513,327 +750,6 @@
     }).join('') + (rows.length > shown.length ? '<tr><td colspan="5" class="muted">仅显示 60 项（按连续未出现次数排序，共 ' + rows.length + ' 项）</td></tr>' : '');
   }
 
-  function renderLeagueOptions() {
-    var set = {};
-    state.rows.forEach(function (r) { if (r.league) set[r.league] = 1; });
-    var leagues = Object.keys(set).sort();
-    [$('#league-filter'), $('#league-filter2')].forEach(function (sel) {
-      var cur = sel.value;
-      sel.innerHTML = '<option value="">全部联赛</option>' +
-        leagues.map(function (l) { return '<option>' + escapeHtml(l) + '</option>'; }).join('');
-      if (leagues.indexOf(cur) >= 0) sel.value = cur;
-    });
-  }
-
-  function renderTiles(rows) {
-    var st = JC.stats(rows, 0.05).summary;
-    var tiles = [
-      { k: '场次（当前筛选）', v: st.total, sub: st.twoCaptureCount ? '两次快照 ' + st.twoCaptureCount : '' },
-      { k: '已出赛果', v: st.settled, sub: st.total ? '占 ' + fmtPct(st.settled / st.total, 0) : '' },
-      { k: '1球赛果', v: st.oneGoalCount, sub: st.settled ? '占已出 ' + fmtPct(st.oneGoalRatio) : '' },
-      { k: '单关场次', v: st.singleCount, sub: st.singleSettled ? '其中已出 ' + st.singleSettled : '官方开放胜平负单关' },
-      { k: '单关1球占比', v: fmtPct(st.singleOneGoalRatio), sub: st.nonSingleGroup.oneGoalRatio != null ? '非单关 ' + fmtPct(st.nonSingleGroup.oneGoalRatio) : '对比非单关' },
-      { k: '平均差值（1球场次）', v: fmtDiff(st.avgDiffOne), cls: st.avgDiffOne > 0 ? 'pos' : (st.avgDiffOne < 0 ? 'neg' : ''), sub: '正=1球更划算' }
-    ];
-    $('#tiles').innerHTML = tiles.map(function (t) {
-      return '<div class="tile"><div class="v ' + (t.cls || '') + '">' + t.v +
-        '</div><div class="k">' + t.k + (t.sub ? ' · <span class="muted">' + t.sub + '</span>' : '') + '</div></div>';
-    }).join('');
-  }
-
-  // 根据数据范围选择图表箱宽，保证柱子数量不超过 maxBins
-  function pickWidth(rows, maxBins) {
-    var diffs = rows.map(function (r) { return r.diff; }).filter(function (v) { return v != null; });
-    if (diffs.length < 2) return 0.05;
-    var span = Math.max.apply(null, diffs) - Math.min.apply(null, diffs);
-    var widths = [0.05, 0.1, 0.2, 0.5, 1, 2];
-    for (var i = 0; i < widths.length; i++) {
-      if (span / widths[i] <= maxBins) return widths[i];
-    }
-    return 2;
-  }
-
-  function niceCeil(n) {
-    // 全部为 4 的倍数，保证 0/25/50/75/100% 刻度都是整数
-    var steps = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 48, 56, 64, 80, 100, 120, 160, 200, 240, 300, 400, 500, 600, 800, 1000];
-    for (var i = 0; i < steps.length; i++) if (steps[i] >= n) return steps[i];
-    return Math.ceil(n / 100) * 100;
-  }
-
-  function renderDistChart(rows) {
-    var chart = $('#chart-dist');
-    var labels = $('#xlabels-dist');
-    var st = JC.stats(rows, pickWidth(rows, 16));
-    var hasData = st.summary.settled > 0 && st.bins.length > 0;
-    $('#chart-dist-empty').hidden = hasData;
-    chart.style.display = hasData ? '' : 'none';
-    labels.style.display = hasData ? '' : 'none';
-    $('#legend-dist').innerHTML =
-      '<span class="chip"><span class="sw" style="background:var(--series-1)"></span>1球（1:0/0:1）</span>' +
-      '<span class="chip"><span class="sw" style="background:var(--series-2)"></span>非1球</span>';
-    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; return; }
-
-    var maxCount = Math.max.apply(null, st.bins.map(function (b) { return b.count; }));
-    var top = niceCeil(maxCount);
-    var html = '';
-    // 网格线与刻度
-    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
-      var bottom = p * 100;
-      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + bottom + '%"></div>';
-      html += '<div class="ytick" style="bottom:' + bottom + '%">' + Math.round(top * p) + '</div>';
-    });
-    st.bins.forEach(function (b, i) {
-      var hOne = b.oneCount / top * 100;
-      var hNon = b.nonOneCount / top * 100;
-      var nonTop = b.nonOneCount > 0;
-      html += '<div class="bin" data-i="' + i + '">' +
-        (b.nonOneCount > 0 ? '<div class="seg non' + (nonTop ? ' top' : '') + '" style="height:' + hNon + '%"></div>' : '') +
-        (b.oneCount > 0 ? '<div class="seg one' + (!nonTop ? ' top' : '') + '" style="height:' + hOne + '%"></div>' : '') +
-        (b.count === 0 ? '<div class="mark"></div>' : '') +
-        '</div>';
-    });
-    chart.innerHTML = html;
-    chart._bins = st.bins;
-    labels.innerHTML = st.bins.map(function (b) {
-      return '<div class="xl">' + b.lo.toFixed(2) + '</div>';
-    }).join('');
-    labels._bins = st.bins;
-
-    chart.onmousemove = function (ev) {
-      var binEl = ev.target.closest ? ev.target.closest('.bin') : null;
-      if (!binEl || !chart._bins) { hideTooltip(); return; }
-      var b = chart._bins[Number(binEl.dataset.i)];
-      if (!b) { hideTooltip(); return; }
-      showTooltip(ev, '差值 ' + b.label + '<br>共 ' + b.count + ' 场' +
-        '<br>1球 ' + b.oneCount + ' 场（' + fmtPct(b.oneRatio) + '）' +
-        '<br>非1球 ' + b.nonOneCount + ' 场');
-    };
-    chart.onmouseleave = hideTooltip;
-  }
-
-  function renderRatioChart(rows) {
-    var chart = $('#chart-ratio');
-    var labels = $('#xlabels-ratio');
-    var st = JC.stats(rows, pickWidth(rows, 16));
-    var hasData = st.summary.settled > 0 && st.bins.length > 0;
-    $('#chart-ratio-empty').hidden = hasData;
-    chart.style.display = hasData ? '' : 'none';
-    labels.style.display = hasData ? '' : 'none';
-    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; return; }
-
-    var html = '';
-    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
-      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + (p * 100) + '%"></div>';
-      html += '<div class="ytick" style="bottom:' + (p * 100) + '%">' + Math.round(p * 100) + '%</div>';
-    });
-    st.bins.forEach(function (b, i) {
-      var h = b.oneRatio != null ? b.oneRatio * 100 : 0;
-      html += '<div class="bin" data-i="' + i + '">' +
-        (b.count > 0 ? '<div class="seg bar-ratio" style="height:' + h + '%"></div>' : '<div class="mark"></div>') +
-        '</div>';
-    });
-    var overall = st.summary.oneGoalRatio;
-    if (overall != null) {
-      html += '<div class="ref-line" style="bottom:' + (overall * 100) + '%"><span class="ref-label">总体 ' + fmtPct(overall) + '</span></div>';
-    }
-    chart.innerHTML = html;
-    chart._bins = st.bins;
-    labels.innerHTML = st.bins.map(function (b) { return '<div class="xl">' + b.lo.toFixed(2) + '</div>'; }).join('');
-
-    chart.onmousemove = function (ev) {
-      var binEl = ev.target.closest ? ev.target.closest('.bin') : null;
-      if (!binEl || !chart._bins) { hideTooltip(); return; }
-      var b = chart._bins[Number(binEl.dataset.i)];
-      if (!b) { hideTooltip(); return; }
-      showTooltip(ev, '差值 ' + b.label + '<br>1球占比 ' + fmtPct(b.oneRatio) +
-        '<br>样本 ' + b.count + ' 场' + (b.count < 5 ? '（样本少，仅供参考）' : ''));
-    };
-    chart.onmouseleave = hideTooltip;
-  }
-
-  function renderBinsTable(rows) {
-    var st = JC.stats(rows, 0.05);
-    var tbody = $('#bins-table tbody');
-    if (!st.bins.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无已出赛果的数据</td></tr>';
-      return;
-    }
-    tbody.innerHTML = st.bins.map(function (b) {
-      var ratioCls = '';
-      if (b.oneRatio != null && b.count >= 5 && st.summary.oneGoalRatio != null) {
-        ratioCls = b.oneRatio >= st.summary.oneGoalRatio ? 'diff-pos' : 'diff-neg';
-      }
-      return '<tr><td>' + b.label + '</td><td class="num">' + b.count + '</td><td class="num">' + b.oneCount +
-        '</td><td class="num">' + b.nonOneCount + '</td><td class="num ' + ratioCls + '">' + fmtPct(b.oneRatio) +
-        '</td><td class="num">' + fmtDiff(b.avgDiff) + '</td></tr>';
-    }).join('');
-  }
-
-  // 差值变化 ①→② 分档 → 1球占比
-  function renderDeltaChart(rows) {
-    var chart = $('#chart-delta');
-    var labels = $('#xlabels-delta');
-    var st = JC.stats(rows, pickWidth(rows, 16));
-    var hasData = st.summary.deltaSettled > 0 && st.deltaBins.some(function (b) { return b.count > 0; });
-    $('#chart-delta-empty').hidden = hasData;
-    chart.style.display = hasData ? '' : 'none';
-    labels.style.display = hasData ? '' : 'none';
-    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; return; }
-    var shortLabels = ['↓≥0.10', '↓0.03~0.10', '±0.03', '↑0.03~0.10', '↑≥0.10'];
-    var html = '';
-    [0, 0.25, 0.5, 0.75, 1].forEach(function (p) {
-      html += '<div class="gl' + (p === 0 ? ' zero' : '') + '" style="bottom:' + (p * 100) + '%"></div>';
-      html += '<div class="ytick" style="bottom:' + (p * 100) + '%">' + Math.round(p * 100) + '%</div>';
-    });
-    st.deltaBins.forEach(function (b, i) {
-      var h = b.oneRatio != null ? b.oneRatio * 100 : 0;
-      html += '<div class="bin" data-i="' + i + '">' +
-        (b.count > 0 ? '<div class="seg bar-ratio" style="height:' + h + '%"></div>' : '<div class="mark"></div>') +
-        '</div>';
-    });
-    var overall = st.summary.oneGoalRatio;
-    if (overall != null) {
-      html += '<div class="ref-line" style="bottom:' + (overall * 100) + '%"><span class="ref-label">总体 ' + fmtPct(overall) + '</span></div>';
-    }
-    chart.innerHTML = html;
-    chart._bins = st.deltaBins;
-    labels.innerHTML = st.deltaBins.map(function (b, i) { return '<div class="xl">' + shortLabels[i] + '</div>'; }).join('');
-    chart.onmousemove = function (ev) {
-      var binEl = ev.target.closest ? ev.target.closest('.bin') : null;
-      if (!binEl || !chart._bins) { hideTooltip(); return; }
-      var b = chart._bins[Number(binEl.dataset.i)];
-      if (!b) { hideTooltip(); return; }
-      showTooltip(ev, '变化：' + b.label + '<br>1球占比 ' + fmtPct(b.oneRatio) +
-        '<br>样本 ' + b.count + ' 场 · 平均变化 ' + fmtDiff(b.avgDelta) + (b.count < 5 ? '（样本少，仅供参考）' : ''));
-    };
-    chart.onmouseleave = hideTooltip;
-  }
-
-  // 单关 vs 非单关对比表
-  function renderSingleTable(rows) {
-    var st = JC.stats(rows, 0.05);
-    var s = st.summary;
-    var tbody = $('#single-table tbody');
-    var mk = function (name, g) {
-      var ratioCls = '';
-      if (g.oneRatio != null && s.oneGoalRatio != null) {
-        ratioCls = g.oneRatio >= s.oneGoalRatio ? 'diff-pos' : 'diff-neg';
-      }
-      return '<tr><td>' + name + '</td><td class="num">' + g.count + '</td><td class="num">' + g.settled +
-        '</td><td class="num">' + g.oneGoalCount + '</td><td class="num ' + ratioCls + '">' + fmtPct(g.oneRatio) +
-        '</td><td class="num">' + fmtDiff(g.avgDiff) + '</td></tr>';
-    };
-    tbody.innerHTML = mk('单场胜平负（单关）', s.singleGroup) + mk('非单关场次', s.nonSingleGroup);
-  }
-
-  // 差值变化分档明细表
-  function renderDeltaTable(rows) {
-    var st = JC.stats(rows, 0.05);
-    var tbody = $('#delta-table tbody');
-    if (!st.summary.deltaSettled) {
-      tbody.innerHTML = '<tr><td colspan="6" class="muted">暂无两次快照齐全且已出赛果的数据</td></tr>';
-      return;
-    }
-    tbody.innerHTML = st.deltaBins.map(function (b) {
-      var ratioCls = '';
-      if (b.oneRatio != null && b.count >= 5 && st.summary.oneGoalRatio != null) {
-        ratioCls = b.oneRatio >= st.summary.oneGoalRatio ? 'diff-pos' : 'diff-neg';
-      }
-      return '<tr><td>' + b.label + '</td><td class="num">' + b.count + '</td><td class="num">' + b.oneCount +
-        '</td><td class="num">' + b.nonOneCount + '</td><td class="num ' + ratioCls + '">' + fmtPct(b.oneRatio) +
-        '</td><td class="num">' + fmtDiff(b.avgDelta) + '</td></tr>';
-    }).join('');
-  }
-
-  function sortRows(rows) {
-    var key = state.sort.key, dir = state.sort.dir;
-    return rows.slice().sort(function (a, b) {
-      var x = a[key], y = b[key];
-      if (x == null && y == null) return 0;
-      if (x == null) return 1;
-      if (y == null) return -1;
-      if (typeof x === 'string') return dir * String(x).localeCompare(String(y));
-      return dir * (x - y);
-    });
-  }
-
-  function renderDataTable(rows) {
-    var sorted = sortRows(rows);
-    var shown = sorted.slice(0, state.shownRows);
-    var tbody = $('#data-table tbody');
-    tbody.innerHTML = shown.map(function (r) {
-      var d1 = r.o1.diff, d2 = r.o2.diff;
-      var cls1 = d1 == null ? '' : (d1 > 0 ? 'diff-pos' : 'diff-neg');
-      var cls2 = d2 == null ? '' : (d2 > 0 ? 'diff-pos' : 'diff-neg');
-      var dirCls = r.dir === '↑' ? 'dir-up' : (r.dir === '↓' ? 'dir-down' : 'dir-flat');
-      var oneTxt = r.isOneGoal == null ? '' : (r.isOneGoal ? '是' : '否');
-      var oneCls = r.isOneGoal === true ? 'one-yes' : (r.isOneGoal === false ? 'one-no' : '');
-      var singleTxt = r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否');
-      var singleCls = r.isSingleWin === true ? 'single-yes' : '';
-      return '<tr>' +
-        '<td>' + r.date + '</td>' +
-        '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
-        '<td>' + escapeHtml(r.league) + '</td>' +
-        '<td class="match-cell">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</td>' +
-        '<td>' + escapeHtml(r.kickoff) + '</td>' +
-        '<td class="' + singleCls + '">' + singleTxt + '</td>' +
-        '<td class="num">' + fmtOdds(r.o1.ttg1) + '</td>' +
-        '<td class="num">' + fmtOdds(r.o1.s10) + '</td>' +
-        '<td class="num">' + fmtOdds(r.o1.s01) + '</td>' +
-        '<td class="num">' + fmt3(r.o1.optimized) + '</td>' +
-        '<td class="num ' + cls1 + '">' + fmtDiff(d1) + '</td>' +
-        '<td class="num">' + fmtOdds(r.o2.ttg1) + '</td>' +
-        '<td class="num">' + fmtOdds(r.o2.s10) + '</td>' +
-        '<td class="num">' + fmtOdds(r.o2.s01) + '</td>' +
-        '<td class="num">' + fmt3(r.o2.optimized) + '</td>' +
-        '<td class="num ' + cls2 + '">' + fmtDiff(d2) + '</td>' +
-        '<td class="' + dirCls + '">' + (r.dir || '') + (r.diffDelta != null ? ' ' + fmtDiff(r.diffDelta) : '') + '</td>' +
-        '<td>' + (r.score || '') + '</td>' +
-        '<td class="' + oneCls + '">' + oneTxt + '</td>' +
-        '<td class="muted">' + escapeHtml(r.times) + '</td>' +
-        '</tr>';
-    }).join('');
-    $('#data-more').hidden = sorted.length <= state.shownRows;
-    renderDataCards(shown.concat([]), sorted.length);
-  }
-
-  // 手机端卡片列表（宽表格在 iPhone 上太拥挤，改为每场一张卡片）
-  function renderDataCards(shown, total) {
-    var el = $('#data-cards');
-    if (!shown.length) {
-      el.innerHTML = '<div class="empty">当前筛选下没有数据</div>';
-      return;
-    }
-    el.innerHTML = '<div class="cards-hint">赔率顺序：总进球1球 / 比分1:0 / 比分0:1</div>' + shown.map(function (r) {
-      var d1 = r.o1.diff, d2 = r.o2.diff;
-      var dirCls = r.dir === '↑' ? 'dir-up' : (r.dir === '↓' ? 'dir-down' : 'dir-flat');
-      var oneTxt = r.isOneGoal === true ? '<span class="one-yes">1球 ✓</span>'
-        : (r.isOneGoal === false ? '<span class="one-no">非1球</span>' : '');
-      return '<div class="mcard">' +
-        '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
-        '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
-        (r.isSingleWin ? '<span class="mc-single">单关</span>' : '') +
-        '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
-        '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
-        '<div class="mc-diff"><span class="mc-k">差值①</span><span class="mc-v ' + (d1 == null ? '' : (d1 > 0 ? 'diff-pos' : 'diff-neg')) + '">' + fmtDiff(d1) + '</span>' +
-        (r.o2.at ? '<span class="mc-k">②</span><span class="mc-v ' + (d2 == null ? '' : (d2 > 0 ? 'diff-pos' : 'diff-neg')) + '">' + fmtDiff(d2) + '</span>' +
-          '<span class="mc-dir ' + dirCls + '">' + r.dir + (r.diffDelta != null ? ' ' + fmtDiff(r.diffDelta) : '') + '</span>' : '<span class="mc-k muted">（仅第一次抓取）</span>') +
-        '</div>' +
-        '<div class="mc-odds"><span class="mc-k">赔率①</span>' +
-        '<span class="mc-v">' + fmtOdds(r.o1.ttg1) + ' / ' + fmtOdds(r.o1.s10) + ' / ' + fmtOdds(r.o1.s01) + '</span>' +
-        (r.o2.at ? '<span class="mc-k" style="margin-left:6px">②</span><span class="mc-v">' + fmtOdds(r.o2.ttg1) + ' / ' + fmtOdds(r.o2.s10) + ' / ' + fmtOdds(r.o2.s01) + '</span>' : '') +
-        '</div>' +
-        '<div class="mc-foot"><span>赛果 <b>' + (r.score || '—') + '</b>' + (r.halfScore ? '（半 ' + r.halfScore + '）' : '') + '</span>' + oneTxt + '</div>' +
-        '</div>';
-    }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');
-  }
-
-  function escapeHtml(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-
   // ---------------------------------------------------------------- 提示框
 
   function showTooltip(ev, html) {
@@ -851,67 +767,78 @@
 
   // ---------------------------------------------------------------- 导出
 
+  function exportRows() { return filteredRows(); }
+
   function exportBrowserExcel() {
-    var rows = filteredRows();
+    var rows = exportRows();
     if (!rows.length) { toast('当前筛选下没有数据', true); return; }
     var wb = XLSX.utils.book_new();
     var months = {};
     rows.forEach(function (r) { var m = String(r.date).slice(0, 7); (months[m] = months[m] || []).push(r); });
+    var head = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负', '实际进球',
+      '基线A预测', '模型A预测', '基线B预测', '模型B预测', '模型A命中', '模型B命中', '抓取时间'];
     Object.keys(months).sort().forEach(function (m) {
-      var aoa = [JC.CSV_HEADERS].concat(months[m].map(function (r) { return JC.rowToCells(r); }));
+      var aoa = [head].concat(months[m].map(function (r) {
+        return [r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
+          r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
+          r.actual == null ? '' : JC.labelG(r.actual),
+          JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predBaseB), JC.labelG(r.predB),
+          hitText(r.hitModelA), hitText(r.hitModelB), JC.fmtAt(r.oddsAt)];
+      }));
       var ws = XLSX.utils.aoa_to_sheet(aoa);
-      ws['!cols'] = [{ wch: 11 }, { wch: 9 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 12 },
-        { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 7 }, { wch: 17 }];
+      ws['!cols'] = [{ wch: 11 }, { wch: 9 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
+        { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 16 }];
       XLSX.utils.book_append_sheet(wb, ws, m.slice(0, 31));
     });
-    // 统计表
-    var st = JC.stats(rows, 0.05);
-    var s = st.summary;
+    var st = JC.predStats(rows);
     var preg = function (v) { return v == null ? '' : Number((v * 100).toFixed(1)) + '%'; };
     var aoa2 = [
-      ['统计（导出时间 ' + JC.nowIso() + '，当前筛选）'], [],
-      ['总场次', s.total], ['其中含两次抓取的场次', s.twoCaptureCount], ['已出赛果场次', s.settled],
-      ['其中1球赛果场次', s.oneGoalCount], ['1球占比', preg(s.oneGoalRatio)],
-      ['平均差值（全部已出）', s.avgDiffAll], ['平均差值（1球场次）', s.avgDiffOne], ['平均差值（非1球场次）', s.avgDiffNon],
-      [], ['单关 vs 非单关', '场次', '已出赛果', '1球场次', '1球占比', '平均差值'],
-      ['单场胜平负（单关）', s.singleGroup.count, s.singleGroup.settled, s.singleGroup.oneGoalCount, preg(s.singleGroup.oneGoalRatio), s.singleGroup.avgDiff],
-      ['非单关场次', s.nonSingleGroup.count, s.nonSingleGroup.settled, s.nonSingleGroup.oneGoalCount, preg(s.nonSingleGroup.oneGoalRatio), s.nonSingleGroup.avgDiff],
-      [], ['差值区间', '总场次', '1球场次', '非1球场次', '1球占比', '平均差值']
-    ].concat(st.bins.map(function (b) {
-      return [b.label, b.count, b.oneCount, b.nonOneCount, preg(b.oneRatio), b.avgDiff];
-    })).concat([
-      [], ['差值变化 ①→②', '场次', '1球场次', '非1球场次', '1球占比', '平均变化量']
-    ]).concat(st.deltaBins.map(function (b) {
-      return [b.label, b.count, b.oneCount, b.nonOneCount, preg(b.oneRatio), b.avgDelta];
-    }));
+      ['预测统计（导出时间 ' + JC.nowIso() + '，当前筛选）'], [],
+      ['已出赛果场次', st.settled], ['其中有预测', st.withPred],
+      ['基线A命中率', st.baseA.hit + '/' + st.baseA.n + ' = ' + preg(st.baseA.rate)],
+      ['模型A命中率', st.modelA.hit + '/' + st.modelA.n + ' = ' + preg(st.modelA.rate)],
+      ['基线B命中率', st.baseB.hit + '/' + st.baseB.n + ' = ' + preg(st.baseB.rate)],
+      ['模型B命中率', st.modelB.hit + '/' + st.modelB.n + ' = ' + preg(st.modelB.rate)]
+    ];
     var ws2 = XLSX.utils.aoa_to_sheet(aoa2);
-    ws2['!cols'] = [{ wch: 24 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
+    ws2['!cols'] = [{ wch: 22 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, ws2, '统计');
     var ws3 = XLSX.utils.aoa_to_sheet([
-      ['优化赔率 = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)'],
-      ['差值 = 1球赔率 − 优化赔率（正数：押1球回报更高；负数：押两个比分双选回报更高）'],
-      ['①/② = 当天第一次(11:00)/第二次(17:00)抓取的快照；变化 = 第二次差值 − 第一次差值的方向（↑/↓/→）；第二次抓取时已开赛的比赛只有①列。'],
-      ['数据来源：中国体育彩票官方接口；本文件由网页端即时导出，完整版见仓库 excel/ 目录。'],
-      ['仅为个人数据分析用途，不构成投注建议。']
+      ['口径A(多选优化)：优化赔率 = 1 ÷ Σ(1/该进球数每个比分的赔率)；差值A = 总进球赔率 − 优化赔率'],
+      ['口径B(简单平均)：平均赔率 = 该进球数各比分赔率的算术平均；差值B = 总进球赔率 − 平均赔率'],
+      ['0球只有 0:0 一个比分，无差值，由全进球数二次曲线拟合给出（表中以 0* 标注）。'],
+      ['预测：基线=差值最小的进球数；模型=近30天"差值排名×进球数"经验命中率（剔除深冷门）。'],
+      ['数据来源：中国体育彩票官方接口；本文件由网页端即时导出，完整版（含差值明细/模型矩阵）见仓库 Excel。']
     ]);
-    ws3['!cols'] = [{ wch: 80 }];
+    ws3['!cols'] = [{ wch: 90 }];
     XLSX.utils.book_append_sheet(wb, ws3, '说明');
-    XLSX.writeFile(wb, '竞彩1球-差值记录_' + todayStr() + '.xlsx');
+    XLSX.writeFile(wb, '竞彩进球数预测_' + todayStr() + '.xlsx');
     toast('已导出 ' + rows.length + ' 行（当前筛选）');
   }
 
   function exportCSV() {
-    var rows = filteredRows();
+    var rows = exportRows();
     if (!rows.length) { toast('当前筛选下没有数据', true); return; }
-    var blob = new Blob([JC.toCSV(rows)], { type: 'text/csv;charset=utf-8' });
+    var head = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负', '实际进球',
+      '基线A预测', '模型A预测', '基线B预测', '模型B预测', '模型A命中', '模型B命中'];
+    var esc = function (v) { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var lines = [head.join(',')];
+    rows.forEach(function (r) {
+      lines.push([r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
+        r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
+        r.actual == null ? '' : JC.labelG(r.actual),
+        JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predBaseB), JC.labelG(r.predB),
+        hitText(r.hitModelA), hitText(r.hitModelB)].map(esc).join(','));
+    });
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = '竞彩1球-差值记录_' + todayStr() + '.csv';
+    a.download = '竞彩进球数预测_' + todayStr() + '.csv';
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
   }
 
-  // ---------------------------------------------------------------- 设置对话框
+  // ---------------------------------------------------------------- 设置
 
   function openSettings() {
     var s = state.settings;
@@ -934,7 +861,7 @@
     if (canSync() && Object.keys(state.dirty).length) syncToGitHub(true);
   }
 
-  // ---------------------------------------------------------------- 事件绑定
+  // ---------------------------------------------------------------- 事件
 
   function bind() {
     $('#btn-odds').onclick = captureOdds;
@@ -952,13 +879,11 @@
       toast('令牌已清除');
     };
 
-    // 更多菜单
     var menu = $('#menu-list');
     $('#btn-more').onclick = function (ev) { ev.stopPropagation(); menu.hidden = !menu.hidden; };
     document.addEventListener('click', function () { menu.hidden = true; });
     menu.onclick = function () { setTimeout(function () { menu.hidden = true; }, 0); };
 
-    // 页签
     $$('.tab').forEach(function (t) {
       t.onclick = function () {
         $$('.tab').forEach(function (x) { x.classList.remove('active'); });
@@ -968,7 +893,6 @@
       };
     });
 
-    // 筛选（两套控件同步）
     function bindRange(sel, syncSel) {
       $$(sel + ' button').forEach(function (b) {
         b.onclick = function () {
@@ -987,9 +911,17 @@
     $('#only-settled2').onchange = function () { state.filters.onlySettled = this.checked; $('#only-settled').checked = this.checked; render(); };
     $('#only-single').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single2').checked = this.checked; render(); };
     $('#only-single2').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single').checked = this.checked; render(); };
-    $('#only-value').onchange = function () { state.filters.onlyValue = this.checked; render(); };
 
-    // 编号追踪
+    $$('#data-table th[data-sort]').forEach(function (th) {
+      th.onclick = function () {
+        var key = th.dataset.sort;
+        if (state.sort.key === key) state.sort.dir = -state.sort.dir;
+        else { state.sort.key = key; state.sort.dir = -1; }
+        renderDataTable(filteredRows());
+      };
+    });
+    $('#btn-more-rows').onclick = function () { state.shownRows += 300; renderDataTable(filteredRows()); };
+
     $('#num-select').onchange = function () { renderNumQuery(); };
     $('#bucket-select').onchange = function () { renderNumQuery(); };
     $('#only-alerts').onchange = function () { renderTracker(); };
@@ -1002,24 +934,14 @@
       var card = $('#numbers-card');
       if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-
-    // 表头排序
-    $$('#data-table th[data-sort]').forEach(function (th) {
-      th.onclick = function () {
-        var key = th.dataset.sort;
-        if (state.sort.key === key) state.sort.dir = -state.sort.dir;
-        else { state.sort.key = key; state.sort.dir = -1; }
-        renderDataTable(filteredRows());
-      };
-    });
-    $('#btn-more-rows').onclick = function () { state.shownRows += 300; renderDataTable(filteredRows()); };
   }
-
-  // ---------------------------------------------------------------- 启动
 
   bind();
   loadAll();
 
   // 调试钩子（仅供开发排查用）
-  window.__jcDebug = { state: state, render: render, rebuildRows: rebuildRows, filteredRows: filteredRows, exportBrowserExcel: exportBrowserExcel, exportCSV: exportCSV };
+  window.__jcDebug = {
+    state: state, render: render, rebuildRows: rebuildRows, filteredRows: filteredRows,
+    exportBrowserExcel: exportBrowserExcel, exportCSV: exportCSV
+  };
 })();

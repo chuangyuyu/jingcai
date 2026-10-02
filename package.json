@@ -1,8 +1,8 @@
 {
-  "name": "jingcai-1qiu-diff",
+  "name": "jingcai-goals-predict",
   "version": "1.0.0",
   "private": true,
-  "description": "竞彩足球：1球赔率 vs 比分(1:0/0:1)双选优化赔率 差值记录与统计",
+  "description": "竞彩足球：各进球数赔率与比分优化赔率差值分析、双轨预测总进球数",
   "scripts": {
     "odds": "node scripts/daily.js odds",
     "results": "node scripts/daily.js results",

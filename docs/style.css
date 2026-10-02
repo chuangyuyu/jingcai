@@ -161,6 +161,14 @@ select {
 .ref-line { position: absolute; left: 40px; right: 0; border-top: 2px dashed var(--ink-muted); pointer-events: none; }
 .ref-label { position: absolute; right: 2px; transform: translateY(-120%); font-size: 11px; color: var(--ink-2); background: var(--surface-1); padding: 0 4px; }
 .bar-ratio { background: var(--series-1); border-radius: 4px 4px 0 0; }
+/* 逐日命中率：每天两根并排细柱 */
+.dbin { display: flex; flex-direction: row; gap: 2px; align-items: flex-end; padding: 0 3px; }
+.dbin .seg { width: 50%; border-radius: 4px 4px 0 0; min-height: 2px; }
+.bar-model { background: var(--series-1); }
+.bar-base { background: var(--series-2); }
+.bar-g { background: var(--series-1); border-radius: 4px 4px 0 0; }
+.bar-g.zero { background: var(--grid); }
+.tiny { font-size: 10px; }
 .xlabels { display: flex; gap: 3px; padding-left: 40px; margin-top: 6px; }
 .xlabels .xl { width: 34px; flex: 1 0 auto; font-size: 10.5px; color: var(--ink-muted); text-align: center; transform: rotate(-42deg); transform-origin: top center; white-space: nowrap; height: 34px; font-variant-numeric: tabular-nums; }
 

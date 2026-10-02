@@ -63,6 +63,8 @@ function saveJson(file, obj) {
 function loadConfig() {
   return Object.assign({
     autoPush: true, backfillDays: 10, gitProxy: '', alertCount: 30,
+    // 进球数预测模型：滚动窗口 30 天；赛果排名 ≥ maxActualRank 的深冷门不纳入学习
+    model: { windowDays: 30, maxActualRank: 6 },
     // 编号追踪的关注范围：编号 001~010；进球数 0/1/2/3/4 各自统计，5 及以上合并为 5+
     // 预警口径：连续未出现「次数」（该编号有比赛但没打出该档进球数）达到 alertCount → 警戒
     numTrack: { nums: ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010'], goalGroups: '0,1,2,3,4,5+' }
@@ -189,6 +191,27 @@ async function runOdds() {
   return { added: totalAdded, updated: totalUpdated, captured: totalCaptured, dates: touchedDates };
 }
 
+// 为已出结果但尚未冻结预测的场次补冻结预测（窗口=该场销售日之前，防未来数据泄漏）
+function freezeMissingPredictions(config) {
+  const index = loadIndex();
+  const dates = Object.keys(index.dates || {}).sort();
+  const docs = dates.map(d => loadDay(d)).filter(Boolean);
+  const all = [];
+  docs.forEach(doc => (doc.matches || []).forEach(m => all.push(m)));
+  let frozen = 0;
+  docs.forEach(doc => {
+    let changed = false;
+    (doc.matches || []).forEach(m => {
+      if (!m.result || !m.result.score || m.pred) return;
+      const p = JC.freezePrediction(m, all, { model: config.model });
+      if (p) { m.pred = p; changed = true; frozen++; }
+    });
+    if (changed) saveDay(doc);
+  });
+  if (frozen) log(`冻结预测：${frozen} 场（模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
+  return frozen;
+}
+
 // ---------------------------------------------------------------- 赛果回填
 
 async function runResults(config) {
@@ -226,7 +249,8 @@ async function runResults(config) {
   }
   if (touchedDates.length) saveIndex(index);
   log(`赛果回填完成：新回填 ${totalChanged} 场`);
-  return { changed: totalChanged, filled: totalFilled, dates: touchedDates };
+  const frozen = freezeMissingPredictions(config);
+  return { changed: totalChanged, filled: totalFilled, dates: touchedDates, frozen };
 }
 
 // ---------------------------------------------------------------- 编号追踪（编号 × 总进球数 历史）
@@ -413,10 +437,11 @@ async function main() {
     const r = await runOdds();
     if (r.added || r.updated || r.captured) parts.push(`赔率 新增${r.added} 变化${r.updated} 快照+${r.captured}（${r.dates.join(' ')}）`);
   }
-  // 每次执行都回填赛果（包括下午的 odds 任务和手动执行），保证结果及时更新
+  // 每次执行都回填赛果（包括下午的 odds 任务和手动执行），保证结果及时更新；并冻结新预测
   if (mode !== 'numbers') {
     const r = await runResults(config);
     if (r.changed) parts.push(`赛果回填 ${r.changed} 场（${r.dates.join(' ')}）`);
+    if (r.frozen) parts.push(`冻结预测 ${r.frozen} 场`);
   }
   // 维护编号历史（编号追踪数据），并检查警戒项
   {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩1球差值助手
 // @namespace    jingcai-1qiu-diff
-// @version      2.2.3
+// @version      3.0.0
 // @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -25,29 +25,29 @@
 
 /* ===== 以下为 docs/core.js 内联内容（构建生成，请勿手改本文件；改 core.js 后重新构建） ===== */
 /*!
- * 竞彩足球「1球赔率 vs 比分双选优化赔率」差值记录工具 — 共享核心库 v2
+ * 竞彩足球「各进球数赔率 vs 比分多选优化赔率」差值分析与进球数预测 — 共享核心库 v3
  * ============================================================
  * 本文件是全部业务逻辑的唯一事实来源，同时被三端使用：
  *   1. GitHub Pages 网页      docs/app.js（浏览器直接 <script> 引入）
  *   2. 本机定时任务脚本       scripts/daily.js（Node 环境 require）
- *   3. Edge 油猴脚本          userscript/jingcai.user.js（构建时由 scripts/build-userscript.js 内联）
- * 修改业务逻辑（接口、公式、字段）只需改这一个文件。
+ *   3. Edge 油猴脚本          userscript/jingcai.user.js（构建时内联）
  *
- * v2 变化：
- *   · 每场比赛保留最近两次抓取快照（captures[]，通常为当天 11:00 与 17:00），
- *     第二次差值旁可显示变化方向（↑变大 / ↓缩小 / →不变）；
- *   · 记录「单场胜平负」开关（poolList 中 HAD 玩法 single=1，即官方挑选的单关场次），
- *     统计支持单关/非单关分组对比；
- *   · 旧版（单快照）数据文件读取时自动升级，无需手工迁移。
+ * 核心思路（用户确认）：
+ *   · 对每个进球数 G（0~7+）：总进球G的赔率 vs 该进球数【所有比分】的多选优化赔率，差值对比；
+ *   · 两种口径并行记录：
+ *       口径A（多选优化保底）: optA = 1 ÷ Σ(1/各比分赔率)   —— G=1 时即 ab/(a+b)（等回报拆注的保底回报）
+ *       口径B（简单平均）    : avgB = 各比分赔率的算术平均
+ *     差值A = 总进球G赔率 − optA；差值B = 总进球G赔率 − avgB
+ *   · 0球只有 0:0 一个比分，无法"优化/平均"→ 两种口径都没有差值；
+ *     0球的差值由【全进球数曲线拟合】（二次拟合，g=1..7 的差值 → g=0 的预测值）给出。
+ *   · 预测双轨：
+ *       基线 = 差值最小的进球数（0球用拟合值参与比较）
+ *       自修正模型 = 近30天"差值排名 × 进球数"的经验命中率表（稳健：爆冷场次不纳入更新）
+ *   · 每场在赛果落定时冻结当时的预测（用该场之前的窗口，杜绝未来数据泄漏），长期对比两轨命中率。
  *
- * 数据来源（中国体育彩票官方 Web API，需要中国大陆网络才能访问）：
- *   赔率: /gateway/jc/football/getMatchCalculatorV1.qry
- *   赛果: /gateway/uniform/football/getUniformMatchResultV1.qry
+ * 数据来源（中国体育彩票官方 Web API，需中国大陆网络）：
+ *   赔率: /gateway/jc/football/getMatchCalculatorV1.qry   赛果: /gateway/uniform/football/getUniformMatchResultV1.qry
  *   两个接口均返回 Access-Control-Allow-Origin: *，浏览器可直接跨域调用。
- *
- * 核心公式（用户确认口径）：
- *   优化赔率 = 1:0赔率 × 0:1赔率 ÷ (1:0赔率 + 0:1赔率)   —— 双选等回报拆分注码后每1元的保底回报
- *   差值     = 1球赔率 − 优化赔率                          —— 正数表示押「总进球1球」更划算
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) { module.exports = factory(); }
@@ -55,13 +55,9 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '2.2.3';
+  var VERSION = '3.0.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
-  // 赔率接口：一次返回当前在售的全部比赛和全部玩法赔率
-  //   ttg.s1     = 总进球「1球」赔率
-  //   crs.s01s00 = 比分 1:0 赔率     crs.s00s01 = 比分 0:1 赔率
-  //   had.h/d/a  = 胜平负（顺带记录）；poolList[].single = 该玩法是否可单关
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
     '?poolCode=had,hhad,ttg,crs,hafu&channel=c';
 
@@ -71,34 +67,25 @@
       '&leagueId=&pageSize=30&pageNo=' + (pageNo || 1) + '&isFix=0&matchPage=1&pcOrWap=1';
   }
 
-  // Node 环境附加浏览器请求头；浏览器环境浏览器禁止设置这些头，
-  // 直接 fetch 即可（接口已开放 CORS）。
   var NODE_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
     'Referer': 'https://www.sporttery.cn/',
     'Accept': 'application/json, text/plain, */*'
   };
 
-  // ---------------------------------------------------------------- 工具函数
+  // ---------------------------------------------------------------- 工具
 
   function num(v) {
     var n = parseFloat(v);
     return (isFinite(n) && n > 0) ? n : null;
   }
-
-  function round3(x) {
-    return x == null ? null : Math.round(x * 1000) / 1000;
-  }
-
+  function round3(x) { return x == null ? null : Math.round(x * 1000) / 1000; }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
-  // 本地时区的 yyyy-mm-dd（不要用 toISOString，那是 UTC）
   function localDateStr(d) {
     d = d || new Date();
     return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
   }
-
-  // 本地时区带偏移的 ISO 时间戳，如 2026-09-20T11:00:05+08:00
   function nowIso() {
     var d = new Date();
     var off = -d.getTimezoneOffset();
@@ -107,38 +94,51 @@
     return localDateStr(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()) + ':' +
       pad2(d.getSeconds()) + sign + pad2(Math.floor(off / 60)) + ':' + pad2(off % 60);
   }
-
   function addDays(dateStr, n) {
     var p = dateStr.split('-');
     var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
     d.setDate(d.getDate() + n);
     return localDateStr(d);
   }
+  function dateOf(iso) { return String(iso || '').slice(0, 10); }
+  function daysBetween(a, b) {
+    if (!a || !b) return null;
+    var pa = a.split('-'), pb = b.split('-');
+    return Math.round((Date.UTC(Number(pb[0]), Number(pb[1]) - 1, Number(pb[2])) -
+      Date.UTC(Number(pa[0]), Number(pa[1]) - 1, Number(pa[2]))) / 86400000);
+  }
+  function fmtAt(iso) { return iso ? String(iso).slice(5, 16).replace('T', ' ') : ''; }
 
-  function isOneGoalScore(score) {
-    return score === '1:0' || score === '0:1';
+  function isOneGoalScore(score) { return score === '1:0' || score === '0:1'; }
+
+  function goalsFromScore(score) {
+    var m = /^(\d{1,2}):(\d{1,2})$/.exec(String(score || '').trim());
+    return m ? Number(m[1]) + Number(m[2]) : null;
   }
 
-  function dateOf(iso) { return String(iso || '').slice(0, 10); }
+  function bucketOfGoals(g) { return g == null ? null : Math.min(g, 7); } // 7 = 7+球
+  function bucketLabel(b) { return b === 7 ? '7+球' : b + '球'; }
 
-  // 赛果接口按「真实开赛日」过滤（凌晨场的真实开赛日 = 次日，例如周日晚 00:00 欧战属于周六销售日）。
-  // 因此回填某天数据文件的赛果时，必须多查一天，否则凌晨场永远匹配不到。
-  // 返回 [date, date+1]，三端（定时脚本/网页/油猴）统一使用。
+  // ---------------------------------------------------------------- 场次编号 / 销售日
+
+  function numOf(matchNumStr) {
+    var m = /(\d{3})\s*$/.exec(String(matchNumStr || ''));
+    return m ? m[1] : null;
+  }
+  var WEEK_CHARS = { '日': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
+  function slateDateOf(matchNumStr, matchDate) {
+    if (!matchDate) return null;
+    var m = /^周([日一二三四五六])\s*\d{3}\s*$/.exec(String(matchNumStr || '').trim());
+    if (!m) return matchDate;
+    var p = String(matchDate).split('-');
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    return d.getDay() === WEEK_CHARS[m[1]] ? matchDate : addDays(matchDate, -1);
+  }
+
+  // 赛果接口按"真实开赛日"过滤（凌晨场真实开赛日=次日），回填时范围 +1 天
   function resultRangeFor(date) { return [date, addDays(date, 1)]; }
 
-  // 抓取时段：上午(<14点) / 下午 —— 用于判断"同一天同一时段重复抓取"不重复记快照
-  function slotOf(iso) {
-    var hh = Number(String(iso || '').slice(11, 13));
-    return (isFinite(hh) && hh < 14) ? 'A' : 'B';
-  }
-
-  // 展示用时间：'2026-09-20T11:00:05+08:00' → '09-20 11:00'
-  function fmtAt(iso) {
-    if (!iso) return '';
-    return String(iso).slice(5, 16).replace('T', ' ');
-  }
-
-  // ---------------------------------------------------------------- 网络请求
+  // ---------------------------------------------------------------- 网络
 
   async function fetchJson(url, isNode) {
     var res = await fetch(url, isNode ? { headers: NODE_HEADERS } : { cache: 'no-store' });
@@ -146,16 +146,13 @@
     var text = await res.text();
     var data;
     try { data = JSON.parse(text); }
-    catch (e) {
-      throw new Error('返回内容不是 JSON（可能被 WAF 拦截或接口有变）：' + text.slice(0, 120));
-    }
+    catch (e) { throw new Error('返回内容不是 JSON（可能被 WAF 拦截或接口有变）：' + text.slice(0, 120)); }
     if (data && data.success === false) {
       throw new Error('接口返回错误：' + (data.errorMessage || data.errorCode || '未知'));
     }
     return data;
   }
 
-  // 抓取赛果（自动翻页），返回 parseResults 之后的数组
   async function fetchAllResults(beginDate, endDate, isNode) {
     var all = [], pageNo = 1, pages = 1;
     do {
@@ -168,36 +165,34 @@
     return parseResults(all);
   }
 
-  // ---------------------------------------------------------------- 计算
+  // ---------------------------------------------------------------- 解析
 
-  // 双选优化：押 1 元按 1/s10 : 1/s01 的比例拆成两注，无论哪个比分命中，
-  // 回报均为 s10*s01/(s10+s01) 元（等回报拆分）。这就是「优化赔率」。
-  function computeDiff(ttg1, s10, s01) {
-    var a = num(s10), b = num(s01), c = num(ttg1);
-    if (a == null || b == null || c == null) return { optimized: null, diff: null };
-    var opt = (a * b) / (a + b);
-    return { optimized: round3(opt), diff: round3(c - opt) };
-  }
-
-  function makeCapture(at, odds) {
-    var c = computeDiff(odds.ttg1, odds.s10, odds.s01);
-    return { at: at, odds: odds, optimized: c.optimized, diff: c.diff };
-  }
-
-  function sameOdds(x, y) {
-    try { return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return false; }
-  }
-
-  // ---------------------------------------------------------------- 数据解析
-
-  // 官方赔率 JSON → 比赛记录数组（v2：每次抓取生成一个快照 capture）
+  // 官方赔率 JSON → 比赛记录（capture 内含完整玩法池，供后续任意口径重算）
   function parseOdds(raw, capturedAt) {
     var out = [];
     var groups = (raw && raw.value && raw.value.matchInfoList) || [];
     groups.forEach(function (g) {
       (g.subMatchList || []).forEach(function (m) {
         var ttg = m.ttg || {}, crs = m.crs || {}, had = m.had || {};
-        // 单关标记：从 poolList 读（HAD=胜平负单关，HHAD=让球胜平负单关）
+        // 比分矩阵 {"h:a": odds}（不含 胜其他/平其他/负其他）
+        var scores = null;
+        var other = null;
+        if (Object.keys(crs).length) {
+          scores = {};
+          Object.keys(crs).forEach(function (k) {
+            var mm = /^s(\d{2})s(\d{2})$/.exec(k);
+            var v = num(crs[k]);
+            if (mm && v != null) scores[Number(mm[1]) + ':' + Number(mm[2])] = v;
+          });
+          var ow = num(crs.s1sh), od = num(crs.s1sd), ol = num(crs.s1sa);
+          if (ow != null || od != null || ol != null) other = { win: ow, draw: od, lose: ol };
+        }
+        // 总进球 0~7+ 赔率数组（s0..s7）
+        var goals = null;
+        if (ttg.s0 != null || ttg.s1 != null) {
+          goals = [];
+          for (var i = 0; i <= 7; i++) goals.push(num(ttg['s' + i]));
+        }
         var singleWin = null, singleHcp = null;
         (m.poolList || []).forEach(function (p) {
           var code = String(p.poolCode || '').toUpperCase();
@@ -205,15 +200,18 @@
           else if (code === 'HHAD') singleHcp = Number(p.single) === 1;
         });
         var odds = {
-          ttg1: num(ttg.s1),          // 总进球「1球」
-          s10: num(crs.s01s00),       // 比分 1:0
-          s01: num(crs.s00s01),       // 比分 0:1
-          had: [num(had.h), num(had.d), num(had.a)]
+          // 旧字段（兼容旧版数据与展示）
+          ttg1: num(ttg.s1), s10: num(crs.s01s00), s01: num(crs.s00s01),
+          had: [num(had.h), num(had.d), num(had.a)],
+          // v3：完整池
+          goals: goals,
+          scores: scores,
+          other: other
         };
         out.push({
           matchId: m.matchId,
           businessDate: m.businessDate || g.businessDate,
-          matchDate: m.matchDate || m.businessDate || g.businessDate, // 真实开赛日历日（凌晨场与销售日不同）
+          matchDate: m.matchDate || m.businessDate || g.businessDate,
           matchNumStr: m.matchNumStr || '',
           league: m.leagueAbbName || m.leagueAllName || '',
           home: m.homeTeamAbbName || m.homeTeamAllName || '',
@@ -222,16 +220,16 @@
           matchStatus: m.matchStatus || m.sellStatus || '',
           isSingleWin: singleWin,
           isSingleHandicap: singleHcp,
-          captures: [makeCapture(capturedAt, odds)],
+          captures: [{ at: capturedAt, odds: odds }],
           totalCaptures: 1,
-          result: null
+          result: null,
+          pred: null   // 预测在赛果落定时冻结 {"baseA":g,"modelA":g,"baseB":g,"modelB":g,"window":n,"at":iso}
         });
       });
     });
     return out;
   }
 
-  // 官方赛果 JSON 条目 → 规整结果数组
   function parseResults(list) {
     return (list || []).map(function (m) {
       return {
@@ -255,19 +253,196 @@
     return /^\d{1,2}:\d{1,2}$/.test(s) ? s : null;
   }
 
-  // ---------------------------------------------------------------- 记录规整（兼容旧版单快照数据）
+  // ---------------------------------------------------------------- 差值计算（核心）
+
+  // 最小二乘拟合：给定点 (x_i, y_i)，拟合二次曲线 y = c0 + c1 x + c2 x^2（点<3 时退化直线），
+  // 返回在 x=0 处的预测值（用于 0 球的差值）
+  function fitValueAt0(xs, ys) {
+    var n = xs.length;
+    if (n < 2) return null;
+    var deg = n >= 3 ? 2 : 1;
+    // 正规方程
+    var m = deg + 1;
+    var A = [], B = [];
+    for (var i = 0; i < m; i++) { A.push(new Array(m).fill(0)); B.push(0); }
+    for (var k = 0; k < n; k++) {
+      for (var r = 0; r < m; r++) {
+        for (var c = 0; c < m; c++) A[r][c] += Math.pow(xs[k], r + c);
+        B[r] += ys[k] * Math.pow(xs[k], r);
+      }
+    }
+    // 高斯消元
+    for (var col = 0; col < m; col++) {
+      var piv = col;
+      for (var rr = col + 1; rr < m; rr++) if (Math.abs(A[rr][col]) > Math.abs(A[piv][col])) piv = rr;
+      if (Math.abs(A[piv][col]) < 1e-9) return null;
+      var tmp = A[col]; A[col] = A[piv]; A[piv] = tmp;
+      var tb = B[col]; B[col] = B[piv]; B[piv] = tb;
+      for (var r2 = 0; r2 < m; r2++) {
+        if (r2 === col) continue;
+        var f = A[r2][col] / A[col][col];
+        for (var c2 = col; c2 < m; c2++) A[r2][c2] -= f * A[col][c2];
+        B[r2] -= f * B[col];
+      }
+    }
+    var coef = [];
+    for (var i2 = 0; i2 < m; i2++) coef.push(B[i2] / A[i2][i2]);
+    return coef[0]; // x=0 处
+  }
+
+  // 由一次赔率快照计算全部进球数的差值（两种口径）+ 0球拟合值 + 基线预测
+  function goalDiffs(odds) {
+    if (!odds || !odds.goals || !odds.scores) return null;
+    var groups = [];
+    var xsA = [], ysA = [], xsB = [], ysB = [];
+    for (var g = 0; g <= 7; g++) {
+      var ttg = odds.goals[g] != null ? odds.goals[g] : null;
+      var list = [];
+      Object.keys(odds.scores).forEach(function (sc) {
+        var tot = goalsFromScore(sc);
+        if (tot == null) return;
+        var b = Math.min(tot, 7);
+        if (b === g) list.push({ score: sc, odds: odds.scores[sc] });
+      });
+      list.sort(function (a, b2) { return a.score.localeCompare(b2.score); });
+      var optA = null, avgB = null;
+      if (list.length >= 2 && ttg != null) {
+        var sumInv = 0, sum = 0;
+        list.forEach(function (c) { sumInv += 1 / c.odds; sum += c.odds; });
+        optA = round3(1 / sumInv);
+        avgB = round3(sum / list.length);
+      }
+      var diffA = (optA != null && ttg != null) ? round3(ttg - optA) : null;
+      var diffB = (avgB != null && ttg != null) ? round3(ttg - avgB) : null;
+      if (g >= 1) {
+        if (diffA != null) { xsA.push(g); ysA.push(diffA); }
+        if (diffB != null) { xsB.push(g); ysB.push(diffB); }
+      }
+      groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, scores: list });
+    }
+    var fit0A = fitValueAt0(xsA, ysA);
+    var fit0B = fitValueAt0(xsB, ysB);
+    if (fit0A != null) groups[0].diffA = round3(fit0A);
+    if (fit0B != null) groups[0].diffB = round3(fit0B);
+    // 基线预测：差值最小的进球数（含 0 球拟合值）
+    var predBaseA = argminG(groups, 'diffA');
+    var predBaseB = argminG(groups, 'diffB');
+    return {
+      groups: groups,
+      fit0A: fit0A != null ? round3(fit0A) : null,
+      fit0B: fit0B != null ? round3(fit0B) : null,
+      predBaseA: predBaseA,
+      predBaseB: predBaseB
+    };
+  }
+
+  function argminG(groups, key) {
+    var best = null, bestV = null;
+    groups.forEach(function (x) {
+      if (x[key] == null) return;
+      if (bestV == null || x[key] < bestV) { bestV = x[key]; best = x.g; }
+    });
+    return best;
+  }
+
+  // ---------------------------------------------------------------- 自修正模型
+
+  // 样本：{ date, diffs: [d0..d7]（d0 为拟合值，可为 null 则该项不参与排名）, actual: g }
+  // 特征：每个进球数的差值在 8 项中的排名（1=最小）。学习"某进球数在排名 r 时的历史命中率"。
+  // 稳健更新：赛果排名 >= maxActualRank（深冷门）的场次不纳入学习。
+  function modelRank(rank, diffs, g) {
+    // 计算 g 的排名（升序，1 起；NULL 项不参与）
+    var vals = [];
+    for (var k = 0; k <= 7; k++) if (diffs[k] != null) vals.push({ g: k, v: diffs[k] });
+    vals.sort(function (a, b) { return a.v - b.v; });
+    for (var i = 0; i < vals.length; i++) if (vals[i].g === g) return i + 1;
+    return null;
+  }
+
+  function modelTrain(samples, opts) {
+    opts = opts || {};
+    var maxActualRank = opts.maxActualRank || 6;
+    var table = [];  // table[g][r] = { hit, total }
+    for (var g = 0; g <= 7; g++) {
+      table.push([]);
+      for (var r = 0; r <= 8; r++) table[g].push({ hit: 0, total: 0 });
+    }
+    var excluded = 0;
+    samples.forEach(function (s) {
+      if (s.actual == null || !s.diffs) return;
+      var rankActual = modelRank(0, s.diffs, s.actual);
+      if (rankActual == null) return;
+      if (rankActual >= maxActualRank) { excluded++; return; } // 爆冷剔除
+      s.diffs.forEach(function (d, g2) {
+        if (d == null) return;
+        var rk = modelRank(0, s.diffs, g2);
+        if (rk == null) return;
+        table[g2][rk].total++;
+        if (g2 === s.actual) table[g2][rk].hit++;
+      });
+    });
+    return { table: table, excluded: excluded, used: samples.length - excluded };
+  }
+
+  // 用模型对一场比赛做预测：取"同排名下历史命中率最高"的进球数（拉普拉斯平滑，平票用基线）
+  function modelPredict(model, diffs, fallbackG) {
+    if (!model || !diffs) return fallbackG == null ? null : fallbackG;
+    var best = null, bestScore = -1;
+    for (var g = 0; g <= 7; g++) {
+      if (diffs[g] == null) continue;
+      var rk = modelRank(0, diffs, g);
+      if (rk == null) continue;
+      var cell = model.table[g][rk];
+      var score = (cell.hit + 0.2) / (cell.total + 1); // 平滑
+      if (score > bestScore) { bestScore = score; best = g; }
+    }
+    return best == null ? fallbackG : best;
+  }
+
+  // 从已出赛果的比赛集合中提取模型样本（指定口径），窗口 = endDate 往前 windowDays 天
+  function modelSamples(matches, key, opts) {
+    opts = opts || {};
+    var windowDays = opts.windowDays || 30;
+    var endDate = opts.endDate || null;
+    var out = [];
+    (matches || []).forEach(function (m) {
+      if (!m.result || m.result.score == null) return;
+      var cap = lastCaptureBefore(m);
+      if (!cap) return;
+      var d = goalDiffs(cap.odds);
+      if (!d) return;
+      var diffs = d.groups.map(function (x) { return x[key]; });
+      if (opts.excludeMatchId != null && m.matchId === opts.excludeMatchId) return;
+      var slate = m.businessDate || dateOf(cap.at);
+      if (endDate && slate >= endDate) return;   // 只用窗口截止日之前的数据（防泄漏）
+      if (windowDays && endDate && daysBetween(slate, endDate) > windowDays) return;
+      out.push({ date: slate, diffs: diffs, actual: bucketOfGoals(goalsFromScore(m.result.score)) });
+    });
+    return out;
+  }
+
+  function lastCaptureBefore(m) {
+    m = normalizeMatch(m);
+    return m.captures.length ? m.captures[m.captures.length - 1] : null;
+  }
+
+  // ---------------------------------------------------------------- 合并 / 规整
+
+  function sameOdds(x, y) {
+    try { return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return false; }
+  }
+  function cmpMatch(a, b) {
+    var t = String(a.matchTime || '').localeCompare(String(b.matchTime || ''));
+    if (t !== 0) return t;
+    return String(a.matchNumStr || '').localeCompare(String(b.matchNumStr || ''));
+  }
 
   function normalizeMatch(m) {
     if (!m) return m;
     if (!m.captures) {
       m.captures = [];
       if (m.odds) {
-        m.captures.push({
-          at: m.oddsAt || '',
-          odds: m.odds,
-          optimized: m.optimized != null ? m.optimized : null,
-          diff: m.diff != null ? m.diff : null
-        });
+        m.captures.push({ at: m.oddsAt || '', odds: m.odds });
       }
       m.totalCaptures = m.captureCount || m.captures.length;
       delete m.odds; delete m.optimized; delete m.diff;
@@ -275,27 +450,10 @@
     }
     if (m.isSingleWin === undefined) m.isSingleWin = null;
     if (m.isSingleHandicap === undefined) m.isSingleHandicap = null;
+    if (m.pred === undefined) m.pred = null;
     return m;
   }
 
-  function latestCapture(m) {
-    m = normalizeMatch(m);
-    return m.captures.length ? m.captures[m.captures.length - 1] : null;
-  }
-
-  // ---------------------------------------------------------------- 合并
-
-  function cmpMatch(a, b) {
-    var t = String(a.matchTime || '').localeCompare(String(b.matchTime || ''));
-    if (t !== 0) return t;
-    return String(a.matchNumStr || '').localeCompare(String(b.matchNumStr || ''));
-  }
-
-  // 把新抓到的比赛合并进某天的数据文件（v2）：
-  //   · 新比赛直接加入；已有比赛在以下任一情况追加一次快照（captures 最多保留最近 2 次）：
-  //       赔率有变化 / 距上次快照跨天 / 跨时段（上午↔下午）
-  //   · 与上次完全相同的同时段重复抓取不产生新快照（避免手动多点几次造成重复）
-  //   · 单关标记、比赛状态等以最新抓取为准；赛果字段不受影响
   function mergeDay(dayDoc, incomingMatches, capturedAt) {
     dayDoc = dayDoc || { date: '', matches: [] };
     if (!dayDoc.matches) dayDoc.matches = [];
@@ -314,17 +472,15 @@
       old.league = inc.league || old.league;
       old.home = inc.home || old.home;
       old.away = inc.away || old.away;
-
       var incCap = inc.captures[0];
       if (!incCap) return;
       var last = old.captures[old.captures.length - 1];
       var changed = last ? !sameOdds(last.odds, incCap.odds) : false;
-      var needAppend = !last ||
-        changed ||
+      var needAppend = !last || changed ||
         dateOf(last.at) !== dateOf(capturedAt) ||
-        slotOf(last.at) !== slotOf(capturedAt);
+        (String(last.at).slice(11, 13) < '14' ? 'A' : 'B') !== (String(capturedAt).slice(11, 13) < '14' ? 'A' : 'B');
       if (needAppend) {
-        old.captures.push({ at: capturedAt, odds: incCap.odds, optimized: incCap.optimized, diff: incCap.diff });
+        old.captures.push({ at: capturedAt, odds: incCap.odds });
         while (old.captures.length > 2) old.captures.shift();
         old.totalCaptures = (old.totalCaptures || 1) + 1;
         captured++;
@@ -336,7 +492,6 @@
     return { day: dayDoc, added: added, updated: updated, captured: captured };
   }
 
-  // 把赛果回填进某天的数据文件（只覆盖比分为数字的场次；记录变化量供调用方决定是否提交）
   function applyResults(dayDoc, results, at) {
     var byId = {};
     (results || []).forEach(function (r) { byId[r.matchId] = r; });
@@ -349,7 +504,7 @@
       m.result = {
         score: r.score,
         halfScore: r.halfScore,
-        isOneGoal: isOneGoalScore(r.score),
+        goals: goalsFromScore(r.score),
         status: r.status,
         at: at
       };
@@ -359,8 +514,6 @@
     return { filled: filled, changed: changed };
   }
 
-  // 文档级合并（多端数据汇合：网页/油猴本地改动 + 云端旧文件）。
-  // 同一场比赛：快照按时间取并集（保留最近 2 次）；单关标记、赛果取非空/更新的。
   function mergeDocs(a, b) {
     if (!a) return b;
     if (!b) return a;
@@ -379,12 +532,11 @@
       m = normalizeMatch(m);
       var old = byId[m.matchId];
       if (!old) { byId[m.matchId] = trimCaptures(m); return; }
-      // 快照并集（按 at 去重，优先保留 diff 非空的一份），保留最近两次
       var map = {};
       old.captures.concat(m.captures).forEach(function (c) {
         if (!c || !c.at) return;
         var prev = map[c.at];
-        if (!prev || (prev.diff == null && c.diff != null)) map[c.at] = c;
+        if (!prev || (!prev.odds.scores && c.odds.scores)) map[c.at] = c;
       });
       old.captures = Object.keys(map).sort().map(function (k) { return map[k]; });
       while (old.captures.length > 2) old.captures.shift();
@@ -397,44 +549,49 @@
       old.league = m.league || old.league;
       old.home = m.home || old.home;
       old.away = m.away || old.away;
-      if (m.result && (!old.result || String(m.result.at || '') >= String(old.result.at || ''))) {
-        old.result = m.result;
-      }
+      if (m.result && (!old.result || String(m.result.at || '') >= String(old.result.at || ''))) old.result = m.result;
+      if (m.pred && (!old.pred || String(m.pred.at || '') >= String(old.pred.at || ''))) old.pred = m.pred;
     });
     out.matches = Object.keys(byId).map(function (k) { return byId[k]; }).sort(cmpMatch);
     return out;
   }
 
-  // ---------------------------------------------------------------- 展平 / 导出
-
-  function capFields(c) {
-    if (!c) return { ttg1: null, s10: null, s01: null, optimized: null, diff: null, at: '' };
-    var o = c.odds || {};
+  // 赛果落定后为一场比赛冻结预测（窗口 = 该场销售日之前，防泄漏）
+  function freezePrediction(match, allMatches, opts) {
+    opts = opts || {};
+    var cap = lastCaptureBefore(match);
+    if (!cap) return null;
+    var d = goalDiffs(cap.odds);
+    if (!d) return null;
+    var diffsA = d.groups.map(function (x) { return x.diffA; });
+    var diffsB = d.groups.map(function (x) { return x.diffB; });
+    var slate = match.businessDate || match.matchDate;
+    var windowDays = (opts.model && opts.model.windowDays) || 30;
+    var maxRank = (opts.model && opts.model.maxActualRank) || 6;
+    var samplesA = modelSamples(allMatches, 'diffA', { windowDays: windowDays, endDate: slate });
+    var samplesB = modelSamples(allMatches, 'diffB', { windowDays: windowDays, endDate: slate });
+    var modelA = modelTrain(samplesA, { maxActualRank: maxRank });
+    var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
     return {
-      ttg1: o.ttg1 != null ? o.ttg1 : null,
-      s10: o.s10 != null ? o.s10 : null,
-      s01: o.s01 != null ? o.s01 : null,
-      optimized: c.optimized != null ? c.optimized : null,
-      diff: c.diff != null ? c.diff : null,
-      at: c.at || ''
+      baseA: d.predBaseA, modelA: modelPredict(modelA, diffsA, d.predBaseA),
+      baseB: d.predBaseB, modelB: modelPredict(modelB, diffsB, d.predBaseB),
+      fit0A: d.fit0A, fit0B: d.fit0B,
+      windowA: modelA.used, windowB: modelB.used,
+      at: nowIso()
     };
   }
 
-  // 把若干天数据文件展平成"每场一行"的表格行（网页表格、Excel、CSV 共用）
+  // ---------------------------------------------------------------- 展平 / 导出
+
   function flatRows(dayDocs) {
     var rows = [];
     (dayDocs || []).forEach(function (d) {
       (d.matches || []).forEach(function (m0) {
         var m = normalizeMatch(m0);
-        var c1 = capFields(m.captures[0] || null);
-        var c2 = capFields(m.captures[1] || null);
-        var latest = m.captures[1] || m.captures[0] || null;
-        var lf = capFields(latest);
-        var delta = null, dir = '';
-        if (c1.diff != null && c2.diff != null) {
-          delta = round3(c2.diff - c1.diff);
-          dir = delta > 0.0005 ? '↑' : (delta < -0.0005 ? '↓' : '→');
-        }
+        var cap = m.captures[m.captures.length - 1] || null;
+        var diffs = cap ? goalDiffs(cap.odds) : null;
+        var actual = (m.result && m.result.goals != null) ? bucketOfGoals(m.result.goals) : null;
+        var pred = m.pred || null;
         rows.push({
           date: d.date || m.businessDate || '',
           matchDate: m.matchDate || m.businessDate || d.date || '',
@@ -444,15 +601,22 @@
           home: m.home || '',
           away: m.away || '',
           isSingleWin: m.isSingleWin === true ? true : (m.isSingleWin === false ? false : null),
-          o1: c1,
-          o2: c2,
-          diff: lf.diff,                       // 主差值：取最新一次快照
-          diffDelta: delta,
-          dir: dir,
-          times: (c1.at ? fmtAt(c1.at) : '') + (c2.at ? ' / ' + fmtAt(c2.at) : ''),
+          hasDetail: !!(diffs && diffs.groups.some(function (x) { return x.diffA != null; })),
+          diffs: diffs,           // { groups, fit0A, fit0B, predBaseA, predBaseB } | null
+          baseA: diffs ? diffs.predBaseA : null,
+          baseB: diffs ? diffs.predBaseB : null,
+          predA: pred ? pred.modelA : null,
+          predB: pred ? pred.modelB : null,
+          predBaseA: pred ? pred.baseA : (diffs ? diffs.predBaseA : null),
+          predBaseB: pred ? pred.baseB : (diffs ? diffs.predBaseB : null),
           score: m.result ? m.result.score : null,
           halfScore: m.result ? m.result.halfScore : null,
-          isOneGoal: m.result ? !!m.result.isOneGoal : null,
+          actual: actual,
+          hitBaseA: (pred && pred.baseA != null && actual != null) ? pred.baseA === actual : null,
+          hitModelA: (pred && pred.modelA != null && actual != null) ? pred.modelA === actual : null,
+          hitBaseB: (pred && pred.baseB != null && actual != null) ? pred.baseB === actual : null,
+          hitModelB: (pred && pred.modelB != null && actual != null) ? pred.modelB === actual : null,
+          oddsAt: cap ? cap.at : '',
           resultAt: m.result ? (m.result.at || '') : ''
         });
       });
@@ -467,184 +631,40 @@
     return rows;
   }
 
-  var CSV_HEADERS = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负',
-    '①1球', '①1:0', '①0:1', '①优化赔率', '①差值', '①抓取时间',
-    '②1球', '②1:0', '②0:1', '②优化赔率', '②差值', '②抓取时间', '变化', '差值变化量',
-    '全场比分', '半场比分', '是否1球', '结果更新时间'];
+  function labelG(g) { return g == null ? '' : bucketLabel(g); }
 
-  function rowToCells(r) {
-    var one = function (v) { return v == null ? '' : (v ? '是' : '否'); };
-    return [
-      r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
-      r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
-      r.o1.ttg1, r.o1.s10, r.o1.s01, r.o1.optimized, r.o1.diff, fmtAt(r.o1.at),
-      r.o2.ttg1, r.o2.s10, r.o2.s01, r.o2.optimized, r.o2.diff, fmtAt(r.o2.at),
-      r.dir, r.diffDelta,
-      r.score || '', r.halfScore || '', one(r.isOneGoal), fmtAt(r.resultAt)
-    ];
-  }
-
-  function toCSV(rows) {
-    var esc = function (v) {
-      if (v == null) return '';
-      v = String(v);
-      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  // 预测统计：基线/模型在给定行集合上的命中率（仅统计有预测且已出结果的场次）
+  function predStats(rows) {
+    var st = {
+      settled: 0, withPred: 0,
+      baseA: { n: 0, hit: 0 }, modelA: { n: 0, hit: 0 },
+      baseB: { n: 0, hit: 0 }, modelB: { n: 0, hit: 0 },
+      byGoal: []   // 各实际进球数的场次数
     };
-    var lines = [CSV_HEADERS.join(',')];
-    rows.forEach(function (r) { lines.push(rowToCells(r).map(esc).join(',')); });
-    return '﻿' + lines.join('\r\n'); // BOM 让 Excel 正确识别 UTF-8
-  }
-
-  // ---------------------------------------------------------------- 统计
-
-  // 差值变化的分档（第二次 − 第一次）
-  var DELTA_BUCKETS = [
-    { lo: null, hi: -0.10, label: '下降 ≥0.10（缩水明显）' },
-    { lo: -0.10, hi: -0.03, label: '下降 0.03~0.10（小幅缩水）' },
-    { lo: -0.03, hi: 0.03, label: '基本不变（±0.03）' },
-    { lo: 0.03, hi: 0.10, label: '上升 0.03~0.10（小幅变大）' },
-    { lo: 0.10, hi: null, label: '上升 ≥0.10（变大明显）' }
-  ];
-
-  function latestDiff(r) { return r.diff; }
-
-  // 对表格行做统计：总体概览 + 差值分箱 + 单关分组对比 + 差值变化分档
-  function stats(rows, binWidth) {
-    rows = rows || [];
-    binWidth = binWidth || 0.05;
-    var withDiff = rows.filter(function (r) { return latestDiff(r) != null; });
-    var settled = rows.filter(function (r) { return latestDiff(r) != null && r.isOneGoal != null; });
-    var one = settled.filter(function (r) { return r.isOneGoal; });
-    var non = settled.filter(function (r) { return !r.isOneGoal; });
-    var avg = function (arr, f) {
-      if (!arr.length) return null;
-      return arr.reduce(function (s, r) { return s + f(r); }, 0) / arr.length;
-    };
-    var group = function (arr) {
-      var gs = arr.filter(function (r) { return r.isOneGoal != null; });
-      var go = gs.filter(function (r) { return r.isOneGoal; });
-      return {
-        count: arr.length,
-        settled: gs.length,
-        oneGoalCount: go.length,
-        oneGoalRatio: gs.length ? go.length / gs.length : null,
-        avgDiff: round3(avg(arr.filter(function (r) { return latestDiff(r) != null; }), function (r) { return latestDiff(r); }))
-      };
-    };
-    var single = rows.filter(function (r) { return r.isSingleWin === true; });
-    var nonSingle = rows.filter(function (r) { return r.isSingleWin === false; });
-    var deltaRows = settled.filter(function (r) { return r.diffDelta != null; });
-
-    var summary = {
-      total: rows.length,
-      settled: settled.length,
-      oneGoalCount: one.length,
-      oneGoalRatio: settled.length ? one.length / settled.length : null,
-      avgDiffAll: round3(avg(settled, function (r) { return latestDiff(r); })),
-      avgDiffOne: round3(avg(one, function (r) { return latestDiff(r); })),
-      avgDiffNon: round3(avg(non, function (r) { return latestDiff(r); })),
-      // v2：单关维度
-      singleCount: single.length,
-      singleSettled: group(single).settled,
-      singleOneGoal: group(single).oneGoalCount,
-      singleOneGoalRatio: group(single).oneGoalRatio,
-      avgDiffSingle: group(single).avgDiff,
-      nonSingleCount: nonSingle.length,
-      nonSingleOneGoalRatio: group(nonSingle).oneGoalRatio,
-      avgDiffNonSingle: group(nonSingle).avgDiff,
-      singleGroup: group(single),
-      nonSingleGroup: group(nonSingle),
-      // v2：两次快照与变化
-      twoCaptureCount: rows.filter(function (r) { return r.o2 && r.o2.at; }).length,
-      deltaSettled: deltaRows.length,
-      avgDeltaAll: round3(avg(deltaRows, function (r) { return r.diffDelta; })),
-      avgDeltaOne: round3(avg(deltaRows.filter(function (r) { return r.isOneGoal; }), function (r) { return r.diffDelta; })),
-      avgDeltaNon: round3(avg(deltaRows.filter(function (r) { return !r.isOneGoal; }), function (r) { return r.diffDelta; }))
-    };
-
-    // 差值分箱（按最新差值）
-    var bins = [];
-    if (settled.length) {
-      var diffs = settled.map(function (r) { return latestDiff(r); });
-      var min = Math.min.apply(null, diffs), max = Math.max.apply(null, diffs);
-      var w = binWidth;
-      while ((max - min) / w > 60) w *= 2;
-      while ((max - min) / w < 8 && w > 0.005) w /= 2;
-      var start = Math.floor(min / w) * w;
-      var n = Math.ceil((max - start) / w) + 1;
-      for (var i = 0; i < n; i++) {
-        var lo = round3(start + i * w);
-        var hi = round3(start + (i + 1) * w);
-        var inBin = settled.filter(function (r) { return latestDiff(r) >= lo && (i === n - 1 ? latestDiff(r) <= hi : latestDiff(r) < hi); });
-        var bOne = inBin.filter(function (r) { return r.isOneGoal; }).length;
-        var bAvg = inBin.length ? inBin.reduce(function (s, r) { return s + latestDiff(r); }, 0) / inBin.length : null;
-        bins.push({
-          lo: lo, hi: hi,
-          label: lo.toFixed(2) + ' ~ ' + hi.toFixed(2),
-          count: inBin.length,
-          oneCount: bOne,
-          nonOneCount: inBin.length - bOne,
-          oneRatio: inBin.length ? bOne / inBin.length : null,
-          avgDiff: bAvg == null ? null : round3(bAvg)
-        });
-      }
-    }
-
-    // 差值变化分档（第二次 − 第一次），仅统计两次快照齐全且已出结果的场次
-    var deltaBins = DELTA_BUCKETS.map(function (b) {
-      var inB = deltaRows.filter(function (r) {
-        if (b.lo != null && r.diffDelta < b.lo) return false;
-        if (b.hi != null && r.diffDelta >= b.hi) return false;
-        return true;
-      });
-      var bOne = inB.filter(function (r) { return r.isOneGoal; }).length;
-      return {
-        label: b.label,
-        count: inB.length,
-        oneCount: bOne,
-        nonOneCount: inB.length - bOne,
-        oneRatio: inB.length ? bOne / inB.length : null,
-        avgDelta: inB.length ? round3(inB.reduce(function (s, r) { return s + r.diffDelta; }, 0) / inB.length) : null
-      };
+    for (var i = 0; i <= 7; i++) st.byGoal.push(0);
+    (rows || []).forEach(function (r) {
+      if (r.actual == null) return;
+      st.settled++;
+      st.byGoal[r.actual]++;
+      if (r.predBaseA != null) { st.withPred++; st.baseA.n++; if (r.hitBaseA) st.baseA.hit++; }
+      if (r.predA != null) { st.modelA.n++; if (r.hitModelA) st.modelA.hit++; }
+      if (r.predBaseB != null) { st.baseB.n++; if (r.hitBaseB) st.baseB.hit++; }
+      if (r.predB != null) { st.modelB.n++; if (r.hitModelB) st.modelB.hit++; }
     });
-
-    return { summary: summary, bins: bins, deltaBins: deltaBins, binWidth: binWidth };
+    ['baseA', 'modelA', 'baseB', 'modelB'].forEach(function (k) {
+      st[k].rate = st[k].n ? st[k].hit / st[k].n : null;
+    });
+    return st;
   }
 
-  // ---------------------------------------------------------------- 编号追踪（编号 × 总进球数）
+  // ---------------------------------------------------------------- 编号追踪（保持）
 
-  // 场次编号的数字部分：'周日001' → '001'
-  function numOf(matchNumStr) {
-    var m = /(\d{3})\s*$/.exec(String(matchNumStr || ''));
-    return m ? m[1] : null;
-  }
-
-  // 全场比分 → 总进球数：'2:1' → 3
-  function goalsFromScore(score) {
-    var m = /^(\d{1,2}):(\d{1,2})$/.exec(String(score || '').trim());
-    return m ? Number(m[1]) + Number(m[2]) : null;
-  }
-
-  // 两个 yyyy-mm-dd 之间的日历天数（b − a）
-  function daysBetween(a, b) {
-    if (!a || !b) return null;
-    var pa = a.split('-'), pb = b.split('-');
-    var ta = Date.UTC(Number(pa[0]), Number(pa[1]) - 1, Number(pa[2]));
-    var tb = Date.UTC(Number(pb[0]), Number(pb[1]) - 1, Number(pb[2]));
-    return Math.round((tb - ta) / 86400000);
-  }
-
-  var GOAL_LABELS = ['0球', '1球', '2球', '3球', '4球', '5球', '6球', '7+球'];
-
-  // 默认进球数分档（0~6 各自 + 7+ 合并，通用默认）；
-  // 用户的追踪口径在 numbers.json 的 buckets 字段里（由 config.json 的 numTrack.goalGroups 生成）
   var DEFAULT_NUM_BUCKETS = [
     { label: '0球', lo: 0, hi: 0 }, { label: '1球', lo: 1, hi: 1 }, { label: '2球', lo: 2, hi: 2 },
     { label: '3球', lo: 3, hi: 3 }, { label: '4球', lo: 4, hi: 4 }, { label: '5球', lo: 5, hi: 5 },
     { label: '6球', lo: 6, hi: 6 }, { label: '7+球', lo: 7, hi: null }
   ];
 
-  // 解析分档配置："0,1,2,3,4,5+" → [{label:'0球',lo:0,hi:0},...,{label:'5+球',lo:5,hi:null}]
   function parseGoalGroups(spec) {
     if (!spec) return null;
     var parts = String(spec).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
@@ -666,30 +686,6 @@
     return -1;
   }
 
-  // 场次编号只在「销售日」内唯一：如周三的场次包含凌晨开赛的比赛（真实开赛日是周四）。
-  // 由编号前缀的星期与真实开赛日推出该场次所属的销售日：
-  //   前缀星期 == 真实开赛日的星期 → 销售日就是当天；否则（凌晨场）→ 前一天。
-  // 例：周三004 于 2026-09-02（周三）→ 销售日 2026-09-02；
-  //     周二004 于 2026-09-02（周三，凌晨场）→ 销售日 2026-09-01。
-  var WEEK_CHARS = { '日': 0, '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
-  function slateDateOf(matchNumStr, matchDate) {
-    if (!matchDate) return null;
-    var m = /^周([日一二三四五六])\s*\d{3}\s*$/.exec(String(matchNumStr || '').trim());
-    if (!m) return matchDate; // 前缀异常时回退为真实开赛日
-    var p = String(matchDate).split('-');
-    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-    return d.getDay() === WEEK_CHARS[m[1]] ? matchDate : addDays(matchDate, -1);
-  }
-
-  // 编号 × 进球数 的历史统计与"连续未出现"追踪。
-  // doc: { updatedAt, alertCount?, nums?: ['001'..], buckets?: [{label,lo,hi}], days: { '2026-09-20': { '001': 2, ... } } }
-  //   · nums    —— 关注范围（编号列表；不设则统计全部编号）
-  //   · buckets —— 进球数分档（不设则用 DEFAULT_NUM_BUCKETS：0~6 各自 + 7+）
-  // 预警口径（用户确认）：按「连续未出现次数」——该编号每出现一次（有比赛）而没打出该档进球数就 +1，
-  //   编号没有比赛的日子不计入（023 不天天有，按自然天数会虚高）。达到 alertCount 次 → 警戒。
-  // 返回 { days, firstDate, lastDate, alertCount, nums, buckets, alerts:[...] }
-  //   · 警戒列表只纳入仍然活跃（近 activeWithinDays 天出现过）的编号、且历史上出现过至少一次的分档；
-  //   · 从未出现过的分档以 never:true 标出（查询器可见，不进警戒）。
   function numbersStats(doc, opts) {
     opts = opts || {};
     var days = (doc && doc.days) || {};
@@ -704,7 +700,7 @@
     dates.forEach(function (d) { Object.keys(days[d] || {}).forEach(function (n) { numSet[n] = true; }); });
     var numList = Object.keys(numSet).sort();
     if (watchNums && watchNums.length) {
-      numList = watchNums.filter(function (n) { return numSet[n]; }); // 只看关注编号（数据里出现过的）
+      numList = watchNums.filter(function (n) { return numSet[n]; });
     }
     var nums = numList.map(function (num) {
       var counts = buckets.map(function () { return 0; });
@@ -724,22 +720,12 @@
         }
       });
       var active = lastSeen != null && daysBetween(lastSeen, lastDate) <= activeWithin;
-      var span = firstSeen && lastSeen ? Math.max(1, daysBetween(firstSeen, lastDate)) : null;
       var combos = buckets.map(function (bk, k) {
         var lh = lastHit[k];
-        var avgGap = (span && counts[k] > 0) ? Math.max(1, Math.round(span / counts[k])) : null;
-        var daysSince = lh ? daysBetween(lh, lastDate) : (firstSeen ? daysBetween(firstSeen, lastDate) : null);
         return {
-          bucket: k,
-          label: bk.label,
-          count: counts[k],
-          lastDate: lh,
-          daysSince: daysSince,
-          never: !lh,
-          streak: streak[k],
-          avgGap: avgGap,   // 该组合历史上平均多少天出现一次（近似值）
-          anomaly: (avgGap && lh && daysSince != null) ? Math.round(daysSince / avgGap * 10) / 10 : null, // 该出指数
-          active: active
+          bucket: k, label: bk.label, count: counts[k], lastDate: lh,
+          daysSince: lh ? daysBetween(lh, lastDate) : (firstSeen ? daysBetween(firstSeen, lastDate) : null),
+          never: !lh, streak: streak[k], active: active
         };
       });
       return { num: num, occurrences: occ, firstSeen: firstSeen, lastSeen: lastSeen, active: active, counts: counts, combos: combos };
@@ -749,20 +735,15 @@
       if (!n.active) return;
       n.combos.forEach(function (c) {
         if (!c.never && c.streak >= alertCount) {
-          alerts.push({
-            num: n.num, bucket: c.bucket, label: c.label,
-            streak: c.streak,           // 连续未出现次数（预警依据）
-            lastDate: c.lastDate, count: c.count, daysSince: c.daysSince
-          });
+          alerts.push({ num: n.num, bucket: c.bucket, label: c.label, streak: c.streak, lastDate: c.lastDate, count: c.count, daysSince: c.daysSince });
         }
       });
     });
-    // 按连续未出现次数降序
     alerts.sort(function (a, b) { return b.streak - a.streak; });
     return { days: dates.length, firstDate: dates[0], lastDate: lastDate, alertCount: alertCount, nums: nums, buckets: buckets, alerts: alerts };
   }
 
-  // ---------------------------------------------------------------- 数据文件名
+  // ---------------------------------------------------------------- 文件名
 
   function dayFileName(date) { return 'days/' + date + '.json'; }
   function parseDayFileName(name) {
@@ -782,35 +763,39 @@
     parseOdds: parseOdds,
     parseResults: parseResults,
     normScore: normScore,
-    computeDiff: computeDiff,
-    isOneGoalScore: isOneGoalScore,
     normalizeMatch: normalizeMatch,
-    latestCapture: latestCapture,
     mergeDay: mergeDay,
     mergeDocs: mergeDocs,
     applyResults: applyResults,
-    flatRows: flatRows,
-    rowToCells: rowToCells,
-    CSV_HEADERS: CSV_HEADERS,
-    toCSV: toCSV,
-    stats: stats,
-    DELTA_BUCKETS: DELTA_BUCKETS,
-    numOf: numOf,
+    // v3 核心
+    goalDiffs: goalDiffs,
+    fitValueAt0: fitValueAt0,
+    modelTrain: modelTrain,
+    modelPredict: modelPredict,
+    modelSamples: modelSamples,
+    freezePrediction: freezePrediction,
     goalsFromScore: goalsFromScore,
+    bucketOfGoals: bucketOfGoals,
+    bucketLabel: bucketLabel,
+    labelG: labelG,
+    isOneGoalScore: isOneGoalScore,
+    // 编号追踪
+    numOf: numOf,
+    slateDateOf: slateDateOf,
     daysBetween: daysBetween,
     numbersStats: numbersStats,
-    GOAL_LABELS: GOAL_LABELS,
-    DEFAULT_NUM_BUCKETS: DEFAULT_NUM_BUCKETS,
     parseGoalGroups: parseGoalGroups,
-    slateDateOf: slateDateOf,
+    DEFAULT_NUM_BUCKETS: DEFAULT_NUM_BUCKETS,
+    // 展平 / 统计
+    flatRows: flatRows,
+    predStats: predStats,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,
     nowIso: nowIso,
     addDays: addDays,
     round3: round3,
-    fmtAt: fmtAt,
-    slotOf: slotOf
+    fmtAt: fmtAt
   };
 });
 
@@ -872,8 +857,11 @@
       });
       setDays(days);
       GM_setValue(K_LAST, JC.localDateStr());
-      var complete = matches.filter(function (m) { return m.captures[0].diff != null; }).length;
-      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，快照 +' + captured + '，可算差值 ' + complete + '）');
+      var complete = matches.filter(function (m) {
+        var dd = JC.goalDiffs(m.captures[0].odds);
+        return dd && dd.groups.some(function (x) { return x.diffA != null; });
+      }).length;
+      say('抓取完成：' + matches.length + ' 场（新增 ' + added + '，快照 +' + captured + '，含完整比分池 ' + complete + '）');
       renderPanel();
       if (canSync()) return sync();
       if (manual) say('已存本机（未配置 GitHub，暂存于油猴存储）');
@@ -1203,14 +1191,21 @@
       listEl.innerHTML = '<div style="color:#888;padding:8px 0">还没有数据，点「刷新赔率」开始。</div>';
       return;
     }
-    // 展示最近一个有数据的日期（通常是今天）
     var showDate = dates[dates.length - 1];
     var today = JC.localDateStr();
     if (days[today]) showDate = today;
+
+    // 本地自修正模型（近30天，剔除深冷门）
+    var all = [];
+    dates.forEach(function (d) { (days[d].matches || []).forEach(function (m) { all.push(m); }); });
+    var samples = JC.modelSamples(all, 'diffA', { windowDays: 30, endDate: JC.addDays(today, 1) });
+    var model = JC.modelTrain(samples, { maxActualRank: 6 });
+
     var rows = JC.flatRows([days[showDate]]);
     var dirty = getDirty();
-    var complete = rows.filter(function (r) { return r.diff != null; }).length;
-    statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可算差值 ' + complete +
+    var withPred = rows.filter(function (r) { return r.diffs; }).length;
+    statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可预测 ' + withPred +
+      ' · 样本 ' + model.used + ' 场' +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
     if (alertInfo && alertInfo.alerts.length) {
       statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项连续未出≥' + alertInfo.alertCount + '次';
@@ -1220,17 +1215,22 @@
     }
 
     var body = rows.map(function (r) {
-      var cls = r.diff == null ? '' : (r.diff > 0 ? 'pos' : 'neg');
-      var dirCls = r.dir === '↑' ? 'neg' : (r.dir === '↓' ? 'pos' : '');
+      var modelG = null, baseG = r.predBaseA;
+      if (r.predA != null) { modelG = r.predA; }
+      else if (r.diffs) {
+        var diffsA = (r.diffs.groups || []).map(function (x) { return x.diffA; });
+        modelG = JC.modelPredict(model, diffsA, r.predBaseA);
+      }
+      var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
+      var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +
         '<td class="single">' + (r.isSingleWin ? '单' : '') + '</td>' +
-        '<td class="num">' + fmt(r.o1.ttg1) + '</td>' +
-        '<td class="num ' + cls + '">' + fmtDiff(r.diff) + '</td>' +
-        '<td class="' + dirCls + '">' + (r.dir || '') + '</td>' +
-        '<td>' + (r.score || '') + '</td></tr>';
+        '<td class="' + hitCls2 + '"><b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b></td>' +
+        '<td>' + (baseG == null ? '—' : JC.labelG(baseG)) + '</td>' +
+        '<td>' + actualTxt + '</td></tr>';
     }).join('');
-    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>1球①</th><th>差值</th><th>变化</th><th>赛果</th></tr></thead><tbody>' + body + '</tbody></table>';
+    listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>模型</th><th>基线</th><th>实际</th></tr></thead><tbody>' + body + '</tbody></table>';
   }
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
