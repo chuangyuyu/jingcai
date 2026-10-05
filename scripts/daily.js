@@ -63,6 +63,8 @@ function saveJson(file, obj) {
 function loadConfig() {
   return Object.assign({
     autoPush: true, backfillDays: 10, gitProxy: '', alertCount: 30,
+    // 模拟投注：每场投注金额（元）
+    bet: { stake: 100 },
     // 进球数预测模型：滚动窗口 30 天；赛果排名 ≥ maxActualRank 的深冷门不纳入学习
     model: { windowDays: 30, maxActualRank: 6 },
     // 编号追踪的关注范围：编号 001~010；进球数 0/1/2/3/4 各自统计，5 及以上合并为 5+
@@ -283,6 +285,7 @@ async function runNumbers(config, opts) {
   }
   doc.alertCount = config.alertCount || doc.alertCount || 30;
   delete doc.alertDays; // 旧口径字段，清理
+  doc.betStake = (config.bet && config.bet.stake) || doc.betStake || 100; // 模拟投注金额（网页/油猴读取）
   // 关注范围与分档（写入 numbers.json，网页/油猴/Excel 均按此口径统计）
   const track = config.numTrack || {};
   doc.nums = (Array.isArray(track.nums) && track.nums.length) ? track.nums : null;

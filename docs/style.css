@@ -168,6 +168,11 @@ select {
 .bar-base { background: var(--series-2); }
 .bar-g { background: var(--series-1); border-radius: 4px 4px 0 0; }
 .bar-g.zero { background: var(--grid); }
+/* 模拟投注：以 0 为轴的上下双向柱（绿=盈利，红=亏损） */
+.chart .zero-line { position: absolute; left: 40px; right: 0; bottom: 50%; border-top: 1px solid var(--baseline); pointer-events: none; }
+.pbar { position: absolute; left: 0; right: 0; border-radius: 3px; }
+.pbar.up { bottom: 50%; background: var(--pos); border-radius: 4px 4px 0 0; }
+.pbar.down { top: 50%; background: var(--neg); border-radius: 0 0 4px 4px; }
 .tiny { font-size: 10px; }
 .xlabels { display: flex; gap: 3px; padding-left: 40px; margin-top: 6px; }
 .xlabels .xl { width: 34px; flex: 1 0 auto; font-size: 10.5px; color: var(--ink-muted); text-align: center; transform: rotate(-42deg); transform-origin: top center; white-space: nowrap; height: 34px; font-variant-numeric: tabular-nums; }

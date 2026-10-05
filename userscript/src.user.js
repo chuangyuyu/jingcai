@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.1.1
+// @version      3.2.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -299,6 +299,24 @@
       (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
   }
 
+  // 模拟投注速览（基于本机数据，每场100元）
+  function showBetting() {
+    var days = getDays();
+    var dates = Object.keys(days).sort();
+    if (!dates.length) { say('本机还没有数据'); return; }
+    var rows = JC.flatRows(dates.map(function (d) { return days[d]; }));
+    var bet = JC.bettingStats(rows, 100);
+    function line(name, t) {
+      return name + '：' + t.bets + ' 场，命中 ' + t.wins + '，投入 ' + t.staked +
+        '，回报 ' + t.returned + '，净盈亏 ' + (t.profit >= 0 ? '+' : '') + t.profit +
+        (t.roi != null ? '（回报率 ' + (t.roi * 100).toFixed(1) + '%）' : '');
+    }
+    window.alert('模拟投注统计（本机数据 · 每场 100 元 · 赔率取最后一次记录）\n\n' +
+      line('模型A', bet.tracks.modelA) + '\n' +
+      line('基线A', bet.tracks.baseA) + '\n' +
+      line('模型B', bet.tracks.modelB) + '\n\n完整统计（每日盈亏等）见网页"模拟投注"卡片');
+  }
+
   // ---------------------------------------------------------------- 浮窗
 
   var panel, body, listEl, statEl;
@@ -469,6 +487,7 @@
   GM_registerMenuCommand('回填赛果', backfill);
   GM_registerMenuCommand('同步到 GitHub', sync);
   GM_registerMenuCommand('查看编号追踪提醒', showAlerts);
+  GM_registerMenuCommand('查看模拟投注统计', showBetting);
   GM_registerMenuCommand('设置 GitHub 仓库/令牌', openSettings);
   GM_registerMenuCommand('导出数据 JSON', exportJson);
   GM_registerMenuCommand('清除本机数据', clearAll);

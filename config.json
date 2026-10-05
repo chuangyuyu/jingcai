@@ -4,6 +4,9 @@
   "times": ["11:00", "17:00"],
   "gitProxy": "",
   "alertCount": 30,
+  "bet": {
+    "stake": 100
+  },
   "model": {
     "windowDays": 30,
     "maxActualRank": 6

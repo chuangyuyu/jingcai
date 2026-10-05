@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>竞彩进球数差值分析与预测</title>
 <meta name="description" content="竞彩足球：各进球数（0~7+球）赔率与比分优化赔率的差值分析，双轨预测每场比赛的总进球数（个人数据分析工具）">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -61,6 +61,32 @@
     </div>
 
     <div class="tiles" id="tiles"></div>
+
+    <div class="card" id="bet-card">
+      <div class="card-head">
+        <h2>模拟投注（每场投注"预测的进球数"）</h2>
+        <div class="seg" id="bet-track-seg">
+          <button data-track="modelA" class="active">模型A</button>
+          <button data-track="baseA">基线A</button>
+          <button data-track="modelB">模型B</button>
+        </div>
+      </div>
+      <p class="card-sub">规则：每场固定投入 <b id="bet-stake">100</b> 元押该轨道的预测进球数（可在 config.json 调整）；猜中按该场<b>最后一次记录</b>的该进球数赔率返还，未中损失本金。上方筛选（日期范围/联赛/单关）对统计生效。绿=盈利、红=亏损。</p>
+      <div class="table-scroll">
+        <table class="grid" id="bet-summary-table">
+          <thead><tr><th>轨道</th><th>投注场次</th><th>命中</th><th>总投入</th><th>总回报</th><th>净盈亏</th><th>回报率</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-wrap"><div class="chart-inner"><div class="chart" id="chart-bet"></div><div class="xlabels" id="xlabels-bet"></div></div></div>
+      <div id="chart-bet-empty" class="empty" hidden>暂无已出结果的可投注场次（需完整比分池快照 + 赛果）。</div>
+      <div class="table-scroll">
+        <table class="grid" id="bet-daily-table">
+          <thead><tr><th>日期</th><th>场次</th><th>命中(模型A)</th><th>当日盈亏(模型A)</th><th>累计(模型A)</th><th>累计(基线A)</th><th>累计(模型B)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
 
     <div class="card">
       <div class="card-head">
@@ -213,7 +239,7 @@
 <div id="tooltip" hidden></div>
 
 <script src="vendor/xlsx.full.min.js?v=1"></script>
-<script src="core.js?v=7"></script>
-<script src="app.js?v=6"></script>
+<script src="core.js?v=8"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

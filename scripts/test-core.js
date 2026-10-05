@@ -199,5 +199,39 @@ console.log('== 合并与兼容 ==');
   ok('mergeDay 正常', r.added === 1 && r.day.matches[0].pred === null);
 }
 
+console.log('== 模拟投注 ==');
+{
+  const mkRow = (date, pred, actual, odds) => ({
+    date, matchNumStr: 'X', league: 'L', home: 'H', away: 'A',
+    predA: pred, predBaseA: pred, predB: pred === 1 ? null : pred, actual,
+    diffs: { groups: [0, 1, 2, 3, 4, 5, 6, 7].map(g => ({ g, ttg: g === pred ? odds : 9 })) }
+  });
+  const rows = [
+    mkRow('2026-10-01', 2, 2, 4.0),   // 中：+300
+    mkRow('2026-10-01', 1, 0, 3.0),   // 挂：-100
+    mkRow('2026-10-02', 3, 2, 5.0),   // 挂：-100
+    { date: '2026-10-02', matchNumStr: 'Y', predA: null, predBaseA: null, predB: null, actual: 1, diffs: null } // 无预测跳过
+  ];
+  const bet = JC.bettingStats(rows, 100);
+  const t = bet.tracks;
+  ok('模型A：3注1中 投入300 回报400 盈亏+100', t.modelA.bets === 3 && t.modelA.wins === 1 &&
+    t.modelA.staked === 300 && t.modelA.returned === 400 && near(t.modelA.profit, 100));
+  ok('模型A 回报率 ≈ 33.3%', near(t.modelA.roi, 1 / 3, 0.001));
+  ok('基线A 与模型A一致（同预测）', t.baseA.bets === 3 && near(t.baseA.profit, 100));
+  ok('模型B：2注1中 盈亏+200', t.modelB.bets === 2 && t.modelB.wins === 1 && near(t.modelB.profit, 200));
+  ok('逐日：10-01 模型A +200', bet.summaryDaily[0].date === '2026-10-01' && near(bet.summaryDaily[0].modelA, 200) && bet.summaryDaily[0].winsA === 1);
+  ok('逐日累计：10-02 模型A=+100 基线A=+100 模型B=+200',
+    near(bet.summaryDaily[1].cumModelA, 100) && near(bet.summaryDaily[1].cumBaseA, 100) && near(bet.summaryDaily[1].cumModelB, 200));
+  ok('逐场明细含赔率与累计', bet.details.length === 3 && bet.details[0].oddsA === 4.0 &&
+    near(bet.details[0].cumA, 300) && near(bet.details[2].cumA, 100));
+  // 该档无赔率时跳过该轨道
+  const noOdds = [mkRow('2026-10-03', 4, 4, null)];
+  const bet2 = JC.bettingStats(noOdds, 100);
+  ok('无赔率不下注', bet2.tracks.modelA.bets === 0 && bet2.details.length === 0);
+  // 自定义金额
+  const bet3 = JC.bettingStats([mkRow('2026-10-04', 2, 2, 4.0)], 50);
+  ok('自定义金额 50 元', near(bet3.tracks.modelA.profit, 150) && bet3.tracks.modelA.staked === 50);
+}
+
 console.log('\n结果：' + pass + ' 通过，' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

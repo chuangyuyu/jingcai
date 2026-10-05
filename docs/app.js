@@ -22,6 +22,9 @@
     sort: { key: 'date', dir: -1 },
     shownRows: 200,
     modelCfg: { windowDays: 30, maxActualRank: 6 },
+    betTrack: 'modelA',
+    betStake: 100,
+    _bet: null,
     busy: false
   };
 
@@ -64,6 +67,7 @@
     $('#dot').className = 'dot ' + (cls || '');
   }
   function fmtDiff(v) { return v == null ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(3); }
+  function fmtMoney(v) { return v == null ? '—' : (v > 0 ? '+' : '') + Number(v).toFixed(2); }
   function fmtPct(v, digits) { return v == null ? '—' : (v * 100).toFixed(digits == null ? 1 : digits) + '%'; }
   function todayStr() { return JC.localDateStr(); }
   function escapeHtml(s) {
@@ -150,6 +154,7 @@
       })
       .then(function (numsDoc) {
         state.numbers = numsDoc;
+        state.betStake = (numsDoc && numsDoc.betStake) || 100;
         render();
         updateStatusLine();
       })
@@ -400,6 +405,7 @@
   function render() {
     var rows = filteredRows();
     renderTiles(rows);
+    renderBetting(rows);
     renderDailyHitChart(state.rows);   // 命中率走势用全量（窗口自身控制）
     renderGoalDistChart(rows);
     renderModelTable(state.rows);
@@ -408,6 +414,83 @@
     renderLeagueOptions();
     renderAlerts();
     renderNumbers();
+  }
+
+  // ---------------------------------------------------------------- 模拟投注
+
+  function renderBetting(rows) {
+    var stake = state.betStake || 100;
+    $('#bet-stake').textContent = stake;
+    var bet = JC.bettingStats(rows, stake);
+    state._bet = bet;
+    var label = { modelA: '模型A', baseA: '基线A', modelB: '模型B（对照）' };
+    $('#bet-summary-table tbody').innerHTML = ['modelA', 'baseA', 'modelB'].map(function (k) {
+      var t = bet.tracks[k];
+      var cls = t.profit == null ? '' : (t.profit > 0 ? 'diff-pos' : (t.profit < 0 ? 'diff-neg' : ''));
+      return '<tr><td>' + label[k] + '</td><td class="num">' + t.bets + '</td><td class="num">' + t.wins +
+        '</td><td class="num">' + t.staked + '</td><td class="num">' + t.returned +
+        '</td><td class="num ' + cls + '"><b>' + fmtMoney(t.profit) + '</b></td><td class="num ' + cls + '">' + fmtPct(t.roi) + '</td></tr>';
+    }).join('');
+    renderBetChart(bet);
+    var dt = $('#bet-daily-table tbody');
+    if (!bet.summaryDaily.length) {
+      dt.innerHTML = '<tr><td colspan="7" class="muted">暂无数据</td></tr>';
+      return;
+    }
+    dt.innerHTML = bet.summaryDaily.slice().reverse().map(function (d) {
+      var cls = d.modelA > 0 ? 'diff-pos' : (d.modelA < 0 ? 'diff-neg' : '');
+      var ccls = d.cumModelA > 0 ? 'diff-pos' : (d.cumModelA < 0 ? 'diff-neg' : '');
+      return '<tr><td>' + d.date + '</td><td class="num">' + d.bets + '</td><td class="num">' + d.winsA +
+        '</td><td class="num ' + cls + '">' + fmtMoney(d.modelA) + '</td><td class="num ' + ccls + '"><b>' + fmtMoney(d.cumModelA) + '</b></td>' +
+        '<td class="num">' + fmtMoney(d.cumBaseA) + '</td><td class="num">' + fmtMoney(d.cumModelB) + '</td></tr>';
+    }).join('');
+  }
+
+  // 每日盈亏：以 0 为轴的上下双向柱（绿=盈利，红=亏损）
+  function renderBetChart(bet) {
+    var chart = $('#chart-bet');
+    var labels = $('#xlabels-bet');
+    var track = state.betTrack || 'modelA';
+    var days = bet.summaryDaily;
+    var hasData = days.length > 0;
+    $('#chart-bet-empty').hidden = hasData;
+    chart.style.display = hasData ? '' : 'none';
+    labels.style.display = hasData ? '' : 'none';
+    if (!hasData) { chart.innerHTML = ''; labels.innerHTML = ''; chart._days = null; return; }
+    var maxAbs = 0;
+    days.forEach(function (d) { maxAbs = Math.max(maxAbs, Math.abs(d[track])); });
+    if (maxAbs <= 0) maxAbs = 100;
+    var pow = Math.pow(10, Math.floor(Math.log10(maxAbs)));
+    var top = Math.ceil(maxAbs / (pow / 2)) * (pow / 2);
+    var cumKey = 'cum' + track.charAt(0).toUpperCase() + track.slice(1);
+    var html = '';
+    html += '<div class="gl" style="bottom:100%"></div><div class="ytick" style="bottom:100%">+' + Math.round(top) + '</div>';
+    html += '<div class="gl" style="bottom:75%"></div><div class="ytick" style="bottom:75%">+' + Math.round(top / 2) + '</div>';
+    html += '<div class="zero-line"></div><div class="ytick" style="bottom:50%">0</div>';
+    html += '<div class="gl" style="bottom:25%"></div><div class="ytick" style="bottom:25%">-' + Math.round(top / 2) + '</div>';
+    html += '<div class="gl zero" style="bottom:0%"></div><div class="ytick" style="bottom:0%">-' + Math.round(top) + '</div>';
+    days.forEach(function (d, i) {
+      var v = d[track];
+      var h = Math.min(50, Math.abs(v) / top * 50);
+      html += '<div class="bin pbin" data-i="' + i + '">' +
+        (v !== 0 ? '<div class="pbar ' + (v > 0 ? 'up' : 'down') + '" style="height:' + Math.max(2, h) + '%"></div>' : '') +
+        '</div>';
+    });
+    chart.innerHTML = html;
+    chart._days = days;
+    chart._track = track;
+    chart._cumKey = cumKey;
+    labels.innerHTML = days.map(function (d) { return '<div class="xl">' + d.date.slice(5) + '</div>'; }).join('');
+    chart.onmousemove = function (ev) {
+      var binEl = ev.target.closest ? ev.target.closest('.pbin') : null;
+      if (!binEl || !chart._days) { hideTooltip(); return; }
+      var d = chart._days[Number(binEl.dataset.i)];
+      if (!d) { hideTooltip(); return; }
+      var trackLabel = { modelA: '模型A', baseA: '基线A', modelB: '模型B' }[chart._track];
+      showTooltip(ev, d.date + ' · ' + trackLabel + '<br>当日：' + fmtMoney(d[chart._track]) +
+        '<br>累计：' + fmtMoney(d[chart._cumKey]) + '<br>模型A命中 ' + d.winsA + '/' + d.bets + ' 场');
+    };
+    chart.onmouseleave = hideTooltip;
   }
 
   function renderLeagueOptions() {
@@ -426,13 +509,14 @@
     var st = JC.predStats(rows);
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
     var stW = JC.predStats(rows.filter(function (r) { return r.date >= winFrom; }));
+    var mt = JC.bettingStats(rows, state.betStake || 100).tracks.modelA;
     var tiles = [
       { k: '场次（当前筛选）', v: st.settled, sub: '共 ' + st.withPred + ' 场有预测' },
+      { k: '模拟净盈亏（模型A）', v: fmtMoney(mt.profit), cls: mt.profit > 0 ? 'pos' : (mt.profit < 0 ? 'neg' : ''), sub: mt.bets + ' 场 · 回报率 ' + fmtPct(mt.roi) },
       { k: '基线A命中率（全部）', v: fmtPct(st.baseA.rate), sub: st.baseA.hit + '/' + st.baseA.n },
       { k: '模型A命中率（全部）', v: fmtPct(st.modelA.rate), sub: st.modelA.hit + '/' + st.modelA.n },
       { k: '模型A命中率（近' + (state.modelCfg.windowDays || 30) + '天）', v: fmtPct(stW.modelA.rate), sub: stW.modelA.hit + '/' + stW.modelA.n },
-      { k: '口径B 模型命中率', v: fmtPct(st.modelB.rate), sub: 'B口径仅记录差值（无基线预测）' },
-      { k: '剔除爆冷规则', v: '排名≥' + (state.modelCfg.maxActualRank || 6), sub: '深冷门不参与学习' }
+      { k: '口径B 模型命中率', v: fmtPct(st.modelB.rate), sub: 'B口径仅记录差值（无基线预测）' }
     ];
     $('#tiles').innerHTML = tiles.map(function (t) {
       return '<div class="tile"><div class="v">' + t.v + '</div><div class="k">' + t.k +
@@ -911,6 +995,15 @@
     $('#only-settled2').onchange = function () { state.filters.onlySettled = this.checked; $('#only-settled').checked = this.checked; render(); };
     $('#only-single').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single2').checked = this.checked; render(); };
     $('#only-single2').onchange = function () { state.filters.onlySingle = this.checked; $('#only-single').checked = this.checked; render(); };
+
+    // 模拟投注：轨道切换
+    $$('#bet-track-seg button').forEach(function (b) {
+      b.onclick = function () {
+        state.betTrack = b.dataset.track;
+        $$('#bet-track-seg button').forEach(function (x) { x.classList.toggle('active', x === b); });
+        if (state._bet) renderBetChart(state._bet);
+      };
+    });
 
     $$('#data-table th[data-sort]').forEach(function (th) {
       th.onclick = function () {

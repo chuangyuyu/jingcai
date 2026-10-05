@@ -278,6 +278,11 @@ function addHelpSheet(wb, config) {
     '    稳健性：赛果排名 ≥ ' + (modelCfg.maxActualRank || 6) + ' 的深冷门场次不纳入学习（防爆冷破坏函数）。',
     '  每场比赛的预测在其赛果落定时冻结（只使用该场之前的数据，杜绝未来数据泄漏），两轨同场对比。',
     '',
+    '【模拟投注】',
+    '  · 每场固定投入（config.json 的 bet.stake，默认 100 元）押"预测的进球数"（三条轨道分别统计：模型A/基线A/模型B）；',
+    '  · 猜中按该场【最后一次记录】的该进球数赔率返还，未中损失本金；',
+    '  · 「模拟投注」表含：汇总、逐场明细（含累计盈亏）、逐日汇总；网页统计页有对应的每日盈亏图。',
+    '',
     '【数据口径】',
     '  · 赔率、赛果来自中国体育彩票官方 Web API；每次抓取保留完整玩法池（总进球0-7+、比分矩阵）。',
     '  · 凌晨开赛的比赛属于前一"销售日"（预测窗口按销售日切分）。',
@@ -291,6 +296,47 @@ function addHelpSheet(wb, config) {
     if (i === 0) row.font = { bold: true, size: 14 };
     if (/^【.*】$/.test(t)) row.font = { bold: true, size: 12 };
   });
+  return ws;
+}
+
+// ---------------- 模拟投注 ----------------
+function addBetSheet(wb, rows, config) {
+  const stake = (config.bet && config.bet.stake) || 100;
+  const bet = JC.bettingStats(rows, stake);
+  const ws = wb.addWorksheet('模拟投注');
+  ws.columns = [{ width: 12 }, { width: 10 }, { width: 13 }, { width: 15 }, { width: 15 },
+    { width: 9 }, { width: 9 }, { width: 9 }, { width: 11 }, { width: 12 }, { width: 11 }, { width: 11 }];
+  ws.addRow(['模拟投注：每场固定 ' + stake + ' 元押"预测的进球数"；猜中按该场最后一次记录的该进球数赔率返还（口径与网页一致，可在 config.json 的 bet.stake 调整金额）']).font = { bold: true, size: 12 };
+  ws.addRow([]);
+  ws.addRow(['汇总']).font = { bold: true, size: 12 };
+  styleHeader(ws.addRow(['轨道', '投注场次', '命中', '总投入', '总回报', '净盈亏', '回报率']));
+  const betLabel = { modelA: '模型A（自修正）', baseA: '基线A（差值最小项）', modelB: '模型B（对照）' };
+  ['modelA', 'baseA', 'modelB'].forEach(k => {
+    const t = bet.tracks[k];
+    const r = ws.addRow([betLabel[k], t.bets, t.wins, t.staked, t.returned, t.profit, t.roi == null ? null : t.roi]);
+    r.getCell(7).numFmt = '0.0%';
+    if (t.profit != null) r.getCell(6).font = { bold: true, color: { argb: t.profit >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE } };
+  });
+  ws.addRow([]);
+  ws.addRow(['逐场明细（模型A 为主，另列其他轨道盈亏；累计为模型A）']).font = { bold: true, size: 12 };
+  styleHeader(ws.addRow(['日期', '编号', '联赛', '主队', '客队', '预测A', '赔率A', '实际进球', '模型A盈亏', '模型A累计', '基线A盈亏', '模型B盈亏']));
+  bet.details.forEach(d => {
+    const r = ws.addRow([d.date, d.matchNumStr, d.league, d.home, d.away,
+      JC.labelG(d.predA), d.oddsA, JC.labelG(d.actual), d.pnlA, d.cumA, d.pnlBaseA, d.pnlB]);
+    r.getCell(7).numFmt = '0.00';
+    [9, 10, 11, 12].forEach(i => { r.getCell(i).numFmt = '+0.00;-0.00;0.00'; });
+    if (d.pnlA != null) r.getCell(9).font = { color: { argb: d.pnlA >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE } };
+    if (d.cumA != null) r.getCell(10).font = { bold: true, color: { argb: d.cumA >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE } };
+  });
+  if (!bet.details.length) ws.addRow(['（暂无：需完整比分池快照 + 已冻结预测 + 已出赛果）']);
+  ws.addRow([]);
+  ws.addRow(['逐日汇总']).font = { bold: true, size: 12 };
+  styleHeader(ws.addRow(['日期', '场次', '模型A命中', '当日(模型A)', '累计(模型A)', '累计(基线A)', '累计(模型B)']));
+  bet.summaryDaily.forEach(d => {
+    const r = ws.addRow([d.date, d.bets, d.winsA, d.modelA, d.cumModelA, d.cumBaseA, d.cumModelB]);
+    [4, 5, 6, 7].forEach(i => { r.getCell(i).numFmt = '+0.00;-0.00;0.00'; });
+  });
+  if (!bet.summaryDaily.length) ws.addRow(['（暂无）']);
   return ws;
 }
 
@@ -314,6 +360,7 @@ async function generateExcel() {
   if (!rows.length) wb.addWorksheet('数据（暂无）');
   addDiffDetailSheet(wb, rows);
   addModelSheet(wb, rows, config);
+  addBetSheet(wb, rows, config);
   addNumbersSheets(wb, loadJson(path.join(DATA_DIR, 'numbers.json'), null));
   addHelpSheet(wb, config);
 

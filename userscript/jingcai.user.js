@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.1.1
+// @version      3.2.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.1.1';
+  var VERSION = '3.2.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -648,8 +648,7 @@
   function labelG(g) { return g == null ? '' : bucketLabel(g); }
 
   // 预测统计：基线/模型在给定行集合上的命中率（仅统计有预测且已出结果的场次）
-  function predStats(rows) {
-    var st = {
+  function predStats(rows) {    var st = {
       settled: 0, withPred: 0,
       baseA: { n: 0, hit: 0 }, modelA: { n: 0, hit: 0 },
       baseB: { n: 0, hit: 0 }, modelB: { n: 0, hit: 0 },
@@ -669,6 +668,85 @@
       st[k].rate = st[k].n ? st[k].hit / st[k].n : null;
     });
     return st;
+  }
+
+  // ---------------------------------------------------------------- 模拟投注
+
+  var DEFAULT_BET_STAKE = 100;
+
+  function round2(x) { return x == null ? null : Math.round(x * 100) / 100; }
+
+  // 模拟投注：对每场已出结果的比赛，按固定金额投注"预测的进球数"，猜中按该进球数的赔率返还。
+  // 赔率口径（用户指定）：取该场【最后一次记录】的总进球赔率（r.diffs.groups[g].ttg）。
+  // 三条预测轨道分别计算：baseA（基线）、modelA（自修正模型）、modelB（B口径模型·对照）。
+  // 返回 { stake, tracks{轨道:{bets,wins,staked,returned,profit,roi,daily[]}}, summaryDaily[], details[] }
+  function bettingStats(rows, stake) {
+    stake = stake || DEFAULT_BET_STAKE;
+    var tracks = {
+      baseA: { key: 'baseA', bets: 0, wins: 0, staked: 0, returned: 0 },
+      modelA: { key: 'modelA', bets: 0, wins: 0, staked: 0, returned: 0 },
+      modelB: { key: 'modelB', bets: 0, wins: 0, staked: 0, returned: 0 }
+    };
+    var dayMap = {};
+    var details = [];
+    (rows || []).forEach(function (r) {
+      if (r.actual == null || !r.diffs) return;
+      var picks = { baseA: r.predBaseA, modelA: r.predA, modelB: r.predB };
+      var grpOf = function (g) {
+        var out = null;
+        (r.diffs.groups || []).forEach(function (x) { if (x.g === g) out = x; });
+        return out;
+      };
+      var det = {
+        date: r.date, matchNumStr: r.matchNumStr, league: r.league, home: r.home, away: r.away,
+        actual: r.actual, predA: r.predA, oddsA: null, pnlA: null,
+        predBaseA: r.predBaseA, pnlBaseA: null, predB: r.predB, pnlB: null
+      };
+      var any = false;
+      ['baseA', 'modelA', 'modelB'].forEach(function (k) {
+        var g = picks[k];
+        if (g == null) return;
+        var grp = grpOf(g);
+        var odds = grp ? grp.ttg : null;
+        if (odds == null) return; // 该档无赔率 → 这一轨不下注
+        any = true;
+        var win = (r.actual === g);
+        var ret = win ? stake * odds : 0;
+        var t = tracks[k];
+        t.bets++; t.staked += stake; t.returned += ret;
+        if (win) t.wins++;
+        var day = dayMap[r.date] = dayMap[r.date] || { date: r.date, baseA: 0, modelA: 0, modelB: 0, bets: 0, winsA: 0 };
+        day[k] += ret - stake;
+        if (k === 'modelA') {
+          if (win) day.winsA++;
+          det.oddsA = odds;
+          det.pnlA = round2(ret - stake);
+        } else if (k === 'baseA') det.pnlBaseA = round2(ret - stake);
+        else det.pnlB = round2(ret - stake);
+      });
+      if (any) {
+        dayMap[r.date].bets++;
+        details.push(det);
+      }
+    });
+    ['baseA', 'modelA', 'modelB'].forEach(function (k) {
+      var t = tracks[k];
+      t.profit = round2(t.returned - t.staked);
+      t.roi = t.staked ? t.profit / t.staked : null;
+      t.staked = round2(t.staked); t.returned = round2(t.returned);
+    });
+    var cum = { baseA: 0, modelA: 0, modelB: 0 };
+    var summaryDaily = Object.keys(dayMap).sort().map(function (d) {
+      var day = dayMap[d];
+      ['baseA', 'modelA', 'modelB'].forEach(function (k) { day[k] = round2(day[k]); cum[k] = round2(cum[k] + day[k]); });
+      day.cumBaseA = cum.baseA; day.cumModelA = cum.modelA; day.cumModelB = cum.modelB;
+      return day;
+    });
+    var run = 0;
+    details.forEach(function (det) {
+      if (det.pnlA != null) { run = round2(run + det.pnlA); det.cumA = run; }
+    });
+    return { stake: stake, tracks: tracks, summaryDaily: summaryDaily, details: details };
   }
 
   // ---------------------------------------------------------------- 编号追踪（保持）
@@ -804,6 +882,8 @@
     // 展平 / 统计
     flatRows: flatRows,
     predStats: predStats,
+    bettingStats: bettingStats,
+    DEFAULT_BET_STAKE: DEFAULT_BET_STAKE,
     dayFileName: dayFileName,
     parseDayFileName: parseDayFileName,
     localDateStr: localDateStr,
@@ -1089,6 +1169,24 @@
       (a.length > 15 ? '\n…等共 ' + a.length + ' 项' : ''));
   }
 
+  // 模拟投注速览（基于本机数据，每场100元）
+  function showBetting() {
+    var days = getDays();
+    var dates = Object.keys(days).sort();
+    if (!dates.length) { say('本机还没有数据'); return; }
+    var rows = JC.flatRows(dates.map(function (d) { return days[d]; }));
+    var bet = JC.bettingStats(rows, 100);
+    function line(name, t) {
+      return name + '：' + t.bets + ' 场，命中 ' + t.wins + '，投入 ' + t.staked +
+        '，回报 ' + t.returned + '，净盈亏 ' + (t.profit >= 0 ? '+' : '') + t.profit +
+        (t.roi != null ? '（回报率 ' + (t.roi * 100).toFixed(1) + '%）' : '');
+    }
+    window.alert('模拟投注统计（本机数据 · 每场 100 元 · 赔率取最后一次记录）\n\n' +
+      line('模型A', bet.tracks.modelA) + '\n' +
+      line('基线A', bet.tracks.baseA) + '\n' +
+      line('模型B', bet.tracks.modelB) + '\n\n完整统计（每日盈亏等）见网页"模拟投注"卡片');
+  }
+
   // ---------------------------------------------------------------- 浮窗
 
   var panel, body, listEl, statEl;
@@ -1259,6 +1357,7 @@
   GM_registerMenuCommand('回填赛果', backfill);
   GM_registerMenuCommand('同步到 GitHub', sync);
   GM_registerMenuCommand('查看编号追踪提醒', showAlerts);
+  GM_registerMenuCommand('查看模拟投注统计', showBetting);
   GM_registerMenuCommand('设置 GitHub 仓库/令牌', openSettings);
   GM_registerMenuCommand('导出数据 JSON', exportJson);
   GM_registerMenuCommand('清除本机数据', clearAll);
