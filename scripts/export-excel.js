@@ -54,7 +54,6 @@ const MONTH_COLUMNS = [
   { header: '实际进球', key: 'actualText', width: 9 },
   { header: '基线A预测', key: 'baseA', width: 10 },
   { header: '模型A预测', key: 'modelA', width: 10 },
-  { header: '基线B预测', key: 'baseB', width: 10 },
   { header: '模型B预测', key: 'modelB', width: 10 },
   { header: '模型A命中', key: 'hitModelA', width: 10 },
   { header: '模型B命中', key: 'hitModelB', width: 10 },
@@ -73,7 +72,6 @@ function addMonthSheet(wb, month, rows) {
       actualText: r.actual == null ? '' : JC.labelG(r.actual),
       baseA: r.predBaseA == null ? '' : JC.labelG(r.predBaseA),
       modelA: r.predA == null ? '' : JC.labelG(r.predA),
-      baseB: r.predBaseB == null ? '' : JC.labelG(r.predBaseB),
       modelB: r.predB == null ? '' : JC.labelG(r.predB),
       hitModelA: r.hitModelA == null ? '' : (r.hitModelA ? '✓' : '✗'),
       hitModelB: r.hitModelB == null ? '' : (r.hitModelB ? '✓' : '✗'),
@@ -94,7 +92,7 @@ function addMonthSheet(wb, month, rows) {
       if (c.value === '✓') c.font = { bold: true, color: { argb: COLOR_POSITIVE } };
       else if (c.value === '✗') c.font = { color: { argb: COLOR_NEGATIVE } };
     });
-    ['actualText', 'baseA', 'modelA', 'baseB', 'modelB'].forEach(k => { row.getCell(k).alignment = { horizontal: 'center' }; });
+    ['actualText', 'baseA', 'modelA', 'modelB'].forEach(k => { row.getCell(k).alignment = { horizontal: 'center' }; });
   }
   return ws;
 }
@@ -107,9 +105,9 @@ function addDiffDetailSheet(wb, rows) {
     { header: '日期', width: 12 }, { header: '编号', width: 9 }, { header: '主队', width: 15 }, { header: '客队', width: 15 },
     { header: '进球数', width: 8 },
     { header: '总进球赔率', width: 11 },
-    { header: '优化赔率A(多选)', width: 14 }, { header: '差值A', width: 10 },
-    { header: '平均赔率B', width: 11 }, { header: '差值B', width: 10 },
-    { header: '比分(赔率)', width: 46 }
+    { header: '优化赔率A(多选)', width: 14 }, { header: '差值A', width: 10 }, { header: '相对差值A(%)', width: 12 },
+    { header: '平均赔率B', width: 11 }, { header: '差值B', width: 10 }, { header: '相对差值B(%)', width: 12 },
+    { header: '比分(赔率)', width: 52 }
   ];
   styleHeader(ws.getRow(1));
   detail.forEach(r => {
@@ -117,14 +115,17 @@ function addDiffDetailSheet(wb, rows) {
     gs.forEach(g => {
       const row = ws.addRow([
         r.date, r.matchNumStr, r.home, r.away, g.label,
-        g.ttg, g.optA, g.diffA, g.avgB, g.diffB,
+        g.ttg, g.optA, g.diffA, g.relA != null ? Math.round(g.relA * 1000) / 10 : null,
+        g.avgB, g.diffB, g.relB != null ? Math.round(g.relB * 1000) / 10 : null,
         g.scores.map(c => c.score + '=' + c.odds).join(' ')
       ]);
       row.getCell(6).numFmt = '0.00';
       row.getCell(7).numFmt = '0.000';
       row.getCell(8).numFmt = '+0.000;-0.000;0.000';
-      row.getCell(9).numFmt = '0.00';
-      row.getCell(10).numFmt = '+0.000;-0.000;0.000';
+      row.getCell(9).numFmt = '+0.0;-0.0;0.0';
+      row.getCell(10).numFmt = '0.00';
+      row.getCell(11).numFmt = '+0.000;-0.000;0.000';
+      row.getCell(12).numFmt = '+0.0;-0.0;0.0';
       if (typeof row.getCell(8).value === 'number') row.getCell(8).font = { color: { argb: row.getCell(8).value >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE } };
       if (g.g === 0) row.font = { color: { argb: COLOR_MUTED } }; // 0球为拟合值
     });
@@ -148,8 +149,8 @@ function addModelSheet(wb, rows, config) {
   ws.addRow(['其中有预测的场次', st.withPred]);
   ws.addRow(['基线A 命中率（差值最小项）', st.baseA.n ? (st.baseA.hit + '/' + st.baseA.n + ' = ' + pct(st.baseA.rate)) : '—']);
   ws.addRow(['模型A 命中率（自修正）', st.modelA.n ? (st.modelA.hit + '/' + st.modelA.n + ' = ' + pct(st.modelA.rate)) : '—']);
-  ws.addRow(['基线B 命中率（简单平均口径）', st.baseB.n ? (st.baseB.hit + '/' + st.baseB.n + ' = ' + pct(st.baseB.rate)) : '—']);
-  ws.addRow(['模型B 命中率（简单平均口径）', st.modelB.n ? (st.modelB.hit + '/' + st.modelB.n + ' = ' + pct(st.modelB.rate)) : '—']);
+  ws.addRow(['模型B 命中率（简单平均口径·对照）', st.modelB.n ? (st.modelB.hit + '/' + st.modelB.n + ' = ' + pct(st.modelB.rate)) : '—']);
+  ws.addRow(['说明：口径B的平均赔率随比分个数放大，差值不可跨档比较，不产出基线预测（详见"说明"表）。']).font = { color: { argb: COLOR_MUTED } };
   ws.addRow([]);
 
   // 近 N 天窗口
@@ -262,8 +263,11 @@ function addHelpSheet(wb, config) {
     '    口径A（多选优化保底）: 优化赔率A = 1 ÷ Σ(1/该进球数每个比分的赔率)',
     '      含义：把 1 元按赔率倒数比例拆注押该进球数的所有比分，无论哪个比分命中，',
     '      保底回报 = 优化赔率A（1球时即 6.40×10.50/(6.40+10.50) 这类公式）',
+    '      注意：7+球 = 比分矩阵中总进球≥7的格子（仅 5:2、2:5）∪ 胜其他/平其他/负其他 三档',
+    '      （真正的 6:0、4:3、6:1 等 7+ 比分都在"其他"里）；缺"其他"档时 7+ 不参与预测',
     '    口径B（简单平均）: 平均赔率B = 该进球数各比分赔率的算术平均',
     '    差值A = 总进球G赔率 − 优化赔率A；差值B = 总进球G赔率 − 平均赔率B',
+    '    相对差值 = 总进球G赔率 ÷ 优化(平均)赔率 − 1（百分比，仅记录参考）',
     '  · 0球只有 0:0 一个比分，无法优化/平均 → 无差值；',
     '    0球的差值由"全进球数二次曲线拟合"给出（用 g=1..7 的真实差值外推，不按 0 硬填）。',
     '',
@@ -322,7 +326,7 @@ async function generateExcel() {
 
   // CSV：预测主表
   const csvHead = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负', '实际进球',
-    '基线A预测', '模型A预测', '基线B预测', '模型B预测', '模型A命中', '模型B命中', '抓取时间', '结果时间'];
+    '基线A预测', '模型A预测', '模型B预测', '模型A命中', '模型B命中', '抓取时间', '结果时间'];
   const csvLines = [csvHead.join(',')];
   const esc = s => { s = s == null ? '' : String(s); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   rows.forEach(r => {
@@ -332,7 +336,6 @@ async function generateExcel() {
       r.actual == null ? '' : JC.labelG(r.actual),
       r.predBaseA == null ? '' : JC.labelG(r.predBaseA),
       r.predA == null ? '' : JC.labelG(r.predA),
-      r.predBaseB == null ? '' : JC.labelG(r.predBaseB),
       r.predB == null ? '' : JC.labelG(r.predB),
       r.hitModelA == null ? '' : (r.hitModelA ? '√' : '×'),
       r.hitModelB == null ? '' : (r.hitModelB ? '√' : '×'),

@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         竞彩1球差值助手
+// @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.0.0
-// @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
+// @version      3.1.1
+// @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
 // @downloadURL  https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.0.0';
+  var VERSION = '3.1.1';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -118,6 +118,7 @@
 
   function bucketOfGoals(g) { return g == null ? null : Math.min(g, 7); } // 7 = 7+球
   function bucketLabel(b) { return b === 7 ? '7+球' : b + '球'; }
+  var GOAL_LABELS = ['0球', '1球', '2球', '3球', '4球', '5球', '6球', '7+球'];
 
   // ---------------------------------------------------------------- 场次编号 / 销售日
 
@@ -291,6 +292,9 @@
   }
 
   // 由一次赔率快照计算全部进球数的差值（两种口径）+ 0球拟合值 + 基线预测
+  // 关键口径：竞彩比分矩阵只覆盖到 5:2 / 2:5（总进球≥7 仅这两个格子），
+  //   真正的 7+ 比分（6:0、4:3、6:1…）全部在「胜其他/平其他/负其他」三档里，
+  //   因此 7+球 的多选优化 = 矩阵≥7 的格子 ∪ 其他三档；缺失其他档时 7+ 不参与预测。
   function goalDiffs(odds) {
     if (!odds || !odds.goals || !odds.scores) return null;
     var groups = [];
@@ -304,9 +308,15 @@
         var b = Math.min(tot, 7);
         if (b === g) list.push({ score: sc, odds: odds.scores[sc] });
       });
-      list.sort(function (a, b2) { return a.score.localeCompare(b2.score); });
+      if (g === 7 && odds.other) {
+        if (odds.other.win != null) list.push({ score: '胜其他', odds: odds.other.win });
+        if (odds.other.draw != null) list.push({ score: '平其他', odds: odds.other.draw });
+        if (odds.other.lose != null) list.push({ score: '负其他', odds: odds.other.lose });
+      }
+      list.sort(function (a, b2) { return String(a.score).localeCompare(String(b2.score)); });
       var optA = null, avgB = null;
-      if (list.length >= 2 && ttg != null) {
+      var canCompute = list.length >= 2 && ttg != null && !(g === 7 && !odds.other);
+      if (canCompute) {
         var sumInv = 0, sum = 0;
         list.forEach(function (c) { sumInv += 1 / c.odds; sum += c.odds; });
         optA = round3(1 / sumInv);
@@ -314,25 +324,28 @@
       }
       var diffA = (optA != null && ttg != null) ? round3(ttg - optA) : null;
       var diffB = (avgB != null && ttg != null) ? round3(ttg - avgB) : null;
+      var relA = (optA != null && ttg != null) ? Math.round((ttg / optA - 1) * 10000) / 10000 : null;
+      var relB = (avgB != null && ttg != null) ? Math.round((ttg / avgB - 1) * 10000) / 10000 : null;
       if (g >= 1) {
-        if (diffA != null) { xsA.push(g); ysA.push(diffA); }
-        if (diffB != null) { xsB.push(g); ysB.push(diffB); }
+        if (diffA != null) { xsA.push(g); ysA.push(Math.max(-5, Math.min(15, diffA))); }
+        if (diffB != null) { xsB.push(g); ysB.push(Math.max(-5, Math.min(15, diffB))); }
       }
-      groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, scores: list });
+      groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, relA: relA, relB: relB, scores: list });
     }
     var fit0A = fitValueAt0(xsA, ysA);
     var fit0B = fitValueAt0(xsB, ysB);
     if (fit0A != null) groups[0].diffA = round3(fit0A);
     if (fit0B != null) groups[0].diffB = round3(fit0B);
-    // 基线预测：差值最小的进球数（含 0 球拟合值）
+    // 基线预测只用口径A：口径B的"平均赔率"随档位指数放大（多选个数的天然效应），
+    // 其差值取最小在数学上必然偏向高档位，没有跨档可比性 —— B 仅记录差值/相对差值，
+    // 并参与"模型B"（按相对差值排名学习）供对比分析。
     var predBaseA = argminG(groups, 'diffA');
-    var predBaseB = argminG(groups, 'diffB');
     return {
       groups: groups,
       fit0A: fit0A != null ? round3(fit0A) : null,
       fit0B: fit0B != null ? round3(fit0B) : null,
       predBaseA: predBaseA,
-      predBaseB: predBaseB
+      predBaseB: null
     };
   }
 
@@ -564,19 +577,20 @@
     var d = goalDiffs(cap.odds);
     if (!d) return null;
     var diffsA = d.groups.map(function (x) { return x.diffA; });
-    var diffsB = d.groups.map(function (x) { return x.diffB; });
+    var diffsB = d.groups.map(function (x) { return x.relB; }); // B口径用相对差值（绝对差值不可跨档比较）
     var slate = match.businessDate || match.matchDate;
     var windowDays = (opts.model && opts.model.windowDays) || 30;
     var maxRank = (opts.model && opts.model.maxActualRank) || 6;
     var samplesA = modelSamples(allMatches, 'diffA', { windowDays: windowDays, endDate: slate });
-    var samplesB = modelSamples(allMatches, 'diffB', { windowDays: windowDays, endDate: slate });
+    var samplesB = modelSamples(allMatches, 'relB', { windowDays: windowDays, endDate: slate });
     var modelA = modelTrain(samplesA, { maxActualRank: maxRank });
     var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
     return {
       baseA: d.predBaseA, modelA: modelPredict(modelA, diffsA, d.predBaseA),
-      baseB: d.predBaseB, modelB: modelPredict(modelB, diffsB, d.predBaseB),
+      baseB: null, modelB: modelPredict(modelB, diffsB, null),
       fit0A: d.fit0A, fit0B: d.fit0B,
       windowA: modelA.used, windowB: modelB.used,
+      ver: VERSION,
       at: nowIso()
     };
   }
@@ -777,6 +791,7 @@
     goalsFromScore: goalsFromScore,
     bucketOfGoals: bucketOfGoals,
     bucketLabel: bucketLabel,
+    GOAL_LABELS: GOAL_LABELS,
     labelG: labelG,
     isOneGoalScore: isOneGoalScore,
     // 编号追踪
@@ -830,7 +845,7 @@
   var statusEl = null;
   function say(msg, isErr) {
     if (statusEl) { statusEl.textContent = msg; statusEl.style.color = isErr ? '#c0392b' : '#333'; }
-    try { GM_notification({ text: msg, title: '竞彩1球差值', timeout: 4000, silent: true }); } catch (e) {}
+    try { GM_notification({ text: msg, title: '竞彩进球数预测', timeout: 4000, silent: true }); } catch (e) {}
     console.log('[竞彩1球差值]', msg);
   }
 
@@ -1110,7 +1125,7 @@
     panel = document.createElement('div');
     panel.id = 'jcq-panel';
     panel.innerHTML =
-      '<div class="hd"><b>竞彩1球差值</b>' +
+      '<div class="hd"><b>竞彩进球数预测</b>' +
       '<button data-act="cap">刷新赔率</button>' +
       '<button data-act="res">回填赛果</button>' +
       '<button data-act="sync">同步</button>' +
@@ -1149,7 +1164,7 @@
       if (!pill) {
         pill = document.createElement('div');
         pill.id = 'jcq-pill';
-        pill.textContent = '竞彩1球差值';
+        pill.textContent = '竞彩进球数预测';
         pill.title = '点击展开面板';
         pill.onclick = function () { fold(false); renderPanel(); };
         document.body.appendChild(pill);

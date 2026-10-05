@@ -59,10 +59,35 @@ console.log('== 进球数差值（两种口径）==');
   ok('2球口径B均值 = 9.60', near(g2.avgB, 9.6));
   ok('0球两种口径均无差值', d.groups[0].optA === null && d.groups[0].avgB === null);
   ok('0球差值来自拟合（非空）', d.groups[0].diffA != null && d.fit0A != null);
-  ok('7+球含总进球≥7的比分（5:2/4:3/3:4/2:5/4:4）', d.groups[7].scores.length === 5);
-  ok('基线预测为合法进球数', d.predBaseA >= 0 && d.predBaseA <= 7 && d.predBaseB >= 0 && d.predBaseB <= 7);
+  ok('7+球含矩阵≥7的比分 + 其他三档（共8项）', d.groups[7].scores.length === 8, 'len=' + d.groups[7].scores.length);
+  ok('7+球包含胜/平/负其他', d.groups[7].scores.some(s => s.score === '胜其他') &&
+    d.groups[7].scores.some(s => s.score === '平其他') && d.groups[7].scores.some(s => s.score === '负其他'));
+  ok('1球相对差值A ≈ +3.1%', near(g1.relA, 0.0312, 0.001), 'relA=' + g1.relA);
+  ok('基线预测为合法进球数（B口径不产出基线）', d.predBaseA >= 0 && d.predBaseA <= 7 && d.predBaseB === null);
   // 无完整池（旧数据）返回 null
   ok('旧数据（无比分矩阵）返回 null', JC.goalDiffs({ ttg1: 4.1, s10: 6.4, s01: 10.5, had: [] }) === null);
+
+  // ★ 回归测试（用户实测报告）：7+球只含 5:2/2:5 两个冷门格时差值会异常巨大（约 −45），
+  //   必须并入"其他"三档后 7+ 差值回到正常量级、不再霸占"差值最小"。
+  {
+    const realLike = {
+      goals: [10.5, 4.4, 3.2, 3.8, 6.2, 12.5, 25, 40],
+      scores: {
+        '0:0': 10.5, '1:0': 6.4, '0:1': 10.5, '1:1': 6.8, '2:0': 9.0, '0:2': 13.0,
+        '2:1': 8.0, '1:2': 11.0, '3:0': 15.0, '3:1': 21.0, '2:2': 13.0, '3:2': 28.0,
+        '4:0': 41.0, '4:1': 45.0, '4:2': 55.0, '5:0': 90.0, '5:1': 95.0, '2:5': 200.0, '5:2': 150.0
+      },
+      other: { win: 55, draw: 550, lose: 300 }
+    };
+    const dr = JC.goalDiffs(realLike);
+    ok('7+球差值回到正常量级（> 0）', dr.groups[7].diffA != null && dr.groups[7].diffA > 0, 'diff7=' + dr.groups[7].diffA);
+    ok('差值最小不再是 7+球', dr.predBaseA !== 7, 'pred=' + dr.predBaseA);
+    // 缺"其他"三档时：7+ 不参与预测（保守处理）
+    const noOther = JSON.parse(JSON.stringify(realLike));
+    delete noOther.other;
+    const dr2 = JC.goalDiffs(noOther);
+    ok('缺其他档时 7+ 差值为 null 且不参与预测', dr2.groups[7].diffA === null && dr2.predBaseA !== 7);
+  }
 }
 
 console.log('== 自修正模型（排名×进球数 命中率表）==');
@@ -109,7 +134,7 @@ console.log('== 预测冻结（防未来数据泄漏）==');
   const pool = [mkMatch(1, '2026-09-20', '2:1'), mkMatch(2, '2026-09-21', '1:0'), mkMatch(3, '2026-09-22', '0:0'), mkMatch(4, '2026-09-23', null)];
   // 冻结第 4 场的预测：窗口只应含前三场（销售日 < 09-23）
   const pred = JC.freezePrediction(pool[3], pool, { model: { windowDays: 30, maxActualRank: 6 } });
-  ok('冻结预测含基线与模型', pred && pred.baseA != null && pred.modelA != null && pred.baseB != null && pred.modelB != null);
+  ok('冻结预测含基线A与模型（B口径无基线）', pred && pred.baseA != null && pred.modelA != null && pred.baseB === null && pred.modelB != null);
   ok('冻结窗口为之前的 3 场', pred.windowA === 3, 'windowA=' + pred.windowA);
   const s = JC.modelSamples(pool, 'diffA', { windowDays: 30, endDate: '2026-09-23' });
   ok('样本不含当日及以后（防泄漏）', s.length === 3);

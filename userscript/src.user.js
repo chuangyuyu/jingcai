@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         竞彩1球差值助手
+// @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.0.0
-// @description  在体彩官网抓取竞彩足球「1球赔率 vs 比分(1:0/0:1)双选优化赔率」的差值（每天两次快照+变化箭头、单关标记），浮窗展示今日场次，可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
+// @version      3.1.1
+// @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
 // @downloadURL  https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
   var statusEl = null;
   function say(msg, isErr) {
     if (statusEl) { statusEl.textContent = msg; statusEl.style.color = isErr ? '#c0392b' : '#333'; }
-    try { GM_notification({ text: msg, title: '竞彩1球差值', timeout: 4000, silent: true }); } catch (e) {}
+    try { GM_notification({ text: msg, title: '竞彩进球数预测', timeout: 4000, silent: true }); } catch (e) {}
     console.log('[竞彩1球差值]', msg);
   }
 
@@ -335,7 +335,7 @@
     panel = document.createElement('div');
     panel.id = 'jcq-panel';
     panel.innerHTML =
-      '<div class="hd"><b>竞彩1球差值</b>' +
+      '<div class="hd"><b>竞彩进球数预测</b>' +
       '<button data-act="cap">刷新赔率</button>' +
       '<button data-act="res">回填赛果</button>' +
       '<button data-act="sync">同步</button>' +
@@ -374,7 +374,7 @@
       if (!pill) {
         pill = document.createElement('div');
         pill.id = 'jcq-pill';
-        pill.textContent = '竞彩1球差值';
+        pill.textContent = '竞彩进球数预测';
         pill.title = '点击展开面板';
         pill.onclick = function () { fold(false); renderPanel(); };
         document.body.appendChild(pill);

@@ -29,7 +29,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.0.0';
+  var VERSION = '3.1.1';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -266,6 +266,9 @@
   }
 
   // 由一次赔率快照计算全部进球数的差值（两种口径）+ 0球拟合值 + 基线预测
+  // 关键口径：竞彩比分矩阵只覆盖到 5:2 / 2:5（总进球≥7 仅这两个格子），
+  //   真正的 7+ 比分（6:0、4:3、6:1…）全部在「胜其他/平其他/负其他」三档里，
+  //   因此 7+球 的多选优化 = 矩阵≥7 的格子 ∪ 其他三档；缺失其他档时 7+ 不参与预测。
   function goalDiffs(odds) {
     if (!odds || !odds.goals || !odds.scores) return null;
     var groups = [];
@@ -279,9 +282,15 @@
         var b = Math.min(tot, 7);
         if (b === g) list.push({ score: sc, odds: odds.scores[sc] });
       });
-      list.sort(function (a, b2) { return a.score.localeCompare(b2.score); });
+      if (g === 7 && odds.other) {
+        if (odds.other.win != null) list.push({ score: '胜其他', odds: odds.other.win });
+        if (odds.other.draw != null) list.push({ score: '平其他', odds: odds.other.draw });
+        if (odds.other.lose != null) list.push({ score: '负其他', odds: odds.other.lose });
+      }
+      list.sort(function (a, b2) { return String(a.score).localeCompare(String(b2.score)); });
       var optA = null, avgB = null;
-      if (list.length >= 2 && ttg != null) {
+      var canCompute = list.length >= 2 && ttg != null && !(g === 7 && !odds.other);
+      if (canCompute) {
         var sumInv = 0, sum = 0;
         list.forEach(function (c) { sumInv += 1 / c.odds; sum += c.odds; });
         optA = round3(1 / sumInv);
@@ -289,25 +298,28 @@
       }
       var diffA = (optA != null && ttg != null) ? round3(ttg - optA) : null;
       var diffB = (avgB != null && ttg != null) ? round3(ttg - avgB) : null;
+      var relA = (optA != null && ttg != null) ? Math.round((ttg / optA - 1) * 10000) / 10000 : null;
+      var relB = (avgB != null && ttg != null) ? Math.round((ttg / avgB - 1) * 10000) / 10000 : null;
       if (g >= 1) {
-        if (diffA != null) { xsA.push(g); ysA.push(diffA); }
-        if (diffB != null) { xsB.push(g); ysB.push(diffB); }
+        if (diffA != null) { xsA.push(g); ysA.push(Math.max(-5, Math.min(15, diffA))); }
+        if (diffB != null) { xsB.push(g); ysB.push(Math.max(-5, Math.min(15, diffB))); }
       }
-      groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, scores: list });
+      groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, relA: relA, relB: relB, scores: list });
     }
     var fit0A = fitValueAt0(xsA, ysA);
     var fit0B = fitValueAt0(xsB, ysB);
     if (fit0A != null) groups[0].diffA = round3(fit0A);
     if (fit0B != null) groups[0].diffB = round3(fit0B);
-    // 基线预测：差值最小的进球数（含 0 球拟合值）
+    // 基线预测只用口径A：口径B的"平均赔率"随档位指数放大（多选个数的天然效应），
+    // 其差值取最小在数学上必然偏向高档位，没有跨档可比性 —— B 仅记录差值/相对差值，
+    // 并参与"模型B"（按相对差值排名学习）供对比分析。
     var predBaseA = argminG(groups, 'diffA');
-    var predBaseB = argminG(groups, 'diffB');
     return {
       groups: groups,
       fit0A: fit0A != null ? round3(fit0A) : null,
       fit0B: fit0B != null ? round3(fit0B) : null,
       predBaseA: predBaseA,
-      predBaseB: predBaseB
+      predBaseB: null
     };
   }
 
@@ -539,19 +551,20 @@
     var d = goalDiffs(cap.odds);
     if (!d) return null;
     var diffsA = d.groups.map(function (x) { return x.diffA; });
-    var diffsB = d.groups.map(function (x) { return x.diffB; });
+    var diffsB = d.groups.map(function (x) { return x.relB; }); // B口径用相对差值（绝对差值不可跨档比较）
     var slate = match.businessDate || match.matchDate;
     var windowDays = (opts.model && opts.model.windowDays) || 30;
     var maxRank = (opts.model && opts.model.maxActualRank) || 6;
     var samplesA = modelSamples(allMatches, 'diffA', { windowDays: windowDays, endDate: slate });
-    var samplesB = modelSamples(allMatches, 'diffB', { windowDays: windowDays, endDate: slate });
+    var samplesB = modelSamples(allMatches, 'relB', { windowDays: windowDays, endDate: slate });
     var modelA = modelTrain(samplesA, { maxActualRank: maxRank });
     var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
     return {
       baseA: d.predBaseA, modelA: modelPredict(modelA, diffsA, d.predBaseA),
-      baseB: d.predBaseB, modelB: modelPredict(modelB, diffsB, d.predBaseB),
+      baseB: null, modelB: modelPredict(modelB, diffsB, null),
       fit0A: d.fit0A, fit0B: d.fit0B,
       windowA: modelA.used, windowB: modelB.used,
+      ver: VERSION,
       at: nowIso()
     };
   }

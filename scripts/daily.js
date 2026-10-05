@@ -191,24 +191,27 @@ async function runOdds() {
   return { added: totalAdded, updated: totalUpdated, captured: totalCaptured, dates: touchedDates };
 }
 
-// 为已出结果但尚未冻结预测的场次补冻结预测（窗口=该场销售日之前，防未来数据泄漏）
+// 为已出结果但尚未冻结预测（或预测由旧版本算法生成）的场次补/重冻结预测。
+// 窗口=该场销售日之前，防未来数据泄漏；算法修正后旧版预测作废重算（非事后调参，是修 bug）。
 function freezeMissingPredictions(config) {
   const index = loadIndex();
   const dates = Object.keys(index.dates || {}).sort();
   const docs = dates.map(d => loadDay(d)).filter(Boolean);
   const all = [];
   docs.forEach(doc => (doc.matches || []).forEach(m => all.push(m)));
-  let frozen = 0;
+  let frozen = 0, refrozen = 0;
   docs.forEach(doc => {
     let changed = false;
     (doc.matches || []).forEach(m => {
-      if (!m.result || !m.result.score || m.pred) return;
+      if (!m.result || !m.result.score) return;
+      if (m.pred && m.pred.ver === JC.VERSION) return;
+      if (m.pred) refrozen++;
       const p = JC.freezePrediction(m, all, { model: config.model });
       if (p) { m.pred = p; changed = true; frozen++; }
     });
     if (changed) saveDay(doc);
   });
-  if (frozen) log(`冻结预测：${frozen} 场（模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
+  if (frozen) log(`冻结预测：${frozen} 场${refrozen ? '（其中 ' + refrozen + ' 场因算法升级重算）' : ''}（模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
   return frozen;
 }
 

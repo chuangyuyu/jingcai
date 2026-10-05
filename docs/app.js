@@ -216,7 +216,7 @@
     });
   }
 
-  // 为本机数据补冻结预测（与服务器端 daily.js 相同的逻辑）
+  // 为本机数据补/重冻结预测（与服务器端 daily.js 相同的逻辑；算法升级后旧预测重算）
   function freezeLocalPredictions() {
     var all = [];
     Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { all.push(m); }); });
@@ -225,7 +225,8 @@
       var doc = state.days[d];
       var changed = false;
       (doc.matches || []).forEach(function (m) {
-        if (!m.result || !m.result.score || m.pred) return;
+        if (!m.result || !m.result.score) return;
+        if (m.pred && m.pred.ver === JC.VERSION) return;
         var p = JC.freezePrediction(m, all, { model: state.modelCfg });
         if (p) { m.pred = p; changed = true; frozen++; }
       });
@@ -430,7 +431,7 @@
       { k: '基线A命中率（全部）', v: fmtPct(st.baseA.rate), sub: st.baseA.hit + '/' + st.baseA.n },
       { k: '模型A命中率（全部）', v: fmtPct(st.modelA.rate), sub: st.modelA.hit + '/' + st.modelA.n },
       { k: '模型A命中率（近' + (state.modelCfg.windowDays || 30) + '天）', v: fmtPct(stW.modelA.rate), sub: stW.modelA.hit + '/' + stW.modelA.n },
-      { k: '口径B 模型命中率', v: fmtPct(st.modelB.rate), sub: '对比：基线B ' + fmtPct(st.baseB.rate) },
+      { k: '口径B 模型命中率', v: fmtPct(st.modelB.rate), sub: 'B口径仅记录差值（无基线预测）' },
       { k: '剔除爆冷规则', v: '排名≥' + (state.modelCfg.maxActualRank || 6), sub: '深冷门不参与学习' }
     ];
     $('#tiles').innerHTML = tiles.map(function (t) {
@@ -569,8 +570,8 @@
       return '<tr><td>' + r.date.slice(5) + '</td><td>' + escapeHtml(r.matchNumStr) + '</td><td>' + escapeHtml(r.league) + '</td>' +
         '<td>' + escapeHtml(r.home) + ' vs ' + escapeHtml(r.away) + '</td><td>' + escapeHtml(r.kickoff) + '</td>' +
         (r.isSingleWin ? '<td class="single-yes">是</td>' : '<td>—</td>') +
-        '<td><b>' + JC.labelG(r.baseA) + '</b></td><td><b>' + JC.labelG(r.baseB) + '</b></td>' +
-        '<td class="muted">' + (r.diffs.minTwo ? '' : '') + '<span class="tiny">' + diffSummary(r) + '</span></td></tr>';
+        '<td><b>' + JC.labelG(r.baseA) + '</b></td>' +
+        '<td class="muted"><span class="tiny">' + diffSummary(r) + '</span></td></tr>';
     }).join('');
   }
   function diffSummary(r) {
@@ -609,7 +610,6 @@
         '<td><b>' + JC.labelG(r.actual) + '</b></td>' +
         '<td>' + JC.labelG(r.predBaseA) + '</td>' +
         '<td>' + JC.labelG(r.predA) + '</td>' +
-        '<td>' + JC.labelG(r.predBaseB) + '</td>' +
         '<td>' + JC.labelG(r.predB) + '</td>' +
         '<td class="' + hitCls(r.hitModelA) + '">' + hitText(r.hitModelA) + '</td>' +
         '<td class="' + hitCls(r.hitModelB) + '">' + hitText(r.hitModelB) + '</td>' +
@@ -636,7 +636,7 @@
         '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
         '<div class="mc-diff"><span class="mc-k">预测(基线A)</span><span class="mc-v">' + JC.labelG(r.predBaseA) + '</span>' +
         '<span class="mc-k">模型A</span><span class="mc-v">' + JC.labelG(r.predA) + '</span>' +
-        '<span class="mc-k">B口径</span><span class="mc-v">' + JC.labelG(r.predB) + '</span></div>' +
+        '<span class="mc-k">模型B</span><span class="mc-v">' + JC.labelG(r.predB) + '</span></div>' +
         '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit + '</div>' +
         '</div>';
     }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');
@@ -776,18 +776,18 @@
     var months = {};
     rows.forEach(function (r) { var m = String(r.date).slice(0, 7); (months[m] = months[m] || []).push(r); });
     var head = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负', '实际进球',
-      '基线A预测', '模型A预测', '基线B预测', '模型B预测', '模型A命中', '模型B命中', '抓取时间'];
+      '基线A预测', '模型A预测', '模型B预测', '模型A命中', '模型B命中', '抓取时间'];
     Object.keys(months).sort().forEach(function (m) {
       var aoa = [head].concat(months[m].map(function (r) {
         return [r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
           r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
           r.actual == null ? '' : JC.labelG(r.actual),
-          JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predBaseB), JC.labelG(r.predB),
+          JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predB),
           hitText(r.hitModelA), hitText(r.hitModelB), JC.fmtAt(r.oddsAt)];
       }));
       var ws = XLSX.utils.aoa_to_sheet(aoa);
       ws['!cols'] = [{ wch: 11 }, { wch: 9 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 8 },
-        { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 16 }];
+        { wch: 8 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 8 }, { wch: 8 }, { wch: 16 }];
       XLSX.utils.book_append_sheet(wb, ws, m.slice(0, 31));
     });
     var st = JC.predStats(rows);
@@ -820,14 +820,14 @@
     var rows = exportRows();
     if (!rows.length) { toast('当前筛选下没有数据', true); return; }
     var head = ['日期', '场次编号', '联赛', '主队', '客队', '开赛时间', '单关胜平负', '实际进球',
-      '基线A预测', '模型A预测', '基线B预测', '模型B预测', '模型A命中', '模型B命中'];
+      '基线A预测', '模型A预测', '模型B预测', '模型A命中', '模型B命中'];
     var esc = function (v) { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
     var lines = [head.join(',')];
     rows.forEach(function (r) {
       lines.push([r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
         r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
         r.actual == null ? '' : JC.labelG(r.actual),
-        JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predBaseB), JC.labelG(r.predB),
+        JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predB),
         hitText(r.hitModelA), hitText(r.hitModelB)].map(esc).join(','));
     });
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
