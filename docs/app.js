@@ -651,10 +651,12 @@
       return;
     }
     tbody.innerHTML = up.slice(0, 40).map(function (r) {
+      var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
       return '<tr><td>' + r.date.slice(5) + '</td><td>' + escapeHtml(r.matchNumStr) + '</td><td>' + escapeHtml(r.league) + '</td>' +
         '<td>' + escapeHtml(r.home) + ' vs ' + escapeHtml(r.away) + '</td><td>' + escapeHtml(r.kickoff) + '</td>' +
         (r.isSingleWin ? '<td class="single-yes">是</td>' : '<td>—</td>') +
-        '<td><b>' + JC.labelG(r.baseA) + '</b></td>' +
+        '<td><a class="pred-link" href="' + href + '" target="_blank" rel="noopener"><b>' + JC.labelG(r.baseA) + '</b>' +
+        (r.oddsBaseA != null ? ' <span class="tiny muted">@' + Number(r.oddsBaseA).toFixed(2) + '</span>' : '') + '</a></td>' +
         '<td class="muted"><span class="tiny">' + diffSummary(r) + '</span></td></tr>';
     }).join('');
   }
@@ -679,6 +681,14 @@
     });
   }
 
+  function predCell(r, g, odds) {
+    if (g == null) return '<td>—</td>';
+    var txt = '<b>' + JC.labelG(g) + '</b>' + (odds != null ? ' <span class="tiny muted">@' + Number(odds).toFixed(2) + '</span>' : '');
+    if (r.matchId == null) return '<td>' + txt + '</td>';
+    var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
+    return '<td><a class="pred-link" href="' + href + '" target="_blank" rel="noopener" title="查看比赛详情">' + txt + '</a></td>';
+  }
+
   function renderDataTable(rows) {
     var sorted = sortRows(rows);
     var shown = sorted.slice(0, state.shownRows);
@@ -692,9 +702,9 @@
         '<td>' + escapeHtml(r.kickoff) + '</td>' +
         '<td class="' + (r.isSingleWin ? 'single-yes' : '') + '">' + (r.isSingleWin ? '是' : '—') + '</td>' +
         '<td><b>' + JC.labelG(r.actual) + '</b></td>' +
-        '<td>' + JC.labelG(r.predBaseA) + '</td>' +
-        '<td>' + JC.labelG(r.predA) + '</td>' +
-        '<td>' + JC.labelG(r.predB) + '</td>' +
+        predCell(r, r.predBaseA, r.oddsBaseA) +
+        predCell(r, r.predA, r.oddsA) +
+        predCell(r, r.predB, r.oddsB) +
         '<td class="' + hitCls(r.hitModelA) + '">' + hitText(r.hitModelA) + '</td>' +
         '<td class="' + hitCls(r.hitModelB) + '">' + hitText(r.hitModelB) + '</td>' +
         '<td class="muted">' + JC.fmtAt(r.oddsAt) + '</td>' +
@@ -712,16 +722,21 @@
     }
     el.innerHTML = shown.map(function (r) {
       var hit = r.hitModelA == null ? '' : '<span class="' + hitCls(r.hitModelA) + '">' + (r.hitModelA ? '模型命中 ✓' : '模型未中 ✗') + '</span>';
+      var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
+      var oddsTxt = function (g, od) { return JC.labelG(g) + (od != null ? ' <span class="tiny muted">@' + Number(od).toFixed(2) + '</span>' : ''); };
       return '<div class="mcard">' +
         '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
         '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
         (r.isSingleWin ? '<span class="mc-single">单关</span>' : '') +
         '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
         '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
-        '<div class="mc-diff"><span class="mc-k">预测(基线A)</span><span class="mc-v">' + JC.labelG(r.predBaseA) + '</span>' +
-        '<span class="mc-k">模型A</span><span class="mc-v">' + JC.labelG(r.predA) + '</span>' +
-        '<span class="mc-k">模型B</span><span class="mc-v">' + JC.labelG(r.predB) + '</span></div>' +
-        '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit + '</div>' +
+        '<div class="mc-diff"><a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' +
+        '<span class="mc-k">基线A</span><span class="mc-v">' + oddsTxt(r.predBaseA, r.oddsBaseA) + '</span></a>' +
+        '<a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' +
+        '<span class="mc-k">模型A</span><span class="mc-v">' + oddsTxt(r.predA, r.oddsA) + '</span></a>' +
+        '<span class="mc-k">模型B</span><span class="mc-v">' + oddsTxt(r.predB, r.oddsB) + '</span></div>' +
+        '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit +
+        ' <a class="pred-link tiny" href="' + href + '" target="_blank" rel="noopener">详情 →</a></div>' +
         '</div>';
     }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');
   }
@@ -866,7 +881,9 @@
         return [r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
           r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
           r.actual == null ? '' : JC.labelG(r.actual),
-          JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predB),
+          r.predBaseA == null ? '' : (JC.labelG(r.predBaseA) + (r.oddsBaseA != null ? ' @' + r.oddsBaseA : '')),
+          r.predA == null ? '' : (JC.labelG(r.predA) + (r.oddsA != null ? ' @' + r.oddsA : '')),
+          r.predB == null ? '' : (JC.labelG(r.predB) + (r.oddsB != null ? ' @' + r.oddsB : '')),
           hitText(r.hitModelA), hitText(r.hitModelB), JC.fmtAt(r.oddsAt)];
       }));
       var ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -911,7 +928,9 @@
       lines.push([r.date, r.matchNumStr, r.league, r.home, r.away, r.kickoff,
         r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
         r.actual == null ? '' : JC.labelG(r.actual),
-        JC.labelG(r.predBaseA), JC.labelG(r.predA), JC.labelG(r.predB),
+        r.predBaseA == null ? '' : (JC.labelG(r.predBaseA) + (r.oddsBaseA != null ? ' @' + r.oddsBaseA : '')),
+        r.predA == null ? '' : (JC.labelG(r.predA) + (r.oddsA != null ? ' @' + r.oddsA : '')),
+        r.predB == null ? '' : (JC.labelG(r.predB) + (r.oddsB != null ? ' @' + r.oddsB : '')),
         hitText(r.hitModelA), hitText(r.hitModelB)].map(esc).join(','));
     });
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });

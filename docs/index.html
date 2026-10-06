@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>竞彩进球数差值分析与预测</title>
 <meta name="description" content="竞彩足球：各进球数（0~7+球）赔率与比分优化赔率的差值分析，双轨预测每场比赛的总进球数（个人数据分析工具）">
-<link rel="stylesheet" href="style.css?v=6">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -21,7 +21,7 @@
     <div class="menu">
       <button id="btn-more">更多 ▾</button>
       <div class="menu-list" id="menu-list" hidden>
-        <a id="btn-xlsx-repo" href="excel/竞彩1球-差值记录.xlsx" download>下载云端 Excel</a>
+        <a id="btn-xlsx-repo" href="excel/竞彩进球数预测.xlsx" download>下载云端 Excel</a>
         <button id="btn-xlsx">浏览器导出 Excel</button>
         <button id="btn-csv">导出 CSV</button>
         <button id="btn-reload">重新加载云端数据</button>
@@ -158,16 +158,6 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-head"><h2>分箱明细（差值取最新一次，箱宽 0.05）</h2></div>
-      <div class="table-scroll">
-        <table class="grid" id="bins-table">
-          <thead><tr><th>差值区间</th><th class="num">总场次</th><th class="num">1球场次</th><th class="num">非1球场次</th><th class="num">1球占比</th><th class="num">平均差值</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-
     <details class="card help">
       <summary><h2>计算口径与说明</h2></summary>
       <div class="help-body">
@@ -239,7 +229,7 @@
 <div id="tooltip" hidden></div>
 
 <script src="vendor/xlsx.full.min.js?v=1"></script>
-<script src="core.js?v=8"></script>
-<script src="app.js?v=7"></script>
+<script src="core.js?v=9"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>

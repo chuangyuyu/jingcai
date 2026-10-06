@@ -29,11 +29,21 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.2.0';
+  var VERSION = '3.3.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
     '?poolCode=had,hhad,ttg,crs,hafu&channel=c';
+
+  // 官方比赛详情（头信息）接口：比分、队徽、赛事/战绩（CORS *，浏览器可直连）
+  function matchHeadUrl(matchId) {
+    return API_BASE + '/gateway/uniform/football/getMatchHeadV1.qry?source=web&sportteryMatchId=' + matchId;
+  }
+
+  // 官方比赛详情页（析：赔率分析；详细：含比分过程/直播）
+  function officialDetailUrl(matchId, showType) {
+    return 'https://www.sporttery.cn/jc/zqdz/index.html?showType=' + (showType || 2) + '&mid=' + matchId;
+  }
 
   function resultUrl(beginDate, endDate, pageNo) {
     return API_BASE + '/gateway/uniform/football/getUniformMatchResultV1.qry' +
@@ -580,7 +590,17 @@
         var diffs = cap ? goalDiffs(cap.odds) : null;
         var actual = (m.result && m.result.goals != null) ? bucketOfGoals(m.result.goals) : null;
         var pred = m.pred || null;
+        var oddsOf = function (g) {
+          if (g == null || !diffs) return null;
+          var out = null;
+          (diffs.groups || []).forEach(function (x) { if (x.g === g) out = x.ttg; });
+          return out;
+        };
+        var predBaseA = pred ? pred.baseA : (diffs ? diffs.predBaseA : null);
+        var predA = pred ? pred.modelA : null;
+        var predB = pred ? pred.modelB : null;
         rows.push({
+          matchId: m.matchId,
           date: d.date || m.businessDate || '',
           matchDate: m.matchDate || m.businessDate || d.date || '',
           kickoff: ((m.matchDate || '').slice(5) + ' ' + (m.matchTime || '').slice(0, 5)).trim(),
@@ -593,10 +613,13 @@
           diffs: diffs,           // { groups, fit0A, fit0B, predBaseA, predBaseB } | null
           baseA: diffs ? diffs.predBaseA : null,
           baseB: diffs ? diffs.predBaseB : null,
-          predA: pred ? pred.modelA : null,
-          predB: pred ? pred.modelB : null,
-          predBaseA: pred ? pred.baseA : (diffs ? diffs.predBaseA : null),
-          predBaseB: pred ? pred.baseB : (diffs ? diffs.predBaseB : null),
+          predA: predA,
+          predB: predB,
+          predBaseA: predBaseA,
+          predBaseB: pred ? pred.baseB : null,
+          oddsBaseA: oddsOf(predBaseA),   // 预测进球数对应的赔率（该场最后一次记录）
+          oddsA: oddsOf(predA),
+          oddsB: oddsOf(predB),
           score: m.result ? m.result.score : null,
           halfScore: m.result ? m.result.halfScore : null,
           actual: actual,
@@ -823,6 +846,8 @@
     ODDS_URL: ODDS_URL,
     resultUrl: resultUrl,
     resultRangeFor: resultRangeFor,
+    matchHeadUrl: matchHeadUrl,
+    officialDetailUrl: officialDetailUrl,
     NODE_HEADERS: NODE_HEADERS,
     fetchJson: fetchJson,
     fetchAllResults: fetchAllResults,

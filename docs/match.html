@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>比赛详情 — 竞彩进球数预测</title>
+<link rel="stylesheet" href="style.css?v=7">
+<style>
+  /* 详情页专属样式 */
+  main.md { max-width: 900px; margin: 0 auto; padding: 12px 14px calc(40px + env(safe-area-inset-bottom)); }
+  .md-phase { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 9px; }
+  .md-phase.pre { background: var(--ghost); color: var(--ink-2); }
+  .md-phase.live { background: rgba(208,59,59,.12); color: var(--neg); }
+  .md-phase.post { background: rgba(16,124,65,.12); color: var(--pos); }
+  .md-head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .md-team { flex:1; min-width:120px; text-align:center; }
+  .md-team img { width:52px; height:52px; object-fit:contain; display:block; margin:0 auto 4px; }
+  .md-team .nm { font-size:16px; font-weight:700; }
+  .md-vs { text-align:center; }
+  .md-score { font-size:34px; font-weight:800; font-variant-numeric: tabular-nums; letter-spacing:2px; }
+  .md-sub { color: var(--ink-muted); font-size:12px; text-align:center; }
+  .md-row { display:flex; gap:8px; flex-wrap:wrap; align-items:baseline; margin:4px 0; }
+  .md-k { color: var(--ink-muted); font-size:12px; }
+  .md-big { font-size:15px; font-weight:700; }
+  tr.row-actual td { background: rgba(16,124,65,.10); }
+  tr.row-pred td { background: rgba(42,120,214,.10); }
+  .md-links { display:flex; gap:8px; flex-wrap:wrap; }
+  .md-links a { font: inherit; color: var(--ink-1); background: var(--ghost); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; text-decoration: none; }
+  .md-links a:hover { border-color: var(--baseline); }
+  .md-matrix td, .md-matrix th { text-align:center !important; font-variant-numeric: tabular-nums; padding: 5px 6px !important; }
+  .md-matrix td.mx { color: var(--ink-muted); }
+  .md-matrix td.hl { outline:2px solid var(--btn); border-radius:4px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-left">
+    <h1 id="md-title">比赛详情</h1>
+    <div class="status"><span class="dot" id="dot"></span><span id="status">加载中…</span></div>
+  </div>
+  <div class="top-actions">
+    <button id="btn-back" class="primary">← 返回数据表</button>
+    <button id="btn-refresh">刷新实时数据</button>
+  </div>
+</header>
+
+<main class="md" id="md-main"></main>
+
+<div id="tooltip" hidden></div>
+
+<script src="core.js?v=9"></script>
+<script src="match.js?v=3"></script>
+</body>
+</html>

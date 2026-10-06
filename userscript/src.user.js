@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.2.0
+// @version      3.3.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -39,7 +39,7 @@
 
   // ---------------------------------------------------------------- 存取
 
-  function getSettings() { return GM_getValue(K_SETTINGS, { owner: '', repo: '', branch: 'main', token: '' }); }
+  function getSettings() { return GM_getValue(K_SETTINGS, { owner: '', repo: '', branch: 'main', token: '', webBase: 'https://chuangyuyu.github.io/jingcai' }); }
   function canSync() { var s = getSettings(); return !!(s.owner && s.repo && s.token); }
   function getDays() { return GM_getValue(K_DAYS, {}); }
   function setDays(d) { GM_setValue(K_DAYS, d); }
@@ -237,7 +237,9 @@
     if (branch == null) return;
     var token = prompt('访问令牌（细粒度 Token，仅需该仓库 Contents 读写权限；留空则不同步）：', s.token || '');
     if (token == null) return;
-    GM_setValue(K_SETTINGS, { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || 'main', token: token.trim() });
+    var webBase = prompt('网页地址（点击浮窗里的预测可打开比赛详情页；默认 GitHub Pages）：', s.webBase || 'https://chuangyuyu.github.io/jingcai');
+    if (webBase == null) return;
+    GM_setValue(K_SETTINGS, { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || 'main', token: token.trim(), webBase: webBase.trim() });
     say(canSync() ? '设置已保存，可直接同步' : '设置已保存（未填令牌，仅存本机）');
     renderPanel();
     if (canSync() && getDirty().length) sync();
@@ -464,13 +466,27 @@
         var diffsA = (r.diffs.groups || []).map(function (x) { return x.diffA; });
         modelG = JC.modelPredict(model, diffsA, r.predBaseA);
       }
+      var oddsOf = function (g) {
+        if (g == null || !r.diffs) return null;
+        var out = null;
+        (r.diffs.groups || []).forEach(function (x) { if (x.g === g) out = x.ttg; });
+        return out;
+      };
+      var baseOdds = r.oddsBaseA != null ? r.oddsBaseA : oddsOf(baseG);
+      var modelOdds = r.oddsA != null ? r.oddsA : oddsOf(modelG);
+      var st2 = getSettings();
+      var href = (st2.webBase || '').replace(/\/+$/, '') + '/match.html?d=' + encodeURIComponent(r.date) + '&id=' + r.matchId;
+      var link = function (inner) {
+        return (r.matchId && st2.webBase) ? '<a href="' + href + '" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px dotted #ccc">' + inner + '</a>' : inner;
+      };
+      var fmtOdds2 = function (o) { return o != null ? ' <span style="color:#999">@' + Number(o).toFixed(2) + '</span>' : ''; };
       var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
       var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +
         '<td class="single">' + (r.isSingleWin ? '单' : '') + '</td>' +
-        '<td class="' + hitCls2 + '"><b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b></td>' +
-        '<td>' + (baseG == null ? '—' : JC.labelG(baseG)) + '</td>' +
+        '<td class="' + hitCls2 + '">' + link('<b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b>' + fmtOdds2(modelOdds)) + '</td>' +
+        '<td>' + link((baseG == null ? '—' : JC.labelG(baseG)) + fmtOdds2(baseOdds)) + '</td>' +
         '<td>' + actualTxt + '</td></tr>';
     }).join('');
     listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>模型</th><th>基线</th><th>实际</th></tr></thead><tbody>' + body + '</tbody></table>';

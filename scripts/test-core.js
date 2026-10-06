@@ -160,8 +160,12 @@ console.log('== 展平与命中统计 ==');
   const r1 = rows.find(r => r.matchNumStr === '周日001');
   ok('v3 场次含差值明细', r1.hasDetail === true && r1.diffs.groups.length === 8);
   ok('命中判定：实际3球 vs 预测2球', r1.actual === 3 && r1.hitBaseA === false && r1.hitModelA === false);
+  ok('数据行携带 matchId（用于详情页链接）', r1.matchId === 1);
+  ok('预测赔率一并携带（2球赔率 4.30）', r1.oddsBaseA === 4.3 && r1.oddsA === 4.3, 'oA=' + r1.oddsA);
   const r2 = rows.find(r => r.matchNumStr === '周日002');
-  ok('旧格式快照 → 无明细、无预测', r2.hasDetail === false && r2.predA === null);
+  ok('旧格式快照 → 无明细、无预测、无赔率', r2.hasDetail === false && r2.predA === null && r2.oddsA === null);
+  ok('官方详情接口 URL', JC.matchHeadUrl(123).indexOf('sportteryMatchId=123') > 0 &&
+    JC.officialDetailUrl(123, 2).indexOf('showType=2&mid=123') > 0);
   const st = JC.predStats(rows);
   ok('统计：1 场已出、基线 n=1', st.settled === 1 && st.baseA.n === 1 && st.baseA.hit === 0);
   ok('各进球数分布', st.byGoal[3] === 1);

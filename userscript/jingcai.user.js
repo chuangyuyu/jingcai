@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.2.0
+// @version      3.3.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,11 +55,21 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.2.0';
+  var VERSION = '3.3.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
     '?poolCode=had,hhad,ttg,crs,hafu&channel=c';
+
+  // 官方比赛详情（头信息）接口：比分、队徽、赛事/战绩（CORS *，浏览器可直连）
+  function matchHeadUrl(matchId) {
+    return API_BASE + '/gateway/uniform/football/getMatchHeadV1.qry?source=web&sportteryMatchId=' + matchId;
+  }
+
+  // 官方比赛详情页（析：赔率分析；详细：含比分过程/直播）
+  function officialDetailUrl(matchId, showType) {
+    return 'https://www.sporttery.cn/jc/zqdz/index.html?showType=' + (showType || 2) + '&mid=' + matchId;
+  }
 
   function resultUrl(beginDate, endDate, pageNo) {
     return API_BASE + '/gateway/uniform/football/getUniformMatchResultV1.qry' +
@@ -606,7 +616,17 @@
         var diffs = cap ? goalDiffs(cap.odds) : null;
         var actual = (m.result && m.result.goals != null) ? bucketOfGoals(m.result.goals) : null;
         var pred = m.pred || null;
+        var oddsOf = function (g) {
+          if (g == null || !diffs) return null;
+          var out = null;
+          (diffs.groups || []).forEach(function (x) { if (x.g === g) out = x.ttg; });
+          return out;
+        };
+        var predBaseA = pred ? pred.baseA : (diffs ? diffs.predBaseA : null);
+        var predA = pred ? pred.modelA : null;
+        var predB = pred ? pred.modelB : null;
         rows.push({
+          matchId: m.matchId,
           date: d.date || m.businessDate || '',
           matchDate: m.matchDate || m.businessDate || d.date || '',
           kickoff: ((m.matchDate || '').slice(5) + ' ' + (m.matchTime || '').slice(0, 5)).trim(),
@@ -619,10 +639,13 @@
           diffs: diffs,           // { groups, fit0A, fit0B, predBaseA, predBaseB } | null
           baseA: diffs ? diffs.predBaseA : null,
           baseB: diffs ? diffs.predBaseB : null,
-          predA: pred ? pred.modelA : null,
-          predB: pred ? pred.modelB : null,
-          predBaseA: pred ? pred.baseA : (diffs ? diffs.predBaseA : null),
-          predBaseB: pred ? pred.baseB : (diffs ? diffs.predBaseB : null),
+          predA: predA,
+          predB: predB,
+          predBaseA: predBaseA,
+          predBaseB: pred ? pred.baseB : null,
+          oddsBaseA: oddsOf(predBaseA),   // 预测进球数对应的赔率（该场最后一次记录）
+          oddsA: oddsOf(predA),
+          oddsB: oddsOf(predB),
           score: m.result ? m.result.score : null,
           halfScore: m.result ? m.result.halfScore : null,
           actual: actual,
@@ -849,6 +872,8 @@
     ODDS_URL: ODDS_URL,
     resultUrl: resultUrl,
     resultRangeFor: resultRangeFor,
+    matchHeadUrl: matchHeadUrl,
+    officialDetailUrl: officialDetailUrl,
     NODE_HEADERS: NODE_HEADERS,
     fetchJson: fetchJson,
     fetchAllResults: fetchAllResults,
@@ -909,7 +934,7 @@
 
   // ---------------------------------------------------------------- 存取
 
-  function getSettings() { return GM_getValue(K_SETTINGS, { owner: '', repo: '', branch: 'main', token: '' }); }
+  function getSettings() { return GM_getValue(K_SETTINGS, { owner: '', repo: '', branch: 'main', token: '', webBase: 'https://chuangyuyu.github.io/jingcai' }); }
   function canSync() { var s = getSettings(); return !!(s.owner && s.repo && s.token); }
   function getDays() { return GM_getValue(K_DAYS, {}); }
   function setDays(d) { GM_setValue(K_DAYS, d); }
@@ -1107,7 +1132,9 @@
     if (branch == null) return;
     var token = prompt('访问令牌（细粒度 Token，仅需该仓库 Contents 读写权限；留空则不同步）：', s.token || '');
     if (token == null) return;
-    GM_setValue(K_SETTINGS, { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || 'main', token: token.trim() });
+    var webBase = prompt('网页地址（点击浮窗里的预测可打开比赛详情页；默认 GitHub Pages）：', s.webBase || 'https://chuangyuyu.github.io/jingcai');
+    if (webBase == null) return;
+    GM_setValue(K_SETTINGS, { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || 'main', token: token.trim(), webBase: webBase.trim() });
     say(canSync() ? '设置已保存，可直接同步' : '设置已保存（未填令牌，仅存本机）');
     renderPanel();
     if (canSync() && getDirty().length) sync();
@@ -1334,13 +1361,27 @@
         var diffsA = (r.diffs.groups || []).map(function (x) { return x.diffA; });
         modelG = JC.modelPredict(model, diffsA, r.predBaseA);
       }
+      var oddsOf = function (g) {
+        if (g == null || !r.diffs) return null;
+        var out = null;
+        (r.diffs.groups || []).forEach(function (x) { if (x.g === g) out = x.ttg; });
+        return out;
+      };
+      var baseOdds = r.oddsBaseA != null ? r.oddsBaseA : oddsOf(baseG);
+      var modelOdds = r.oddsA != null ? r.oddsA : oddsOf(modelG);
+      var st2 = getSettings();
+      var href = (st2.webBase || '').replace(/\/+$/, '') + '/match.html?d=' + encodeURIComponent(r.date) + '&id=' + r.matchId;
+      var link = function (inner) {
+        return (r.matchId && st2.webBase) ? '<a href="' + href + '" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px dotted #ccc">' + inner + '</a>' : inner;
+      };
+      var fmtOdds2 = function (o) { return o != null ? ' <span style="color:#999">@' + Number(o).toFixed(2) + '</span>' : ''; };
       var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
       var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +
         '<td class="single">' + (r.isSingleWin ? '单' : '') + '</td>' +
-        '<td class="' + hitCls2 + '"><b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b></td>' +
-        '<td>' + (baseG == null ? '—' : JC.labelG(baseG)) + '</td>' +
+        '<td class="' + hitCls2 + '">' + link('<b>' + (modelG == null ? '—' : JC.labelG(modelG)) + '</b>' + fmtOdds2(modelOdds)) + '</td>' +
+        '<td>' + link((baseG == null ? '—' : JC.labelG(baseG)) + fmtOdds2(baseOdds)) + '</td>' +
         '<td>' + actualTxt + '</td></tr>';
     }).join('');
     listEl.innerHTML = '<table><thead><tr><th>编号</th><th>对阵</th><th>单</th><th>模型</th><th>基线</th><th>实际</th></tr></thead><tbody>' + body + '</tbody></table>';
