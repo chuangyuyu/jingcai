@@ -1,26 +1,27 @@
 # ============================================================
-# 竞彩进球数预测 · 飞牛 NAS(fnOS) / 任意 Docker 环境 部署配置
+# 竞彩进球数预测 · 飞牛 NAS(fnOS) 部署配置
+# 文件布局：项目文件放 /vol1/jingcai，本文件放 /vol1/docker/jingcai
+# （NAS 与电脑端是两套独立采集：电脑端照常推 GitHub，NAS 存本地，互不影响）
 # ------------------------------------------------------------
-# 【使用前提】本文件必须留在项目文件夹里，部署时选择/指向的就是这个文件
-#   （这样下面 volumes 里的 "." 就代表项目文件夹）
-#
-# ★★ 最容易出错的一点 ★★
-#   如果是把本文件"内容复制粘贴"到网页界面里创建的：`.` 会变成别的目录，
-#   容器将因找不到 nas/server.js 反复重启。此时必须把下面一行
-#       - .:/app
-#   改成你 NAS 上的实际项目路径（绝对路径），例如：
-#       - /vol1/1000/jingcai:/app
+# ★★ 唯一必须核对的一点 ★★
+#   volumes 里的 /vol1/jingcai 必须与 NAS 上项目文件夹的实际路径完全一致。
+#   查实际路径：飞牛「文件」应用 → 右键项目文件夹 →「详细信息/属性」。
+#   （若是建在个人空间里，实际可能是 /vol1/1000/jingcai；存储空间不叫 vol1 则相应替换）
+#   用的是绝对路径，所以本文件放哪、用"选文件"还是"粘贴内容"方式创建项目都不会挂错目录。
 #
 # ★ 拉取 node 镜像慢/失败：飞牛 Docker →「设置」→ 配置镜像加速源后重试；
 #   仍不行可把 image 换成中国可直连的加速前缀，例如：
 #       image: docker.m.daocloud.io/library/node:20-alpine
-#   （加速地址会随时间变化，可搜索"docker 镜像加速"取其一时效可用的）
+#   （加速地址有时效，可搜索"docker 镜像加速"取其一时效可用的）
 #
 # ★ 端口默认 8788：改端口时下面 ports 与 environment.PORT 两处必须一致。
 #
-# ★ 若日志出现权限错误（EACCES / permission denied）：
-#   在项目目录下一行修复（SSH）：sudo chown -R 1000:1000 /vol1/1000/jingcai
+# ★ 日志出现权限错误（EACCES / permission denied）：
+#   SSH 执行 sudo chown -R 1000:1000 /vol1/jingcai
 #   或删除下面的 user 行后重新部署（改为以 root 运行，同样可用）。
+#
+# ★ NAS 端保持 config.json 的 autoPush=false 并建议删掉拷贝过来的 .git 文件夹，
+#   让这一套完全独立、不碰 GitHub（安装指引里有说明）。
 # ============================================================
 version: "3.8"
 
@@ -29,13 +30,13 @@ services:
     image: node:20-alpine
     container_name: jingcai
     working_dir: /app
-    command: ["node", "/app/nas/server.js"]   # 绝对路径、无需 sh/引号（脚本不依赖工作目录）
-    user: "1000:1000"          # 移除本行将以 root 运行（可绕开权限类启动失败）
+    command: ["node", "/app/nas/server.js"]   # 绝对路径、无需引号（脚本不依赖工作目录）
+    user: "1000:1000"          # 权限报错时删除本行（以 root 运行，同样可用）
     environment:
       - TZ=Asia/Shanghai
       - PORT=8788
     volumes:
-      - .:/app                 # 粘贴方式创建时必须改为绝对路径，如 /vol1/1000/jingcai:/app
+      - /vol1/jingcai:/app     # ← 核对这里：项目文件夹的实际绝对路径
     ports:
       - "8788:8788"
     restart: unless-stopped

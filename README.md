@@ -22,12 +22,12 @@
 
 | 入口 | 作用 | 谁来执行 |
 |---|---|---|
-| **飞牛 NAS（推荐长期运行）** | 网页 + 定时抓取全部在 NAS 上：**局域网直接访问，不需要 GitHub、不需要任何代理**；数据存 NAS 本地 | 飞牛 fnOS 的 Docker 容器 |
+| **飞牛 NAS（与电脑端两套并行）** | 网页 + 定时抓取全部在 NAS 上：**局域网直接访问，不需要 GitHub、不需要任何代理**；数据存 NAS 本地，与电脑端各自独立采集（出门在外的备用入口） | 飞牛 fnOS 的 Docker 容器 |
 | **网页**（GitHub Pages） | 查看/分析：模拟投注、预测命中率、模型明细、详情页、编号追踪；导出 Excel；也可手动抓取、回填赛果 | 任何设备打开浏览器 |
 | **计划任务**（本机 Windows） | 每天 11:00 与 17:00 各抓一次（赔率快照 + 回填赛果 + 封盘冻结预测），数据在本地/可推送 GitHub | 这台电脑（需开机） |
 | **油猴脚本**（Edge 等浏览器） | 访问体彩官网时自动抓取；浮窗显示每场预测（带赔率、可点开详情）；可一键同步 | 你日常用的浏览器 |
 
-网页端直接调用体彩官方接口（接口已开放跨域），所以**手机上打开网页也能抓取最新数据**；数据保存在你的 GitHub 仓库里，多设备共享。
+网页端直接调用体彩官方接口（接口已开放跨域），所以**手机上打开网页也能抓取最新数据**；数据保存在你的 GitHub 仓库里，多设备共享。NAS 上的网页则由 NAS 本地服务执行抓取、数据存 NAS（见下方 NAS 章节）。
 
 > 为什么不用 GitHub Actions 定时？体彩接口会拦截境外 IP 访问，而 GitHub 的服务器在境外，定时任务必须落在国内网络（本机计划任务 / 浏览器）。
 > 注意：新功能需要"完整比分矩阵"快照，仅对升级后（v3）抓取的场次生效；旧快照只有 1 球数据，显示为空。
@@ -109,65 +109,74 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Interactive
 
 ---
 
-## 部署到飞牛 NAS（fnOS）——推荐长期运行方式
+## 部署到飞牛 NAS（fnOS）——与电脑端两套并行
 
-网页与定时抓取全部跑在 NAS 上，局域网内任何设备（手机/电脑）直接访问，**不依赖 GitHub、不需要任何代理**，数据保存在 NAS 本地。现有数据随项目文件夹一起拷贝即可保留。
+NAS 是一套**完全独立**的部署：网页 + 定时抓取都在 NAS 上，数据存 NAS 本地；**电脑端保持原样**（计划任务照跑、照常推送 GitHub 网页）。两套各自累计数据、互不干扰——这是刻意的设计：在家随时用 NAS 页面（快、不依赖任何代理）；**出门在外 github.io 打不开时，NAS 页面就是备用入口**。
 
-### 第一步：把项目放进 NAS（数据随文件夹一起迁移）
+**文件布局**：项目文件放 NAS 存储空间根目录 **`/vol1/jingcai`**；容器项目文件放 **`/vol1/docker/jingcai`**（存放 `docker-compose.yml`）。
+
+> `/vol1` 是飞牛第一块存储空间的实际路径。**以「文件」应用里该文件夹「详细信息/属性」显示的路径为准**——若文件夹建在个人空间里，实际可能是 `/vol1/1000/jingcai`，把 compose 里 volumes 一行改掉即可（`docker-compose.yml` 注释里也写明了）。
+
+### 第一步：把项目放进 NAS，做两处"独立化"设置
 
 1. 在 Windows 上先双击 `手动执行.cmd` 跑一次，让数据最新（数据都在 `docs/data` 与 `docs/excel` 里）
-2. 从 Windows 资源管理器访问 NAS 共享（地址栏输入 `\\NAS的IP`，用飞牛账号登录），或在飞牛「文件」应用里操作
-3. 在存储空间里新建一个文件夹，例如 **`/vol1/1000/jingcai`**（下称"项目目录"）
-4. 把**整个项目文件夹的内容**拷进去（`docs`、`scripts`、`nas`、`userscript`、`config.json`、`docker-compose.yml` 等）。其中 `node_modules` **建议一并拷入**（全部为纯 JS 依赖，已验证无原生模块，拷到 NAS 可直接用于生成 Excel）；不拷也不影响抓取与网页，需要时在容器内执行 `docker exec jingcai sh -c "cd /app && npm install"` 安装亦可
-5. 拷完后原数据（赔率记录、预测、赛果、编号历史、Excel）就已随 `docs/data`、`docs/excel` 完整保留
+2. 从 Windows 资源管理器访问 NAS 共享（地址栏输入 `\\NAS的IP`，用飞牛账号登录），在存储空间根目录新建文件夹 `jingcai`，把**整个项目文件夹的内容**拷进去（`docs`、`scripts`、`nas`、`config.json` 等）。`node_modules` **建议一并拷入**（全部为纯 JS 依赖，已验证无原生模块，拷到 NAS 可直接用于生成 Excel）；不拷也不影响抓取与网页，需要时在容器内执行 `docker exec jingcai sh -c "cd /app && npm install"` 安装亦可
+3. 拷完后原数据（赔率记录、预测、赛果、编号历史、Excel）就已随 `docs/data`、`docs/excel` 完整保留
+4. 在 NAS 副本上做两处小改动，让这一套彻底独立（**不影响电脑端**）：
+   - 编辑 `jingcai/config.json`：把 `"autoPush": true` 改为 **`false`**（NAS 端不推送 GitHub）
+   - 若拷贝时把 `.git` 文件夹也带过去了，**删除或改名为 `.git-bak`**——NAS 端从此与 GitHub 无任何往来；不删也照常使用，只是环境自检会多花几十秒探测 GitHub
+5. 在根目录建 `docker` 文件夹（→ 实际路径 `/vol1/docker`），里面再建 `jingcai`，用于放容器项目文件
 
-### 第二步：部署容器（三种方式任选，逐字段填写说明与完整报错排查见 **[NAS部署指南.md](NAS部署指南.md)**）
+### 第二步：部署容器（三种方式任选，完整报错排查见 **[NAS部署指南.md](NAS部署指南.md)**）
 
-**方式 A · 容器表单（最直观）**：Docker 应用 →「容器」→「添加容器」：镜像 `node:20-alpine`；名称 `jingcai`；重启策略"除非手动停止"；端口 本地8788→容器8788；挂载 主机`/vol1/1000/jingcai` → 容器 `/app`；环境变量 `TZ=Asia/Shanghai`、`PORT=8788`；命令 `node /app/nas/server.js`（**无引号**，该框不支持引号）
+先把 `docker-compose.yml` **复制一份**到 `/vol1/docker/jingcai/`，然后三选一：
 
-**方式 B · SSH 一条命令**：
+**方式 A · Compose 项目（推荐）**：Docker 应用 →「项目」→「新建项目」→ 名称 `jingcai`；若界面让选项目存放位置，选 `/vol1/docker/jingcai`；Compose 来源选「选择文件」指到该文件夹里的 `docker-compose.yml`，或直接把文件内容**粘贴**进去（仓库自带的 compose 已写好绝对路径，粘贴方式也直接可用——不会再踩"容器反复重启"的坑；唯一要核对的是 `/vol1/jingcai` 与你的实际路径一致）
+
+**方式 B · 容器表单**：Docker →「容器」→「添加容器」：镜像 `node:20-alpine`；名称 `jingcai`；重启策略"除非手动停止"；端口 本地8788→容器8788；挂载 主机`/vol1/jingcai` → 容器 `/app`；环境变量 `TZ=Asia/Shanghai`、`PORT=8788`；命令 `node /app/nas/server.js`（**无引号**，该框不支持引号）
+
+**方式 C · SSH 一条命令**：
 
 ```bash
-docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e PORT=8788 -p 8788:8788 -v /vol1/1000/jingcai:/app node:20-alpine node /app/nas/server.js
+docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e PORT=8788 -p 8788:8788 -v /vol1/jingcai:/app node:20-alpine node /app/nas/server.js
 ```
-
-**方式 C · Compose 项目**：Docker →「项目」→ 新建 → 名称 `jingcai` → 选择项目目录里的 `docker-compose.yml` 部署。
-⚠️ 若是"粘贴内容"方式：必须把 `- .:/app` 改成 `- /vol1/1000/jingcai:/app`（绝对路径），否则容器反复重启——这是最常见的坑。
 
 > **容器起不来？** 先看日志（Docker → 容器/项目 → jingcai →「日志」；或 SSH `docker logs jingcai --tail 50`），再对照 [NAS部署指南.md](NAS部署指南.md) 的排查表：镜像拉取失败（配镜像加速源）、挂载路径不对（Cannot find module /app/nas/server.js）、权限（chown 或去掉 user 行）、端口占用，四类覆盖 95% 情况。把日志发我也可以直接帮你看。
 
 ### 第三步：验证
 
 1. 手机/电脑浏览器打开 **`http://NAS的IP:8788`** —— 就是完整的网页（数据表、模拟投注、统计、详情页、Excel 下载都在）
-2. Docker → 项目 → `jingcai` → 日志：应看到 `NAS 服务已启动 / 定时执行：11:00(both)、17:00(odds)`
-3. 状态接口：`http://NAS的IP:8788/api/status`（可看到下次执行时间、数据概况）
-4. 想立刻手动执行一次：`http://NAS的IP:8788/api/run?mode=both`
+2. 页面状态栏会显示 **「NAS 本地数据」**，且「同步到云端」按钮自动隐藏：说明网页已连上 NAS 本地服务，这里的**「抓取今日赔率 / 回填赛果」按钮直接指挥 NAS 执行**（写入 NAS 数据文件，所有设备刷新即可见）
+3. Docker → 项目 → `jingcai` → 日志：应看到 `NAS 服务已启动 / 定时执行：11:00(both)、17:00(odds)`
+4. 状态接口：`http://NAS的IP:8788/api/status`（可看到下次执行时间、数据概况）
 
-### 第四步：收尾（重要）
+### 第四步：两套并行（电脑端无需任何改动）
 
-- **停用 Windows 端的采集任务**：任务计划程序 → 禁用「竞彩1球-上午抓取」「竞彩1球-下午抓取」。NAS 的容器定时器已接替采集，避免两处同时采集造成数据分叉；此后 Windows 无需开机
-- NAS 端默认**不推送 GitHub**（避开特殊上网环境），所有数据在 NAS 本地
-- 若仍想偶尔备份到 GitHub：把 NAS 项目目录里的 `docs/data`、`docs/excel` 拷回 Windows 本项目覆盖，再执行 `git add -A && git commit -m "data: NAS 数据同步" && git push`
+- **电脑端保持原样**：两个计划任务继续 11:00 / 17:00 采集并推送 GitHub——不要停用，两套并行正是你要的
+- **NAS 端**：容器定时器同样 11:00 / 17:00 采集，数据只存 NAS 本地
+- 两边数据各自累计（快照来自各自网络环境的抓取），互不覆盖，也不需要同步合并
+
+**出门在外访问 NAS**：可选开启 fnOS 的远程访问（绑定飞牛账号后，在外可打开 NAS 界面；能否直通 8788 页面视系统版本），或在路由器做 DDNS/端口映射——后者建议先在 `config.json` 的 `nas.runKey` 设一个口令，防止他人触发手动执行。
 
 ### 日常使用与维护
 
 | 事项 | 操作 |
 |---|---|
 | 自动采集 | 每天 11:00 / 17:00 容器自动执行（抓赔率 + 回填赛果 + 封盘冻结）；日志见 Docker 项目日志或项目目录 `logs/daily.log` |
-| 手动执行 | 浏览器打开 `/api/run?mode=both`；或 SSH 到 NAS 执行 `docker exec jingcai node scripts/daily.js both --no-push` |
+| 手动执行 | 直接点网页上的「抓取今日赔率 / 回填赛果」按钮（NAS 本地执行）；或浏览器开 `/api/run?mode=both`；或 SSH `docker exec jingcai node scripts/daily.js both --no-push` |
 | 改采集时间 | 编辑项目目录 `config.json` 的 `times` → 在 Docker 里重启 `jingcai` 容器 |
 | 改网页端口 | 编辑 `docker-compose.yml` 的 `ports` 与 `PORT`（两处改成同一端口）→ 重新部署 |
-| 访问口令（可选） | `config.json` 的 `nas.runKey` 填一个口令 → 手动执行接口需带 `?key=口令`（网页浏览不受影响） |
+| 访问口令（可选） | `config.json` 的 `nas.runKey` 填一个口令 → 网页按钮首次使用时输入一次（浏览器记住），手动接口需带 `?key=口令`；网页浏览不受影响 |
 | 数据备份 | 备份项目目录的 `docs/data`（核心数据）+ `docs/excel`；整个项目文件夹拷回电脑也是一份完整备份 |
-| 更新代码 | 把新版本代码文件覆盖到 NAS 项目目录（**不要覆盖 `docs/data`、`docs/excel`、`logs`**）→ 重启容器 |
+| 更新代码 | 把新版本代码文件覆盖到 NAS 项目目录（**不要覆盖 `docs/data`、`docs/excel`、`logs`**）；`docs/` 下的网页文件即时生效（无需重启），改了 `scripts/`、`nas/`、`config.json` 才需要重启容器 |
 | 排障 | 环境自检：`docker exec jingcai node scripts/daily.js check`（NAS 环境下 GitHub/Windows 任务项自动按"可忽略"处理） |
 
 **常见问题**
 - **拉取镜像失败**：Docker 设置 → 配置国内镜像加速源后重试
 - **8788 端口被占用**：按上表改端口
 - **日志提示写文件失败/权限问题**：把 `docker-compose.yml` 里的 `user: "1000:1000"` 一行删除，重新部署（以 root 运行）
-- **手机打不开**：确认手机与 NAS 在同一局域网（这正是 NAS 部署的意义：**不需要代理**）；若跨网段访问需在路由器放行或使用飞牛的远程访问
-- **容器在跑但网页没数据**：等一次相同时段的采集，或手动执行 `/api/run?mode=both`
+- **手机打不开**：确认手机与 NAS 在同一局域网（这正是 NAS 部署的意义：**不需要代理**）；出门在外用飞牛的远程访问（见上）
+- **容器在跑但网页没数据**：点网页上的「抓取今日赔率」按钮，或访问 `/api/run?mode=both`
 
 ## 迁移到其他电脑（整个文件夹拷走即可用）
 
@@ -291,8 +300,8 @@ logs/daily.log           计划任务运行日志
 ## 常见问题
 
 - **推送失败 / 连不上 GitHub？** 程序**每次执行前会自动探测本地代理**：先读 Windows 系统代理设置（与 Edge 共用），再扫描常见代理端口，并逐个实际验证能否连上 github.com，找到后自动写入本仓库 git 配置——**代理端口变了不需要手动改**。请在推送时段保持代理软件运行。若特殊环境探测不到，可在 `config.json` 里填 `"gitProxy": "http://127.0.0.1:端口"` 手动指定。排查问题先跑一次「环境自检.cmd」
-- **手机打不开网页？** `github.io` 域名在国内直连可能不稳定，手机上也需可用的网络环境（或代理）；打不开时可以改用网页里的「下载云端 Excel」等替代方式，或告诉我，可以再部署一份到国内可直连的托管（如 Cloudflare Pages）
-- **电脑关机了？** 开机后计划任务会补跑一次（StartWhenAvailable）。几天不开机也不影响已有数据；之后可在网页手动「回填赛果」补齐
+- **手机打不开网页？** `github.io` 域名在国内直连可能不稳定，手机上也需可用的网络环境（或代理）；打不开时可以改用**已部署的 NAS 页面**（见上方 NAS 章节，局域网/远程访问直连），或告诉我，可以再部署一份到国内可直连的托管（如 Cloudflare Pages）
+- **电脑关机了？** 开机后计划任务会补跑一次（StartWhenAvailable）。几天不开机也不影响已有数据；之后可在网页手动「回填赛果」补齐（NAS 页面同样可以）
 - **接口变了怎么办？** 所有接口地址与解析逻辑都在 `docs/core.js` 一个文件里，改完重新 `npm run build:userscript` 即可，三端同时生效
 - **多设备同时写入会冲突吗？** 写入前会先拉取云端并合并（同一场取更新的赔率、已有的赛果不丢），冲突自动重试，无需手工处理
 - **令牌安全吗？** 令牌只保存在浏览器 localStorage 或本机 `.git/config`，不会提交到仓库；建议用细粒度令牌并只授权这一个仓库的 Contents 读写

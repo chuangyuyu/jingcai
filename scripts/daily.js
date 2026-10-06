@@ -393,8 +393,10 @@ async function runCheck() {
       const url = git(['remote', 'get-url', 'origin']).trim();
       ok('git 远端 origin', true, url);
     } catch (e) { /* 上面已覆盖 */ }
-  } else {
+  } else if (isWin) {
     ok('git 远端 origin', false, '未配置：git remote add origin https://github.com/你的用户名/仓库名.git');
+  } else {
+    ok('git 远端 origin', true, '未配置（NAS 独立部署：数据存本地、不推送 GitHub，属正常）');
   }
 
   if (isWin) {

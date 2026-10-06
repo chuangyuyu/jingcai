@@ -25,7 +25,8 @@
     betTrack: 'modelA',
     betStake: 100,
     _bet: null,
-    busy: false
+    busy: false,
+    nas: { enabled: false, runKeyRequired: false }
   };
 
   var LS_SETTINGS = 'jc_settings_v1';
@@ -123,7 +124,7 @@
   }
 
   function loadAll() {
-    setStatus('正在加载云端数据…', 'busy');
+    setStatus('正在加载数据…', 'busy');
     var local = loadDirty();
     state.dirty = local;
     loadModelCfg();
@@ -134,13 +135,13 @@
         Object.keys(local).forEach(function (d) { if (dates.indexOf(d) < 0) dates.push(d); });
         dates.sort();
         if (!dates.length) return [];
-        setStatus('正在加载云端数据…（0/' + dates.length + '）', 'busy');
+        setStatus('正在加载数据…（0/' + dates.length + '）', 'busy');
         var loaded = 0;
         return mapLimit(dates, 6, function (d) {
           return fetchDayFile(d).then(function (remote) {
             loaded++;
             if (loaded % 10 === 0 || loaded === dates.length) {
-              setStatus('正在加载云端数据…（' + loaded + '/' + dates.length + '）', 'busy');
+              setStatus('正在加载数据…（' + loaded + '/' + dates.length + '）', 'busy');
             }
             return JC.mergeDocs(remote, local[d] || null);
           }).then(function (doc) { return doc ? [d, doc] : null; });
@@ -226,8 +227,68 @@
       (dates.length ? dates[0] + ' ~ ' + dates[dates.length - 1] : '—') + '）' +
       ' · 最近抓取 ' + (lastAt ? lastAt.replace('T', ' ').slice(0, 16) : '—');
     if (dirtyCount) txt += ' · 待同步 ' + dirtyCount + ' 天';
+    if (state.nas.enabled) txt += ' · NAS 本地数据';
     if (extra) txt += ' · ' + extra;
     setStatus(txt, dirtyCount ? 'warn' : 'ok');
+  }
+
+  // ---------------------------------------------------------------- NAS 本地模式
+  // 页面由 NAS 的 nas/server.js 提供时（同源 /api/status 可达）：抓取/回填改由
+  // NAS 端执行（结果直接写入 NAS 数据文件，局域网所有设备刷新即可见），
+  // 不再走浏览器"待同步/localStorage"或 GitHub 通道。
+  function probeNas() {
+    if (/\.github\.io$/i.test(location.hostname)) return; // GitHub Pages 无本地服务，跳过探测
+    fetch('/api/status', { cache: 'no-store' }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      if (!j || j.service !== 'jingcai-nas') return;
+      state.nas.enabled = true;
+      state.nas.runKeyRequired = !!j.runKeyRequired;
+      var sb = $('#btn-sync');
+      if (sb) sb.hidden = true; // NAS 模式数据存本地，云端同步按钮不适用
+      updateStatusLine();
+      console.log('[jingcai] 已连接 NAS 本地服务：抓取/回填直接写 NAS 数据', j.data || '');
+    }).catch(function () { /* 非 NAS 环境（Pages/静态托管）：忽略 */ });
+  }
+
+  function nasRun(mode, busyText) {
+    if (state.busy) return;
+    var key = '';
+    if (state.nas.runKeyRequired) {
+      key = localStorage.getItem('jc_nas_key') || '';
+      if (!key) {
+        key = window.prompt('请输入 NAS 访问口令（config.json 的 nas.runKey）') || '';
+        if (!key) { toast('已取消：需要访问口令'); return; }
+        localStorage.setItem('jc_nas_key', key);
+      }
+    }
+    state.busy = true;
+    var b1 = $('#btn-odds'), b2 = $('#btn-results');
+    b1.disabled = true;
+    b2.disabled = true;
+    setStatus(busyText + '（NAS 本地执行中，约需几十秒）…', 'busy');
+    fetch('/api/run?mode=' + encodeURIComponent(mode) + (key ? '&key=' + encodeURIComponent(key) : ''), { cache: 'no-store' })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, j: j }; });
+      })
+      .then(function (x) {
+        if (x.status === 403) { localStorage.removeItem('jc_nas_key'); throw new Error('访问口令错误，请核对 config.json 的 nas.runKey'); }
+        if (x.status === 409) throw new Error('NAS 上已有任务正在执行，请稍候再试');
+        if (!x.j || x.j.ok !== true) throw new Error((x.j && x.j.error) || ('HTTP ' + x.status));
+        return loadAll().then(function () {
+          toast('NAS 本地执行完成，页面已刷新（其他设备刷新即可见）');
+        });
+      })
+      .catch(function (e) {
+        setStatus('NAS 本地执行失败：' + e.message, 'err');
+        toast('NAS 本地执行失败：' + e.message, true);
+      })
+      .then(function () {
+        state.busy = false;
+        b1.disabled = false;
+        b2.disabled = false;
+      });
   }
 
   // ---------------------------------------------------------------- 抓取 / 回填（浏览器端）
@@ -236,6 +297,7 @@
 
   function captureOdds() {
     if (state.busy) return;
+    if (state.nas.enabled) { nasRun('odds', '正在抓取今日赔率'); return; }
     state.busy = true;
     var btn = $('#btn-odds');
     btn.disabled = true;
@@ -293,6 +355,7 @@
 
   function backfillResults() {
     if (state.busy) return;
+    if (state.nas.enabled) { nasRun('results', '正在回填赛果'); return; }
     var today = todayStr();
     var minDate = JC.addDays(today, -14);
     var dates = Object.keys(state.days).filter(function (d) {
@@ -1112,6 +1175,7 @@
   }
 
   bind();
+  probeNas();
   loadAll();
 
   // 调试钩子（仅供开发排查用）
