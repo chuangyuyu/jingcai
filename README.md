@@ -121,15 +121,20 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Interactive
 4. 把**整个项目文件夹的内容**拷进去（`docs`、`scripts`、`nas`、`userscript`、`config.json`、`docker-compose.yml` 等）。其中 `node_modules` **建议一并拷入**（全部为纯 JS 依赖，已验证无原生模块，拷到 NAS 可直接用于生成 Excel）；不拷也不影响抓取与网页，需要时在容器内执行 `docker exec jingcai sh -c "cd /app && npm install"` 安装亦可
 5. 拷完后原数据（赔率记录、预测、赛果、编号历史、Excel）就已随 `docs/data`、`docs/excel` 完整保留
 
-### 第二步：用飞牛 Docker 部署
+### 第二步：部署容器（三种方式任选，逐字段填写说明与完整报错排查见 **[NAS部署指南.md](NAS部署指南.md)**）
 
-1. 飞牛「应用中心」安装并打开 **Docker** 应用
-2. 左侧 **项目** → **新建项目**：
-   - 项目名称：`jingcai`
-   - Compose 文件：选择项目目录里的 **`docker-compose.yml`**（这样其中的 `.:/app` 即指向项目目录）
-   - 如果界面是"粘贴内容"方式：把 `docker-compose.yml` 全文粘进去，并把 `volumes` 中的 `- .:/app` 改为 `- /vol1/1000/jingcai:/app`（换成你的实际项目目录）
-   - 点击 **部署/启动**。首次会自动拉取 `node:20-alpine` 镜像（拉取慢时可在 Docker 设置里配置国内镜像加速源）
-3. 部署成功后容器 `jingcai` 会自动运行（已配置 `restart: unless-stopped`，NAS 重启后自动拉起）
+**方式 A · 容器表单（最直观）**：Docker 应用 →「容器」→「添加容器」：镜像 `node:20-alpine`；名称 `jingcai`；重启策略"除非手动停止"；端口 本地8788→容器8788；挂载 主机`/vol1/1000/jingcai` → 容器 `/app`；环境变量 `TZ=Asia/Shanghai`、`PORT=8788`；命令 `sh -c "cd /app && node nas/server.js"`
+
+**方式 B · SSH 一条命令**：
+
+```bash
+docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e PORT=8788 -p 8788:8788 -v /vol1/1000/jingcai:/app node:20-alpine sh -c "cd /app && node nas/server.js"
+```
+
+**方式 C · Compose 项目**：Docker →「项目」→ 新建 → 名称 `jingcai` → 选择项目目录里的 `docker-compose.yml` 部署。
+⚠️ 若是"粘贴内容"方式：必须把 `- .:/app` 改成 `- /vol1/1000/jingcai:/app`（绝对路径），否则容器反复重启——这是最常见的坑。
+
+> **容器起不来？** 先看日志（Docker → 容器/项目 → jingcai →「日志」；或 SSH `docker logs jingcai --tail 50`），再对照 [NAS部署指南.md](NAS部署指南.md) 的排查表：镜像拉取失败（配镜像加速源）、挂载路径不对（Cannot find module /app/nas/server.js）、权限（chown 或去掉 user 行）、端口占用，四类覆盖 95% 情况。把日志发我也可以直接帮你看。
 
 ### 第三步：验证
 
@@ -268,6 +273,7 @@ userscript/
 nas/
   server.js              NAS/容器服务：本地网页 + 定时抓取（零依赖）
 docker-compose.yml      Docker 部署配置（飞牛 NAS / 任意 Docker 环境）
+NAS部署指南.md          飞牛NAS 详细部署指引（逐字段说明 + 容器启动失败排查表）
 config.json              autoPush / 回填窗口 / 定时时间 / 模型参数 / 编号追踪 / NAS 口令
 logs/daily.log           计划任务运行日志
 ```

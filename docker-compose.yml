@@ -1,22 +1,41 @@
 # ============================================================
 # 竞彩进球数预测 · 飞牛 NAS(fnOS) / 任意 Docker 环境 部署配置
-# 用法：见 README「部署到飞牛 NAS」章节
-#   · 本文件必须与项目文件夹放在一起（compose 中的 "." 即项目文件夹）
-#   · 网页端口默认 8788，可在下面 ports 与 environment.PORT 同步修改
-#   · 以 UID 1000（飞牛默认用户）运行，保证 NAS 上文件属主正常；如遇权限问题可删除 user 行
+# ------------------------------------------------------------
+# 【使用前提】本文件必须留在项目文件夹里，部署时选择/指向的就是这个文件
+#   （这样下面 volumes 里的 "." 就代表项目文件夹）
+#
+# ★★ 最容易出错的一点 ★★
+#   如果是把本文件"内容复制粘贴"到网页界面里创建的：`.` 会变成别的目录，
+#   容器将因找不到 nas/server.js 反复重启。此时必须把下面一行
+#       - .:/app
+#   改成你 NAS 上的实际项目路径（绝对路径），例如：
+#       - /vol1/1000/jingcai:/app
+#
+# ★ 拉取 node 镜像慢/失败：飞牛 Docker →「设置」→ 配置镜像加速源后重试；
+#   仍不行可把 image 换成中国可直连的加速前缀，例如：
+#       image: docker.m.daocloud.io/library/node:20-alpine
+#   （加速地址会随时间变化，可搜索"docker 镜像加速"取其一时效可用的）
+#
+# ★ 端口默认 8788：改端口时下面 ports 与 environment.PORT 两处必须一致。
+#
+# ★ 若日志出现权限错误（EACCES / permission denied）：
+#   在项目目录下一行修复（SSH）：sudo chown -R 1000:1000 /vol1/1000/jingcai
+#   或删除下面的 user 行后重新部署（改为以 root 运行，同样可用）。
 # ============================================================
+version: "3.8"
+
 services:
   jingcai:
     image: node:20-alpine
     container_name: jingcai
     working_dir: /app
     command: ["node", "nas/server.js"]
-    user: "1000:1000"
+    user: "1000:1000"          # 移除本行将以 root 运行（可绕开权限类启动失败）
     environment:
       - TZ=Asia/Shanghai
       - PORT=8788
     volumes:
-      - .:/app
+      - .:/app                 # 粘贴方式创建时必须改为绝对路径，如 /vol1/1000/jingcai:/app
     ports:
       - "8788:8788"
     restart: unless-stopped
