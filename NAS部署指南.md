@@ -101,6 +101,7 @@ docker run -d --name jingcai --restart unless-stopped \
 | 日志里的关键词 | 原因 | 解决 |
 |---|---|---|
 | `pull access denied`、`i/o timeout`、`TLS handshake timeout`、`dial tcp ... timeout` | **镜像拉取失败**（连不上 Docker Hub，国内常见，与代码无关） | ① Docker 应用 →「设置」→ 配置**镜像加速源**（填飞牛推荐的加速地址）后重试；② 或把镜像名换成加速前缀，如 `docker.m.daocloud.io/library/node:20-alpine`（加速地址有时效，可上网搜"docker 镜像加速"取最新可用的） |
+| `Starting` → `Started` → `Exited:0`（**干干净净退出、日志没有任何报错**） | **容器的「命令」字段没生效/没填**：容器实际跑的是 node 的交互模式（等待输入），无输入立即正常退出（退出码 0 就是它"正常结束"的意思） | 编辑容器 → 找到「命令 / 执行命令 / Command」框（不是名称、不是环境变量框），填：`sh -c "cd /app && node nas/server.js"` → 保存并启动；或按"方式 B"用 SSH 一条命令删旧建新。验证：日志出现 `NAS 服务已启动` 即成功 |
 | `Cannot find module '/app/nas/server.js'`、`MODULE_NOT_FOUND` | **挂载路径不对**——容器里 `/app` 不是项目文件夹 | 方式 C 粘贴创建的：把 `- .:/app` 改成 `- /vol1/1000/jingcai:/app`；方式 A/B：检查挂载的"主机路径"是不是真的项目文件夹（里面要有 nas、docs 这些子文件夹） |
 | `EACCES: permission denied`、`permission denied, open ...` | **文件权限**——容器用户读不了/写不了项目文件 | SSH 执行一行：`sudo chown -R 1000:1000 /vol1/1000/jingcai`；或方式 C 删除 `user: "1000:1000"` 那一行、方式 A 不设置用户，重新部署（以 root 运行） |
 | `port is already allocated`、`address already in use` | **8788 端口被占用** | 换端口：方式 A 把两处 8788 都改成一个空闲端口（如 8890）；方式 B/C 同理（ports 与 PORT 两处一致）；改完 `http://NAS的IP:新端口` 访问 |
