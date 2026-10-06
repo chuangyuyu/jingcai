@@ -119,10 +119,10 @@
 
     <div class="card">
       <div class="card-head"><h2>即将开赛的预测</h2></div>
-      <p class="card-sub">未出结果且已抓到完整比分池的场次；基线A = 差值最小的进球数。最后一列为各进球数差值概览（0* 为0球拟合值；7+球 = 比分矩阵中总进球≥7 的格子 ∪ 胜/平/负其他三档）。</p>
+      <p class="card-sub">未出结果且已抓到完整比分池的场次。基线A = 差值最小项；<b>模型A ⚡ = 实时自修正预测</b>（近30天滚动模型，赛果落定时冻结存档）。最后一列为各进球数差值概览（0* 为0球拟合值；7+球 = 比分矩阵中总进球≥7 的格子 ∪ 胜/平/负其他三档）。点击预测可看比赛详情。</p>
       <div class="table-scroll">
         <table class="grid" id="upcoming-table">
-          <thead><tr><th>日期</th><th>编号</th><th>联赛</th><th>对阵</th><th>开赛</th><th>单关</th><th>基线A</th><th>差值概览（A口径）</th></tr></thead>
+          <thead><tr><th>日期</th><th>编号</th><th>联赛</th><th>对阵</th><th>开赛</th><th>单关</th><th>基线A</th><th>模型A</th><th>差值概览（A口径）</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -199,6 +199,7 @@
           <tbody></tbody>
         </table>
       </div>
+      <p class="card-sub" style="margin-top:8px">⚡ = 赛前/赛中实时计算的模型预测（近30天滚动模型）；比赛结算后自动冻结存档，回测只认冻结值。</p>
       <div id="data-cards" class="cards"></div>
       <div id="data-more" class="more" hidden><button id="btn-more-rows">显示更多…</button></div>
     </div>
@@ -230,6 +231,6 @@
 
 <script src="vendor/xlsx.full.min.js?v=1"></script>
 <script src="core.js?v=9"></script>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

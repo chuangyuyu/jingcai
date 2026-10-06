@@ -71,8 +71,12 @@ function addMonthSheet(wb, month, rows) {
       singleText: r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
       actualText: r.actual == null ? '' : JC.labelG(r.actual),
       baseA: r.predBaseA == null ? '' : (JC.labelG(r.predBaseA) + (r.oddsBaseA != null ? ' @' + r.oddsBaseA : '')),
-      modelA: r.predA == null ? '' : (JC.labelG(r.predA) + (r.oddsA != null ? ' @' + r.oddsA : '')),
-      modelB: r.predB == null ? '' : (JC.labelG(r.predB) + (r.oddsB != null ? ' @' + r.oddsB : '')),
+      modelA: (r.predA != null)
+        ? (JC.labelG(r.predA) + (r.oddsA != null ? ' @' + r.oddsA : ''))
+        : (r.predALive == null ? '' : (JC.labelG(r.predALive) + (r.oddsALive != null ? ' @' + r.oddsALive : '') + ' ⚡')),
+      modelB: (r.predB != null)
+        ? (JC.labelG(r.predB) + (r.oddsB != null ? ' @' + r.oddsB : ''))
+        : (r.predBLive == null ? '' : (JC.labelG(r.predBLive) + (r.oddsBLive != null ? ' @' + r.oddsBLive : '') + ' ⚡')),
       hitModelA: r.hitModelA == null ? '' : (r.hitModelA ? '✓' : '✗'),
       hitModelB: r.hitModelB == null ? '' : (r.hitModelB ? '✓' : '✗'),
       oddsAt: JC.fmtAt(r.oddsAt), resultAt: JC.fmtAt(r.resultAt)
@@ -285,7 +289,7 @@ function addHelpSheet(wb, config) {
     '',
     '【数据口径】',
     '  · 赔率、赛果来自中国体育彩票官方 Web API；每次抓取保留完整玩法池（总进球0-7+、比分矩阵）。',
-    '  · 预测列格式"X球 @赔率"：@后为该预测进球数对应的赔率（该场最后一次记录），便于核对与回测对照。',
+    '  · 预测列格式"X球 @赔率"：@后为该预测进球数对应的赔率（该场最后一次记录），便于核对与回测对照；带 ⚡ 的为未结算场次的实时模型预测（同算法），结算时冻结存档。',
     '  · 凌晨开赛的比赛属于前一"销售日"（预测窗口按销售日切分）。',
     '  · 由于需保存完整比分矩阵，本功能仅对"升级后抓取"的场次生效（旧快照只有1球数据）。',
     '',
@@ -347,6 +351,33 @@ async function generateExcel() {
   const dates = Object.keys(index.dates || {}).sort();
   const docs = dates.map(d => loadJson(path.join(DAYS_DIR, d + '.json'), null)).filter(Boolean);
   const rows = JC.flatRows(docs);
+
+  // 未结算场次的"实时模型"预测（同算法，近30天滚动；结算场次用冻结存档值）
+  const modelCfg = (config.model) || { windowDays: 30, maxActualRank: 6 };
+  const winFrom = JC.addDays(JC.localDateStr(), -(modelCfg.windowDays || 30));
+  const samplesA = [], samplesB = [];
+  rows.forEach(r => {
+    if (r.actual == null || !r.diffs || r.date < winFrom) return;
+    samplesA.push({ date: r.date, diffs: (r.diffs.groups || []).map(g => g.diffA), actual: r.actual });
+    samplesB.push({ date: r.date, diffs: (r.diffs.groups || []).map(g => g.relB), actual: r.actual });
+  });
+  const liveA = JC.modelTrain(samplesA, { maxActualRank: modelCfg.maxActualRank });
+  const liveB = JC.modelTrain(samplesB, { maxActualRank: modelCfg.maxActualRank });
+  const oddsOfRow = (r, g) => {
+    if (g == null || !r.diffs) return null;
+    let out = null;
+    (r.diffs.groups || []).forEach(x => { if (x.g === g) out = x.ttg; });
+    return out;
+  };
+  rows.forEach(r => {
+    if (r.predA != null || !r.diffs) return;
+    const dA = (r.diffs.groups || []).map(g => g.diffA);
+    const dB = (r.diffs.groups || []).map(g => g.relB);
+    r.predALive = JC.modelPredict(liveA, dA, r.predBaseA);
+    r.predBLive = JC.modelPredict(liveB, dB, null);
+    r.oddsALive = oddsOfRow(r, r.predALive);
+    r.oddsBLive = oddsOfRow(r, r.predBLive);
+  });
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'jingcai-goals-predict';

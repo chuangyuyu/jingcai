@@ -165,6 +165,48 @@
 
   function rebuildRows() {
     state.rows = JC.flatRows(Object.keys(state.days).sort().map(function (d) { return state.days[d]; }));
+    trainLiveModels();
+  }
+
+  // 实时模型（与"结算冻结"同算法）：赛前/赛中的模型A/B 预测由这里计算，显示在表格中；
+  // 比赛结算时由服务器/本机任务用同一口径冻结存档（回测只认冻结值，防事后修正）。
+  function trainLiveModels() {
+    var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
+    var samplesA = [], samplesB = [];
+    state.rows.forEach(function (r) {
+      if (r.actual == null || !r.diffs || r.date < winFrom) return;
+      samplesA.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.diffA; }), actual: r.actual });
+      samplesB.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.relB; }), actual: r.actual });
+    });
+    state.liveModelA = JC.modelTrain(samplesA, { maxActualRank: state.modelCfg.maxActualRank });
+    state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: state.modelCfg.maxActualRank });
+    state.liveSampleN = state.liveModelA.used;
+  }
+
+  function oddsOfRow(r, g) {
+    if (g == null || !r.diffs) return null;
+    var out = null;
+    (r.diffs.groups || []).forEach(function (x) { if (x.g === g) out = x.ttg; });
+    return out;
+  }
+
+  // 统一取预测：优先已冻结（结算存档），否则实时计算模型
+  function predsOf(r) {
+    if (r.predA != null) {
+      return { baseA: r.predBaseA, modelA: r.predA, modelB: r.predB, oddsBaseA: r.oddsBaseA, oddsA: r.oddsA, oddsB: r.oddsB, frozen: true };
+    }
+    if (!r.diffs || !state.liveModelA) {
+      return { baseA: r.predBaseA, modelA: null, modelB: null, oddsBaseA: r.oddsBaseA, oddsA: null, oddsB: null, frozen: false };
+    }
+    var dA = (r.diffs.groups || []).map(function (g) { return g.diffA; });
+    var dB = (r.diffs.groups || []).map(function (g) { return g.relB; });
+    var modelA = JC.modelPredict(state.liveModelA, dA, r.predBaseA);
+    var modelB = JC.modelPredict(state.liveModelB, dB, null);
+    return {
+      baseA: r.predBaseA, modelA: modelA, modelB: modelB,
+      oddsBaseA: r.oddsBaseA, oddsA: oddsOfRow(r, modelA), oddsB: oddsOfRow(r, modelB),
+      frozen: false
+    };
   }
 
   function updateStatusLine(extra) {
@@ -651,12 +693,17 @@
       return;
     }
     tbody.innerHTML = up.slice(0, 40).map(function (r) {
+      var p = predsOf(r);
       var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
+      var predA = function (g, od, strong) {
+        var txt = (strong ? '<b>' : '') + JC.labelG(g) + (strong ? '</b>' : '') + (od != null ? ' <span class="tiny muted">@' + Number(od).toFixed(2) + '</span>' : '');
+        return '<a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' + txt + '</a>';
+      };
       return '<tr><td>' + r.date.slice(5) + '</td><td>' + escapeHtml(r.matchNumStr) + '</td><td>' + escapeHtml(r.league) + '</td>' +
         '<td>' + escapeHtml(r.home) + ' vs ' + escapeHtml(r.away) + '</td><td>' + escapeHtml(r.kickoff) + '</td>' +
         (r.isSingleWin ? '<td class="single-yes">是</td>' : '<td>—</td>') +
-        '<td><a class="pred-link" href="' + href + '" target="_blank" rel="noopener"><b>' + JC.labelG(r.baseA) + '</b>' +
-        (r.oddsBaseA != null ? ' <span class="tiny muted">@' + Number(r.oddsBaseA).toFixed(2) + '</span>' : '') + '</a></td>' +
+        '<td>' + predA(p.baseA, p.oddsBaseA, true) + '</td>' +
+        '<td>' + predA(p.modelA, p.oddsA, true) + ' <span class="tiny muted">⚡</span></td>' +
         '<td class="muted"><span class="tiny">' + diffSummary(r) + '</span></td></tr>';
     }).join('');
   }
@@ -681,9 +728,9 @@
     });
   }
 
-  function predCell(r, g, odds) {
+  function predCell(r, g, odds, extra) {
     if (g == null) return '<td>—</td>';
-    var txt = '<b>' + JC.labelG(g) + '</b>' + (odds != null ? ' <span class="tiny muted">@' + Number(odds).toFixed(2) + '</span>' : '');
+    var txt = '<b>' + JC.labelG(g) + '</b>' + (odds != null ? ' <span class="tiny muted">@' + Number(odds).toFixed(2) + '</span>' : '') + (extra || '');
     if (r.matchId == null) return '<td>' + txt + '</td>';
     var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
     return '<td><a class="pred-link" href="' + href + '" target="_blank" rel="noopener" title="查看比赛详情">' + txt + '</a></td>';
@@ -694,6 +741,8 @@
     var shown = sorted.slice(0, state.shownRows);
     var tbody = $('#data-table tbody');
     tbody.innerHTML = shown.map(function (r) {
+      var p = predsOf(r);
+      var liveMark = function (g) { return (g != null && !p.frozen && r.actual == null) ? '<span class="tiny muted" title="赛前实时计算（同算法）；结算时冻结存档"> ⚡</span>' : ''; };
       return '<tr>' +
         '<td>' + r.date + '</td>' +
         '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
@@ -702,9 +751,9 @@
         '<td>' + escapeHtml(r.kickoff) + '</td>' +
         '<td class="' + (r.isSingleWin ? 'single-yes' : '') + '">' + (r.isSingleWin ? '是' : '—') + '</td>' +
         '<td><b>' + JC.labelG(r.actual) + '</b></td>' +
-        predCell(r, r.predBaseA, r.oddsBaseA) +
-        predCell(r, r.predA, r.oddsA) +
-        predCell(r, r.predB, r.oddsB) +
+        predCell(r, p.baseA, p.oddsBaseA) +
+        predCell(r, p.modelA, p.oddsA, liveMark(p.modelA)) +
+        predCell(r, p.modelB, p.oddsB, liveMark(p.modelB)) +
         '<td class="' + hitCls(r.hitModelA) + '">' + hitText(r.hitModelA) + '</td>' +
         '<td class="' + hitCls(r.hitModelB) + '">' + hitText(r.hitModelB) + '</td>' +
         '<td class="muted">' + JC.fmtAt(r.oddsAt) + '</td>' +
@@ -721,8 +770,10 @@
       return;
     }
     el.innerHTML = shown.map(function (r) {
+      var p = predsOf(r);
       var hit = r.hitModelA == null ? '' : '<span class="' + hitCls(r.hitModelA) + '">' + (r.hitModelA ? '模型命中 ✓' : '模型未中 ✗') + '</span>';
       var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
+      var liveMk = (!p.frozen && r.actual == null) ? '<span class="tiny muted">⚡</span>' : '';
       var oddsTxt = function (g, od) { return JC.labelG(g) + (od != null ? ' <span class="tiny muted">@' + Number(od).toFixed(2) + '</span>' : ''); };
       return '<div class="mcard">' +
         '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
@@ -731,10 +782,10 @@
         '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
         '<div class="mc-teams">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</div>' +
         '<div class="mc-diff"><a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' +
-        '<span class="mc-k">基线A</span><span class="mc-v">' + oddsTxt(r.predBaseA, r.oddsBaseA) + '</span></a>' +
+        '<span class="mc-k">基线A</span><span class="mc-v">' + oddsTxt(p.baseA, p.oddsBaseA) + '</span></a>' +
         '<a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' +
-        '<span class="mc-k">模型A</span><span class="mc-v">' + oddsTxt(r.predA, r.oddsA) + '</span></a>' +
-        '<span class="mc-k">模型B</span><span class="mc-v">' + oddsTxt(r.predB, r.oddsB) + '</span></div>' +
+        '<span class="mc-k">模型A ' + liveMk + '</span><span class="mc-v">' + oddsTxt(p.modelA, p.oddsA) + '</span></a>' +
+        '<span class="mc-k">模型B</span><span class="mc-v">' + oddsTxt(p.modelB, p.oddsB) + '</span></div>' +
         '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit +
         ' <a class="pred-link tiny" href="' + href + '" target="_blank" rel="noopener">详情 →</a></div>' +
         '</div>';
