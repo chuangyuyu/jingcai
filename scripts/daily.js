@@ -346,8 +346,9 @@ function withTimeout(promise, ms, label) {
 
 // node scripts/daily.js check —— 迁移/排障用：逐项检查运行环境并给出结论
 async function runCheck() {
-  console.log('=== 竞彩1球差值 · 环境自检 ===');
-  console.log('时间：' + JC.nowIso() + '（核心库 v' + JC.VERSION + '）');
+  const isWin = process.platform === 'win32';
+  console.log('=== 竞彩进球数差值 · 环境自检 ===');
+  console.log('时间：' + JC.nowIso() + '（核心库 v' + JC.VERSION + '，' + (isWin ? 'Windows' : 'Linux/' + process.platform) + '）');
   console.log('目录：' + ROOT + '\n');
   let fails = 0;
   const ok = function (name, pass, detail) {
@@ -382,7 +383,11 @@ async function runCheck() {
       const out = execFileSync('git', ['ls-remote', 'origin', 'main'], { cwd: ROOT, encoding: 'utf8', stdio: 'pipe', timeout: 40000 });
       ok('GitHub 远端连通', out.trim().length > 0, '远端 main：' + out.trim().split(/\s/)[0].slice(0, 10) + '…');
     } catch (e) {
-      ok('GitHub 远端连通', false, '连接失败：检查网络；国内直连被拦截时请先开启代理软件');
+      if (isWin) {
+        ok('GitHub 远端连通', false, '连接失败：检查网络；国内直连被拦截时请先开启代理软件');
+      } else {
+        ok('GitHub 远端连通', true, '未连通（NAS/Linux 部署属正常：本部署不推送 GitHub，数据存 NAS 本地）');
+      }
     }
     try {
       const url = git(['remote', 'get-url', 'origin']).trim();
@@ -392,18 +397,22 @@ async function runCheck() {
     ok('git 远端 origin', false, '未配置：git remote add origin https://github.com/你的用户名/仓库名.git');
   }
 
-  try {
-    execFileSync('schtasks', ['/query', '/tn', '竞彩1球-上午抓取'], { stdio: 'pipe', encoding: 'buffer' });
-    ok('计划任务（每天 11:00 / 17:00 两次）', true, '已注册（上午抓取 / 下午抓取）');
-  } catch (e) {
-    let legacy = false;
+  if (isWin) {
     try {
-      execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
-      legacy = true;
-    } catch (e2) { /* 新旧都没有 */ }
-    ok('计划任务（每天 11:00 / 17:00 两次）', false, legacy
-      ? '仍是旧版任务（晚间 21:00）：请用管理员 PowerShell 重新运行 scripts\\register-tasks.ps1 -InteractiveUser 更新为 11:00/17:00'
-      : '未注册：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
+      execFileSync('schtasks', ['/query', '/tn', '竞彩1球-上午抓取'], { stdio: 'pipe', encoding: 'buffer' });
+      ok('计划任务（每天 11:00 / 17:00 两次）', true, '已注册（上午抓取 / 下午抓取）');
+    } catch (e) {
+      let legacy = false;
+      try {
+        execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
+        legacy = true;
+      } catch (e2) { /* 新旧都没有 */ }
+      ok('计划任务（每天 11:00 / 17:00 两次）', false, legacy
+        ? '仍是旧版任务（晚间 21:00）：请用管理员 PowerShell 重新运行 scripts\\register-tasks.ps1 -InteractiveUser 更新为 11:00/17:00'
+        : '未注册：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
+    }
+  } else {
+    ok('定时执行（NAS 容器内定时器）', true, '由 nas/server.js 负责（11:00/17:00；状态见 http://<NAS>:端口/api/status）');
   }
 
   const index = loadIndex();

@@ -22,9 +22,10 @@
 
 | 入口 | 作用 | 谁来执行 |
 |---|---|---|
-| **网页**（GitHub Pages） | 查看/分析：预测命中率走势、进球数分布、模型明细、即将开赛的预测、编号追踪；导出 Excel；也可手动抓取、回填赛果 | 任何设备打开浏览器 |
-| **计划任务**（本机 Windows） | 每天 11:00 与 17:00 各抓一次（赔率快照 + 回填赛果 + 冻结预测），自动提交到 GitHub | 这台电脑（需开机） |
-| **油猴脚本**（Edge 等浏览器） | 访问体彩官网时自动抓取；浮窗直接显示当天各场预测；可一键同步 | 你日常用的浏览器 |
+| **飞牛 NAS（推荐长期运行）** | 网页 + 定时抓取全部在 NAS 上：**局域网直接访问，不需要 GitHub、不需要任何代理**；数据存 NAS 本地 | 飞牛 fnOS 的 Docker 容器 |
+| **网页**（GitHub Pages） | 查看/分析：模拟投注、预测命中率、模型明细、详情页、编号追踪；导出 Excel；也可手动抓取、回填赛果 | 任何设备打开浏览器 |
+| **计划任务**（本机 Windows） | 每天 11:00 与 17:00 各抓一次（赔率快照 + 回填赛果 + 封盘冻结预测），数据在本地/可推送 GitHub | 这台电脑（需开机） |
+| **油猴脚本**（Edge 等浏览器） | 访问体彩官网时自动抓取；浮窗显示每场预测（带赔率、可点开详情）；可一键同步 | 你日常用的浏览器 |
 
 网页端直接调用体彩官方接口（接口已开放跨域），所以**手机上打开网页也能抓取最新数据**；数据保存在你的 GitHub 仓库里，多设备共享。
 
@@ -107,6 +108,61 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Interactive
 3. 之后你每次访问体彩官网（如竞彩赛程页），脚本每天首次访问会自动抓一次数据；页面右下角浮窗可看当天场次差值，点「设置」填入仓库和令牌即可同步到云端
 
 ---
+
+## 部署到飞牛 NAS（fnOS）——推荐长期运行方式
+
+网页与定时抓取全部跑在 NAS 上，局域网内任何设备（手机/电脑）直接访问，**不依赖 GitHub、不需要任何代理**，数据保存在 NAS 本地。现有数据随项目文件夹一起拷贝即可保留。
+
+### 第一步：把项目放进 NAS（数据随文件夹一起迁移）
+
+1. 在 Windows 上先双击 `手动执行.cmd` 跑一次，让数据最新（数据都在 `docs/data` 与 `docs/excel` 里）
+2. 从 Windows 资源管理器访问 NAS 共享（地址栏输入 `\\NAS的IP`，用飞牛账号登录），或在飞牛「文件」应用里操作
+3. 在存储空间里新建一个文件夹，例如 **`/vol1/1000/jingcai`**（下称"项目目录"）
+4. 把**整个项目文件夹的内容**拷进去（`docs`、`scripts`、`nas`、`userscript`、`config.json`、`docker-compose.yml` 等）。其中 `node_modules` **建议一并拷入**（全部为纯 JS 依赖，已验证无原生模块，拷到 NAS 可直接用于生成 Excel）；不拷也不影响抓取与网页，需要时在容器内执行 `docker exec jingcai sh -c "cd /app && npm install"` 安装亦可
+5. 拷完后原数据（赔率记录、预测、赛果、编号历史、Excel）就已随 `docs/data`、`docs/excel` 完整保留
+
+### 第二步：用飞牛 Docker 部署
+
+1. 飞牛「应用中心」安装并打开 **Docker** 应用
+2. 左侧 **项目** → **新建项目**：
+   - 项目名称：`jingcai`
+   - Compose 文件：选择项目目录里的 **`docker-compose.yml`**（这样其中的 `.:/app` 即指向项目目录）
+   - 如果界面是"粘贴内容"方式：把 `docker-compose.yml` 全文粘进去，并把 `volumes` 中的 `- .:/app` 改为 `- /vol1/1000/jingcai:/app`（换成你的实际项目目录）
+   - 点击 **部署/启动**。首次会自动拉取 `node:20-alpine` 镜像（拉取慢时可在 Docker 设置里配置国内镜像加速源）
+3. 部署成功后容器 `jingcai` 会自动运行（已配置 `restart: unless-stopped`，NAS 重启后自动拉起）
+
+### 第三步：验证
+
+1. 手机/电脑浏览器打开 **`http://NAS的IP:8788`** —— 就是完整的网页（数据表、模拟投注、统计、详情页、Excel 下载都在）
+2. Docker → 项目 → `jingcai` → 日志：应看到 `NAS 服务已启动 / 定时执行：11:00(both)、17:00(odds)`
+3. 状态接口：`http://NAS的IP:8788/api/status`（可看到下次执行时间、数据概况）
+4. 想立刻手动执行一次：`http://NAS的IP:8788/api/run?mode=both`
+
+### 第四步：收尾（重要）
+
+- **停用 Windows 端的采集任务**：任务计划程序 → 禁用「竞彩1球-上午抓取」「竞彩1球-下午抓取」。NAS 的容器定时器已接替采集，避免两处同时采集造成数据分叉；此后 Windows 无需开机
+- NAS 端默认**不推送 GitHub**（避开特殊上网环境），所有数据在 NAS 本地
+- 若仍想偶尔备份到 GitHub：把 NAS 项目目录里的 `docs/data`、`docs/excel` 拷回 Windows 本项目覆盖，再执行 `git add -A && git commit -m "data: NAS 数据同步" && git push`
+
+### 日常使用与维护
+
+| 事项 | 操作 |
+|---|---|
+| 自动采集 | 每天 11:00 / 17:00 容器自动执行（抓赔率 + 回填赛果 + 封盘冻结）；日志见 Docker 项目日志或项目目录 `logs/daily.log` |
+| 手动执行 | 浏览器打开 `/api/run?mode=both`；或 SSH 到 NAS 执行 `docker exec jingcai node scripts/daily.js both --no-push` |
+| 改采集时间 | 编辑项目目录 `config.json` 的 `times` → 在 Docker 里重启 `jingcai` 容器 |
+| 改网页端口 | 编辑 `docker-compose.yml` 的 `ports` 与 `PORT`（两处改成同一端口）→ 重新部署 |
+| 访问口令（可选） | `config.json` 的 `nas.runKey` 填一个口令 → 手动执行接口需带 `?key=口令`（网页浏览不受影响） |
+| 数据备份 | 备份项目目录的 `docs/data`（核心数据）+ `docs/excel`；整个项目文件夹拷回电脑也是一份完整备份 |
+| 更新代码 | 把新版本代码文件覆盖到 NAS 项目目录（**不要覆盖 `docs/data`、`docs/excel`、`logs`**）→ 重启容器 |
+| 排障 | 环境自检：`docker exec jingcai node scripts/daily.js check`（NAS 环境下 GitHub/Windows 任务项自动按"可忽略"处理） |
+
+**常见问题**
+- **拉取镜像失败**：Docker 设置 → 配置国内镜像加速源后重试
+- **8788 端口被占用**：按上表改端口
+- **日志提示写文件失败/权限问题**：把 `docker-compose.yml` 里的 `user: "1000:1000"` 一行删除，重新部署（以 root 运行）
+- **手机打不开**：确认手机与 NAS 在同一局域网（这正是 NAS 部署的意义：**不需要代理**）；若跨网段访问需在路由器放行或使用飞牛的远程访问
+- **容器在跑但网页没数据**：等一次相同时段的采集，或手动执行 `/api/run?mode=both`
 
 ## 迁移到其他电脑（整个文件夹拷走即可用）
 
@@ -209,7 +265,10 @@ scripts/
 userscript/
   src.user.js            油猴脚本源文件（改交互改这里）
   jingcai.user.js        构建产物（安装用，勿手改）
-config.json              autoPush / 回填窗口 / 定时时间
+nas/
+  server.js              NAS/容器服务：本地网页 + 定时抓取（零依赖）
+docker-compose.yml      Docker 部署配置（飞牛 NAS / 任意 Docker 环境）
+config.json              autoPush / 回填窗口 / 定时时间 / 模型参数 / 编号追踪 / NAS 口令
 logs/daily.log           计划任务运行日志
 ```
 
