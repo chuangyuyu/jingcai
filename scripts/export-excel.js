@@ -69,7 +69,7 @@ function addMonthSheet(wb, month, rows) {
       date: r.date, matchNumStr: r.matchNumStr, league: r.league, home: r.home, away: r.away,
       kickoff: r.kickoff,
       singleText: r.isSingleWin == null ? '' : (r.isSingleWin ? '是' : '否'),
-      actualText: r.actual == null ? '' : JC.labelG(r.actual),
+      actualText: r.cancelled ? '已取消' : (r.actual == null ? '' : (JC.labelG(r.actual) + (r.rescheduled ? '（推迟）' : ''))),
       baseA: r.predBaseA == null ? '' : (JC.labelG(r.predBaseA) + (r.oddsBaseA != null ? ' @' + r.oddsBaseA : '')),
       modelA: (r.predA != null)
         ? (JC.labelG(r.predA) + (r.oddsA != null ? ' @' + r.oddsA : ''))
@@ -281,6 +281,8 @@ function addHelpSheet(wb, config) {
     '    取"该进球数在当前排名下命中率最高"者作为预测；',
     '    稳健性：赛果排名 ≥ ' + (modelCfg.maxActualRank || 6) + ' 的深冷门场次不纳入学习（防爆冷破坏函数）。',
     '  每场比赛的预测在其赛果落定时冻结（只使用该场之前的数据，杜绝未来数据泄漏），两轨同场对比。',
+    '  · 竞彩比赛开赛即封盘：到开赛时间后，最后一份赔率算出的预测即最终存档值（无需等赛果）。',
+    '  · 取消或推迟补赛的场次：结果照常记录与展示，但不纳入模型学习与模拟投注回测（意外情况造成偏差）。',
     '',
     '【模拟投注】',
     '  · 每场固定投入（config.json 的 bet.stake，默认 100 元）押"预测的进球数"（三条轨道分别统计：模型A/基线A/模型B）；',

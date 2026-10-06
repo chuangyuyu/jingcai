@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.3.0
+// @version      3.4.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -480,7 +480,7 @@
         return (r.matchId && st2.webBase) ? '<a href="' + href + '" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px dotted #ccc">' + inner + '</a>' : inner;
       };
       var fmtOdds2 = function (o) { return o != null ? ' <span style="color:#999">@' + Number(o).toFixed(2) + '</span>' : ''; };
-      var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
+      var actualTxt = r.cancelled ? '取消' : (r.actual != null ? (JC.labelG(r.actual) + (r.rescheduled ? '推迟' : '')) : '');
       var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +

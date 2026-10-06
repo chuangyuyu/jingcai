@@ -9,7 +9,7 @@
   /* 详情页专属样式 */
   main.md { max-width: 900px; margin: 0 auto; padding: 12px 14px calc(40px + env(safe-area-inset-bottom)); }
   .md-phase { display: inline-block; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 2px 9px; }
-  .md-phase.pre { background: var(--ghost); color: var(--ink-2); }
+  .md-phase.pre, .md-phase.cancelled { background: var(--ghost); color: var(--ink-2); }
   .md-phase.live { background: rgba(208,59,59,.12); color: var(--neg); }
   .md-phase.post { background: rgba(16,124,65,.12); color: var(--pos); }
   .md-head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
@@ -50,7 +50,7 @@
 
 <div id="tooltip" hidden></div>
 
-<script src="core.js?v=9"></script>
-<script src="match.js?v=3"></script>
+<script src="core.js?v=10"></script>
+<script src="match.js?v=4"></script>
 </body>
 </html>

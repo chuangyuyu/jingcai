@@ -237,5 +237,35 @@ console.log('== 模拟投注 ==');
   ok('自定义金额 50 元', near(bet3.tracks.modelA.profit, 150) && bet3.tracks.modelA.staked === 50);
 }
 
+console.log('== 取消/推迟场次 ==');
+{
+  const day = { date: '2026-10-01', matches: [
+    { matchId: 1, matchDate: '2026-10-01', matchNumStr: 'A', captures: [], result: null },
+    { matchId: 2, matchDate: '2026-10-01', matchNumStr: 'B', captures: [], result: null }
+  ] };
+  const rs = JC.parseResults([
+    { matchId: 1, sectionsNo999: '取消', sectionsNo1: '', matchResultStatus: '0', matchDate: '2026-10-01' },
+    { matchId: 2, sectionsNo999: '1:0', sectionsNo1: '0:0', matchResultStatus: '2', matchDate: '2026-10-03' } // 推迟2天
+  ]);
+  const r = JC.applyResults(day, rs, 'T');
+  ok('取消场标记', day.matches[0].result && day.matches[0].result.cancelled === true);
+  ok('推迟场标记（补赛日期≠原日期）', day.matches[1].result && day.matches[1].result.rescheduled === true && day.matches[1].result.score === '1:0');
+  ok('changed 计数 = 2', r.changed === 2);
+  const rows = JC.flatRows([day]);
+  ok('flatRows 排除标记', rows.find(x => x.matchId === 1).excluded === true && rows.find(x => x.matchId === 2).excluded === true);
+  // predStats / bettingStats 排除
+  const st = JC.predStats([{ date: 'D', actual: 1, excluded: true, predBaseA: 1, hitBaseA: true, baseA: 1, predA: 1, hitModelA: true, predB: null, hitModelB: null, predBaseB: null, o1: {}, o2: {} }]);
+  ok('predStats 排除取消/推迟', st.settled === 0 && st.modelA.n === 0);
+  const bt = JC.bettingStats([{ date: 'D', actual: 1, excluded: true, diffs: { groups: [{ g: 1, ttg: 2 }] }, predA: 1, predBaseA: 1, predB: null, matchNumStr: 'X', league: 'L', home: 'H', away: 'A' }], 100);
+  ok('bettingStats 排除取消/推迟', bt.tracks.modelA.bets === 0 && bt.details.length === 0);
+  // modelSamples 排除（推迟）
+  const pools = { goals: new Array(8).fill(2), scores: { '1:0': 5, '0:1': 6 } };
+  const m1 = { matchId: 3, businessDate: '2026-10-01', result: { score: '1:0', rescheduled: true }, captures: [{ at: 'T', odds: pools }] };
+  const m2 = { matchId: 4, businessDate: '2026-10-01', result: { score: '1:0' }, captures: [{ at: 'T', odds: pools }] };
+  const m3 = { matchId: 5, businessDate: '2026-10-01', result: { score: null, cancelled: true }, captures: [{ at: 'T', odds: pools }] };
+  const s = JC.modelSamples([m1, m2, m3], 'diffA', {});
+  ok('modelSamples 排除推迟与取消场', s.length === 1 && s[0].actual === 1);
+}
+
 console.log('\n结果：' + pass + ' 通过，' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      3.3.0
+// @version      3.4.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -55,7 +55,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.3.0';
+  var VERSION = '3.4.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -251,6 +251,7 @@
         away: m.awayTeam || m.allAwayTeam || '',
         date: m.matchDate,
         score: normScore(m.sectionsNo999),
+        scoreRaw: (typeof m.sectionsNo999 === 'string' ? m.sectionsNo999.trim() : ''),
         halfScore: normScore(m.sectionsNo1),
         status: m.matchResultStatus,
         had: [m.h, m.d, m.a]
@@ -422,7 +423,8 @@
     return best == null ? fallbackG : best;
   }
 
-  // 从已出赛果的比赛集合中提取模型样本（指定口径），窗口 = endDate 往前 windowDays 天
+  // 从已出赛果的比赛集合中提取模型样本（指定口径），窗口 = endDate 往前 windowDays 天。
+  // 取消 / 推迟补赛的场次不纳入（意外情况造成偏差，避免污染模型）。
   function modelSamples(matches, key, opts) {
     opts = opts || {};
     var windowDays = opts.windowDays || 30;
@@ -430,6 +432,7 @@
     var out = [];
     (matches || []).forEach(function (m) {
       if (!m.result || m.result.score == null) return;
+      if (m.result.cancelled || m.result.rescheduled) return;
       var cap = lastCaptureBefore(m);
       if (!cap) return;
       var d = goalDiffs(cap.odds);
@@ -521,13 +524,24 @@
     var filled = 0, changed = 0;
     (dayDoc.matches || []).forEach(function (m) {
       var r = byId[m.matchId];
-      if (!r || !r.score) return;
+      if (!r) return;
+      if (!r.score) {
+        // 明确取消的比赛（赛果原文含"取消"）：记录标记，供界面展示与统计排除
+        if (r.scoreRaw && String(r.scoreRaw).indexOf('取消') >= 0 && !(m.result && m.result.cancelled)) {
+          m.result = { score: null, cancelled: true, status: r.status, at: at };
+          changed++;
+        }
+        return;
+      }
+      // 推迟判定：赛果的真实开赛日与记录不一致 → 补赛（意外情况，不用于模型学习/回测）
+      var rescheduled = !!(r.date && m.matchDate && r.date !== m.matchDate);
       var prev = m.result;
-      if (!prev || prev.score !== r.score) changed++;
+      if (!prev || prev.score !== r.score || !!prev.rescheduled !== rescheduled || !!prev.cancelled) changed++;
       m.result = {
         score: r.score,
         halfScore: r.halfScore,
         goals: goalsFromScore(r.score),
+        rescheduled: rescheduled,
         status: r.status,
         at: at
       };
@@ -615,6 +629,9 @@
         var cap = m.captures[m.captures.length - 1] || null;
         var diffs = cap ? goalDiffs(cap.odds) : null;
         var actual = (m.result && m.result.goals != null) ? bucketOfGoals(m.result.goals) : null;
+        var cancelled = !!(m.result && m.result.cancelled);
+        var rescheduled = !!(m.result && m.result.rescheduled);
+        var excluded = cancelled || rescheduled; // 取消/推迟补赛：展示但排除于模型学习与回测
         var pred = m.pred || null;
         var oddsOf = function (g) {
           if (g == null || !diffs) return null;
@@ -646,9 +663,12 @@
           oddsBaseA: oddsOf(predBaseA),   // 预测进球数对应的赔率（该场最后一次记录）
           oddsA: oddsOf(predA),
           oddsB: oddsOf(predB),
-          score: m.result ? m.result.score : null,
-          halfScore: m.result ? m.result.halfScore : null,
+          score: m.result && m.result.score ? m.result.score : null,
+          halfScore: m.result && m.result.halfScore ? m.result.halfScore : null,
           actual: actual,
+          cancelled: cancelled,
+          rescheduled: rescheduled,
+          excluded: excluded,
           hitBaseA: (pred && pred.baseA != null && actual != null) ? pred.baseA === actual : null,
           hitModelA: (pred && pred.modelA != null && actual != null) ? pred.modelA === actual : null,
           hitBaseB: (pred && pred.baseB != null && actual != null) ? pred.baseB === actual : null,
@@ -679,7 +699,7 @@
     };
     for (var i = 0; i <= 7; i++) st.byGoal.push(0);
     (rows || []).forEach(function (r) {
-      if (r.actual == null) return;
+      if (r.actual == null || r.excluded) return;
       st.settled++;
       st.byGoal[r.actual]++;
       if (r.predBaseA != null) { st.withPred++; st.baseA.n++; if (r.hitBaseA) st.baseA.hit++; }
@@ -713,7 +733,7 @@
     var dayMap = {};
     var details = [];
     (rows || []).forEach(function (r) {
-      if (r.actual == null || !r.diffs) return;
+      if (r.actual == null || !r.diffs || r.excluded) return;
       var picks = { baseA: r.predBaseA, modelA: r.predA, modelB: r.predB };
       var grpOf = function (g) {
         var out = null;
@@ -1375,7 +1395,7 @@
         return (r.matchId && st2.webBase) ? '<a href="' + href + '" target="_blank" style="color:inherit;text-decoration:none;border-bottom:1px dotted #ccc">' + inner + '</a>' : inner;
       };
       var fmtOdds2 = function (o) { return o != null ? ' <span style="color:#999">@' + Number(o).toFixed(2) + '</span>' : ''; };
-      var actualTxt = r.actual != null ? JC.labelG(r.actual) : '';
+      var actualTxt = r.cancelled ? '取消' : (r.actual != null ? (JC.labelG(r.actual) + (r.rescheduled ? '推迟' : '')) : '');
       var hitCls2 = r.hitModelA == null ? '' : (r.hitModelA ? 'pos' : 'neg');
       return '<tr><td>' + esc(r.matchNumStr) + '</td>' +
         '<td>' + esc(r.home) + ' vs ' + esc(r.away) + '</td>' +

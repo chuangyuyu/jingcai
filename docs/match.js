@@ -108,8 +108,10 @@
     var first = caps.length > 1 ? JC.goalDiffs(caps[0].odds) : null;
     var kickoffMs = m.matchDate ? new Date(m.matchDate + 'T' + (m.matchTime || '00:00:00') + '+08:00').getTime() : null;
     var now = Date.now();
+    var cancelled = !!(m.result && m.result.cancelled);
+    var rescheduled = !!(m.result && m.result.rescheduled);
     var finished = !!(m.result && m.result.score);
-    var phase = finished ? 'post' : (kickoffMs && now >= kickoffMs ? 'live' : 'pre');
+    var phase = cancelled ? 'cancelled' : (finished ? 'post' : (kickoffMs && now >= kickoffMs ? 'live' : 'pre'));
     // 三轨道预测与赔率
     var oddsOf = function (g) {
       if (g == null || !diffs) return null;
@@ -139,12 +141,12 @@
       t.hit = (actual != null && t.g != null) ? (t.g === actual) : null;
       t.pnl = (t.hit == null || t.odds == null) ? null : (t.hit ? t.odds * state.stake - state.stake : -state.stake);
     });
-    return { caps: caps, last: last, diffs: diffs, first: first, phase: phase, kickoffMs: kickoffMs, tracks: tracks, actual: actual, pred: pred };
+    return { caps: caps, last: last, diffs: diffs, first: first, phase: phase, kickoffMs: kickoffMs, tracks: tracks, actual: actual, pred: pred, cancelled: cancelled, rescheduled: rescheduled };
   }
 
   // ---------------------------------------------------------------- 渲染
 
-  var PHASE_TXT = { pre: '未开赛', live: '进行中', post: '已结束' };
+  var PHASE_TXT = { pre: '未开赛', live: '进行中', post: '已结束', cancelled: '已取消' };
 
   function render() {
     var m = state.match;
@@ -174,7 +176,7 @@
       '<div class="md-team">' + (homeLogo ? '<img src="' + esc(homeLogo) + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<div class="nm">' + esc(m.home) + '</div></div>' +
       '<div class="md-vs">' + (score ? '<div class="md-score">' + esc(score) + '</div>' : '<div class="md-score" style="color:var(--ink-muted)">VS</div>') +
       (m.result && m.result.halfScore ? '<div class="md-sub">半场 ' + esc(m.result.halfScore) + '</div>' : '') +
-      '<div class="md-sub">' + (v.phase === 'live' ? '比赛进行中…' : (v.phase === 'post' ? '全场（90分钟）' : '尚未开赛')) + '</div></div>' +
+      '<div class="md-sub">' + (v.phase === 'live' ? '比赛进行中…' : (v.phase === 'post' ? (v.rescheduled ? '全场（推迟补赛，不计入模型与回测）' : '全场（90分钟）') : (v.phase === 'cancelled' ? '比赛已取消' : '尚未开赛'))) + '</div></div>' +
       '<div class="md-team">' + (awayLogo ? '<img src="' + esc(awayLogo) + '" alt="" onerror="this.style.display=\'none\'">' : '') + '<div class="nm">' + esc(m.away) + '</div></div>' +
       '</div>';
     if (head && (head.tournamentCnName || head.seasonName)) {

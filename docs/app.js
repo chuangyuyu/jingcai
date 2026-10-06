@@ -190,7 +190,15 @@
     return out;
   }
 
-  // 统一取预测：优先已冻结（结算存档），否则实时计算模型
+  // 是否已开赛（封盘）：开赛即赔率定格，实时值=最终存档值
+  function hasStarted(r) {
+    if (!r.matchDate) return false;
+    var hhmm = String(r.kickoff || '').slice(-5);
+    var ms = Date.parse(r.matchDate + 'T' + (/^\d\d:\d\d$/.test(hhmm) ? hhmm : '23:59') + ':00+08:00');
+    return isFinite(ms) && Date.now() >= ms;
+  }
+
+  // 统一取预测：优先已冻结（结算/封盘存档），否则实时计算模型
   function predsOf(r) {
     if (r.predA != null) {
       return { baseA: r.predBaseA, modelA: r.predA, modelB: r.predB, oddsBaseA: r.oddsBaseA, oddsA: r.oddsA, oddsB: r.oddsB, frozen: true };
@@ -263,7 +271,7 @@
     });
   }
 
-  // 为本机数据补/重冻结预测（与服务器端 daily.js 相同的逻辑；算法升级后旧预测重算）
+  // 为本机数据补/重冻结预测（与服务器端 daily.js 相同逻辑：封盘即冻、算法升级重算）
   function freezeLocalPredictions() {
     var all = [];
     Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { all.push(m); }); });
@@ -272,8 +280,9 @@
       var doc = state.days[d];
       var changed = false;
       (doc.matches || []).forEach(function (m) {
-        if (!m.result || !m.result.score) return;
         if (m.pred && m.pred.ver === JC.VERSION) return;
+        var kickoffMs = (m.matchDate && m.matchTime) ? Date.parse(m.matchDate + 'T' + m.matchTime + '+08:00') : null;
+        if (kickoffMs == null || !isFinite(kickoffMs) || Date.now() < kickoffMs) return;
         var p = JC.freezePrediction(m, all, { model: state.modelCfg });
         if (p) { m.pred = p; changed = true; frozen++; }
       });
@@ -573,7 +582,7 @@
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
     var byDate = {};
     rows.forEach(function (r) {
-      if (r.date < winFrom || r.actual == null) return;
+      if (r.date < winFrom || r.actual == null || r.excluded) return;
       var d = byDate[r.date] = byDate[r.date] || { baseN: 0, baseHit: 0, modelN: 0, modelHit: 0 };
       if (r.predBaseA != null) { d.baseN++; if (r.hitBaseA) d.baseHit++; }
       if (r.predA != null) { d.modelN++; if (r.hitModelA) d.modelHit++; }
@@ -656,7 +665,7 @@
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
     var samples = [];
     rows.forEach(function (r) {
-      if (r.date < winFrom || r.actual == null || !r.diffs) return;
+      if (r.date < winFrom || r.actual == null || !r.diffs || r.excluded) return;
       samples.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.diffA; }), actual: r.actual });
     });
     var model = JC.modelTrain(samples, { maxActualRank: state.modelCfg.maxActualRank });
@@ -685,7 +694,7 @@
 
   // 即将开赛的预测列表（未出结果、有明细）
   function renderUpcomingCard(rows) {
-    var up = rows.filter(function (r) { return r.actual == null && r.diffs; });
+    var up = rows.filter(function (r) { return r.actual == null && r.diffs && !r.cancelled; });
     up.sort(function (a, b) { return String(a.date + a.kickoff).localeCompare(String(b.date + b.kickoff)); });
     var tbody = $('#upcoming-table tbody');
     if (!up.length) {
@@ -742,7 +751,9 @@
     var tbody = $('#data-table tbody');
     tbody.innerHTML = shown.map(function (r) {
       var p = predsOf(r);
-      var liveMark = function (g) { return (g != null && !p.frozen && r.actual == null) ? '<span class="tiny muted" title="赛前实时计算（同算法）；结算时冻结存档"> ⚡</span>' : ''; };
+      var liveMark = function (g) { return (g != null && !p.frozen && r.actual == null && !hasStarted(r)) ? '<span class="tiny muted" title="赛前实时计算（同算法）；封盘（开赛）时冻结存档"> ⚡</span>' : ''; };
+      var actualTxt = r.cancelled ? '<span class="muted">已取消</span>' :
+        ('<b>' + JC.labelG(r.actual) + '</b>' + (r.rescheduled ? ' <span class="tiny" style="color:#b85c00">推迟</span>' : ''));
       return '<tr>' +
         '<td>' + r.date + '</td>' +
         '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
@@ -750,7 +761,7 @@
         '<td class="match-cell">' + escapeHtml(r.home) + '<span class="vs">vs</span>' + escapeHtml(r.away) + '</td>' +
         '<td>' + escapeHtml(r.kickoff) + '</td>' +
         '<td class="' + (r.isSingleWin ? 'single-yes' : '') + '">' + (r.isSingleWin ? '是' : '—') + '</td>' +
-        '<td><b>' + JC.labelG(r.actual) + '</b></td>' +
+        '<td>' + actualTxt + '</td>' +
         predCell(r, p.baseA, p.oddsBaseA) +
         predCell(r, p.modelA, p.oddsA, liveMark(p.modelA)) +
         predCell(r, p.modelB, p.oddsB, liveMark(p.modelB)) +
@@ -773,8 +784,9 @@
       var p = predsOf(r);
       var hit = r.hitModelA == null ? '' : '<span class="' + hitCls(r.hitModelA) + '">' + (r.hitModelA ? '模型命中 ✓' : '模型未中 ✗') + '</span>';
       var href = 'match.html?d=' + encodeURIComponent(r.date) + '&id=' + encodeURIComponent(r.matchId);
-      var liveMk = (!p.frozen && r.actual == null) ? '<span class="tiny muted">⚡</span>' : '';
+      var liveMk = (!p.frozen && r.actual == null && !hasStarted(r)) ? '<span class="tiny muted">⚡</span>' : '';
       var oddsTxt = function (g, od) { return JC.labelG(g) + (od != null ? ' <span class="tiny muted">@' + Number(od).toFixed(2) + '</span>' : ''); };
+      var actualCard = r.cancelled ? '<span class="muted">已取消</span>' : (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' + (r.rescheduled ? ' 推迟' : '') : '—');
       return '<div class="mcard">' +
         '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
         '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
@@ -786,7 +798,7 @@
         '<a class="pred-link" href="' + href + '" target="_blank" rel="noopener">' +
         '<span class="mc-k">模型A ' + liveMk + '</span><span class="mc-v">' + oddsTxt(p.modelA, p.oddsA) + '</span></a>' +
         '<span class="mc-k">模型B</span><span class="mc-v">' + oddsTxt(p.modelB, p.oddsB) + '</span></div>' +
-        '<div class="mc-foot"><span>实际 <b>' + (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' : '—') + '</b></span>' + hit +
+        '<div class="mc-foot"><span>实际 <b>' + actualCard + '</b></span>' + hit +
         ' <a class="pred-link tiny" href="' + href + '" target="_blank" rel="noopener">详情 →</a></div>' +
         '</div>';
     }).join('') + (total > shown.length ? '<div class="muted" style="text-align:center;padding:6px;font-size:12px">仅显示前 ' + shown.length + ' 场，点下方"显示更多"</div>' : '');

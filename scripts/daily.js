@@ -193,8 +193,9 @@ async function runOdds() {
   return { added: totalAdded, updated: totalUpdated, captured: totalCaptured, dates: touchedDates };
 }
 
-// 为已出结果但尚未冻结预测（或预测由旧版本算法生成）的场次补/重冻结预测。
-// 窗口=该场销售日之前，防未来数据泄漏；算法修正后旧版预测作废重算（非事后调参，是修 bug）。
+// 为已封盘（开赛）但尚未冻结预测（或预测由旧版本算法生成）的场次补/重冻结预测。
+// 竞彩比赛开赛即封盘、赔率定格 —— 所以到开赛时间后，最后一份快照算出的结果就是最终存档值，
+// 无需等赛果；窗口=该场销售日之前，防未来数据泄漏。算法修正后旧版预测作废重算（修 bug 非调参）。
 function freezeMissingPredictions(config) {
   const index = loadIndex();
   const dates = Object.keys(index.dates || {}).sort();
@@ -205,15 +206,17 @@ function freezeMissingPredictions(config) {
   docs.forEach(doc => {
     let changed = false;
     (doc.matches || []).forEach(m => {
-      if (!m.result || !m.result.score) return;
       if (m.pred && m.pred.ver === JC.VERSION) return;
+      const kickoffMs = (m.matchDate && m.matchTime) ? Date.parse(m.matchDate + 'T' + m.matchTime + '+08:00') : null;
+      const started = kickoffMs != null && isFinite(kickoffMs) && Date.now() >= kickoffMs;
+      if (!started) return; // 尚未开赛：等最后一份赔率再冻
       if (m.pred) refrozen++;
       const p = JC.freezePrediction(m, all, { model: config.model });
       if (p) { m.pred = p; changed = true; frozen++; }
     });
     if (changed) saveDay(doc);
   });
-  if (frozen) log(`冻结预测：${frozen} 场${refrozen ? '（其中 ' + refrozen + ' 场因算法升级重算）' : ''}（模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
+  if (frozen) log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
   return frozen;
 }
 
