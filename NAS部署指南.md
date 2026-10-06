@@ -32,7 +32,7 @@
 | 端口映射 | 本地 `8788` → 容器 `8788`，协议 TCP |
 | 存储/挂载 | 添加一条：主机路径 `/vol1/1000/jingcai`（你的实际项目路径）→ 容器路径 `/app` |
 | 环境变量 | 添加两条：`TZ` = `Asia/Shanghai`；`PORT` = `8788` |
-| 命令（若有该字段） | `sh -c "cd /app && node nas/server.js"`（界面没有"工作目录"字段时用这条；如果有"工作目录"填 `/app`，命令则填 `node nas/server.js`） |
+| 命令（若有该字段） | `node /app/nas/server.js`（就是这一串，**不要加引号、不要加 sh -c、不要加 cd**；脚本不依赖工作目录，绝对路径即可） |
 
 保存/启动即可。
 
@@ -46,7 +46,7 @@ docker run -d --name jingcai --restart unless-stopped \
   -p 8788:8788 \
   -v /vol1/1000/jingcai:/app \
   node:20-alpine \
-  sh -c "cd /app && node nas/server.js"
+  node /app/nas/server.js
 ```
 
 （把 `/vol1/1000/jingcai` 换成你的实际路径；第一条命令已包含自动重启设置。）
@@ -101,7 +101,8 @@ docker run -d --name jingcai --restart unless-stopped \
 | 日志里的关键词 | 原因 | 解决 |
 |---|---|---|
 | `pull access denied`、`i/o timeout`、`TLS handshake timeout`、`dial tcp ... timeout` | **镜像拉取失败**（连不上 Docker Hub，国内常见，与代码无关） | ① Docker 应用 →「设置」→ 配置**镜像加速源**（填飞牛推荐的加速地址）后重试；② 或把镜像名换成加速前缀，如 `docker.m.daocloud.io/library/node:20-alpine`（加速地址有时效，可上网搜"docker 镜像加速"取最新可用的） |
-| `Starting` → `Started` → `Exited:0`（**干干净净退出、日志没有任何报错**） | **容器的「命令」字段没生效/没填**：容器实际跑的是 node 的交互模式（等待输入），无输入立即正常退出（退出码 0 就是它"正常结束"的意思） | 编辑容器 → 找到「命令 / 执行命令 / Command」框（不是名称、不是环境变量框），填：`sh -c "cd /app && node nas/server.js"` → 保存并启动；或按"方式 B"用 SSH 一条命令删旧建新。验证：日志出现 `NAS 服务已启动` 即成功 |
+| `Starting` → `Started` → `Exited:0`（**干干净净退出、日志没有任何报错**） | **容器的「命令」字段没生效/没填**：容器实际跑的是 node 的交互模式（等待输入），无输入立即正常退出（退出码 0 就是它"正常结束"的意思） | 编辑容器 → 找到「命令 / 执行命令 / Command」框（不是名称、不是环境变量框），填：`node /app/nas/server.js`（无引号）→ 保存并启动；或按"方式 B"用 SSH 一条命令删旧建新。验证：日志出现 `NAS 服务已启动` 即成功 |
+| `syntax error: unterminated quoted string`（或命令里的引号被拆得乱七八糟） | **命令框不支持引号**：图形界面把双引号拆坏了，`sh -c "..."` 这类带引号的命令会失败 | 改用**不带引号**的命令：`node /app/nas/server.js`；或按"方式 B"用 SSH 一条命令重建 |
 | `Cannot find module '/app/nas/server.js'`、`MODULE_NOT_FOUND` | **挂载路径不对**——容器里 `/app` 不是项目文件夹 | 方式 C 粘贴创建的：把 `- .:/app` 改成 `- /vol1/1000/jingcai:/app`；方式 A/B：检查挂载的"主机路径"是不是真的项目文件夹（里面要有 nas、docs 这些子文件夹） |
 | `EACCES: permission denied`、`permission denied, open ...` | **文件权限**——容器用户读不了/写不了项目文件 | SSH 执行一行：`sudo chown -R 1000:1000 /vol1/1000/jingcai`；或方式 C 删除 `user: "1000:1000"` 那一行、方式 A 不设置用户，重新部署（以 root 运行） |
 | `port is already allocated`、`address already in use` | **8788 端口被占用** | 换端口：方式 A 把两处 8788 都改成一个空闲端口（如 8890）；方式 B/C 同理（ports 与 PORT 两处一致）；改完 `http://NAS的IP:新端口` 访问 |

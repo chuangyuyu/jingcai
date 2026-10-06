@@ -123,12 +123,12 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Interactive
 
 ### 第二步：部署容器（三种方式任选，逐字段填写说明与完整报错排查见 **[NAS部署指南.md](NAS部署指南.md)**）
 
-**方式 A · 容器表单（最直观）**：Docker 应用 →「容器」→「添加容器」：镜像 `node:20-alpine`；名称 `jingcai`；重启策略"除非手动停止"；端口 本地8788→容器8788；挂载 主机`/vol1/1000/jingcai` → 容器 `/app`；环境变量 `TZ=Asia/Shanghai`、`PORT=8788`；命令 `sh -c "cd /app && node nas/server.js"`
+**方式 A · 容器表单（最直观）**：Docker 应用 →「容器」→「添加容器」：镜像 `node:20-alpine`；名称 `jingcai`；重启策略"除非手动停止"；端口 本地8788→容器8788；挂载 主机`/vol1/1000/jingcai` → 容器 `/app`；环境变量 `TZ=Asia/Shanghai`、`PORT=8788`；命令 `node /app/nas/server.js`（**无引号**，该框不支持引号）
 
 **方式 B · SSH 一条命令**：
 
 ```bash
-docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e PORT=8788 -p 8788:8788 -v /vol1/1000/jingcai:/app node:20-alpine sh -c "cd /app && node nas/server.js"
+docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e PORT=8788 -p 8788:8788 -v /vol1/1000/jingcai:/app node:20-alpine node /app/nas/server.js
 ```
 
 **方式 C · Compose 项目**：Docker →「项目」→ 新建 → 名称 `jingcai` → 选择项目目录里的 `docker-compose.yml` 部署。

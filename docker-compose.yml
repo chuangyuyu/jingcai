@@ -29,7 +29,7 @@ services:
     image: node:20-alpine
     container_name: jingcai
     working_dir: /app
-    command: ["node", "nas/server.js"]
+    command: ["node", "/app/nas/server.js"]   # 绝对路径、无需 sh/引号（脚本不依赖工作目录）
     user: "1000:1000"          # 移除本行将以 root 运行（可绕开权限类启动失败）
     environment:
       - TZ=Asia/Shanghai
