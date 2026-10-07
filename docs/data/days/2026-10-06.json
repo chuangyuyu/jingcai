@@ -74,8 +74,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "goals": 0,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 2,
+    "modelA": 1,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.286,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041815,
@@ -208,8 +226,26 @@
     }
    ],
    "totalCaptures": 2,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "0:2",
+    "halfScore": "0:2",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 1,
+    "modelA": 0,
+    "baseB": null,
+    "modelB": 4,
+    "fit0A": 1.397,
+    "fit0B": -2.814,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041816,
@@ -284,8 +320,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "1:2",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 1,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 4,
+    "fit0A": 2.425,
+    "fit0B": -3.875,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041817,
@@ -360,8 +414,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "3:0",
+    "halfScore": "2:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 3.121,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041818,
@@ -436,8 +508,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "1:2",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 4,
+    "modelA": 1,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.613,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041819,
@@ -512,8 +602,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "3:0",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 6,
+    "modelA": 1,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 3.209,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041820,
@@ -588,8 +696,26 @@
     }
    ],
    "totalCaptures": 1,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "0:4",
+    "halfScore": "0:2",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 2,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.047,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041821,
@@ -723,7 +849,18 @@
    ],
    "totalCaptures": 2,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 1,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.458,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041822,
@@ -799,7 +936,18 @@
    ],
    "totalCaptures": 1,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.366,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041812,
@@ -932,8 +1080,26 @@
     }
    ],
    "totalCaptures": 2,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "2:0",
+    "halfScore": "1:0",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 7,
+    "modelA": 0,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": -0.001,
+    "fit0B": -5,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041835,
@@ -1066,8 +1232,26 @@
     }
    ],
    "totalCaptures": 2,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 1,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 0.671,
+    "fit0B": -4.004,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   },
   {
    "matchId": 2041813,
@@ -1200,9 +1384,27 @@
     }
    ],
    "totalCaptures": 2,
-   "result": null,
-   "pred": null
+   "result": {
+    "score": "2:2",
+    "halfScore": "0:1",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-07T11:00:03+08:00"
+   },
+   "pred": {
+    "baseA": 1,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 4,
+    "fit0A": 2.178,
+    "fit0B": -3.071,
+    "windowA": 5,
+    "windowB": 5,
+    "ver": "3.4.0",
+    "at": "2026-10-07T11:00:03+08:00"
+   }
   }
  ],
- "updatedAt": "2026-10-06T18:11:32+08:00"
+ "updatedAt": "2026-10-07T11:00:03+08:00"
 }
