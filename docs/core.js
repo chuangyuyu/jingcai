@@ -33,7 +33,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '4.0.0';
+  var VERSION = '4.0.1';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -448,7 +448,7 @@
   //   { days: { 'YYYY-MM-DD': { matchId: [联赛, 主队, 客队, 主队进球, 客队进球] } } }
   // 严格防泄漏：预测某销售日 S 的比赛只用 日期 < S 的历史；权重评测同样逐场重建。
 
-  var FACTOR_DEFAULTS = { rank: 1, league: 0.35, team: 0.15 };  // 评测样本不足时的先验占比
+  var FACTOR_PRIOR = { rank: 1, league: 0.05, team: 0.03 };  // 先验：证据不足时以排名因子为骨架，联赛/球队≈休眠
   var K_LEAGUE = 20, K_TEAM = 6;  // 收缩强度：样本量远小于 K 时因子贴近全局（近乎休眠）
 
   // history 文档 → 比赛行（只取 beforeDate 之前，严格 < 防同日泄漏）
@@ -615,8 +615,9 @@
     }
 
     // 权重学习：用最近 evalDays 的实盘样本滚动评测——每个因子单独预测的命中率
-    // 对比"全局分布最大档"的基础命中率；好于基础才拿权重（差距/8% 封顶 1），
-    // 评测样本少时向先验权重回退（新因子先"试用"再"转正"，表现差的自动休眠）。
+    // 对比"全局分布最大档"的基础命中率。**必须高出基础率至少 2 个百分点才开始获得权重**
+    // （高出 12 个百分点封顶为满分），达不到的因子权重≈0、休眠不干扰预测；
+    // 评测样本少时向先验（排名骨架 + 联赛/球队≈0）回退——新因子先"试用"再"转正"。
     function weightsFor(slate) {
       var key = slate || '';
       if (wMemo[key]) return wMemo[key];
@@ -637,10 +638,10 @@
       });
       var baseRate = n ? hit.base / n : 0;
       var conf = n / (n + 40); // 置信度：评测样本越多，越相信自己测出的表现
-      var skill = function (h) { return n ? Math.max(0, Math.min(1, (h / n - baseRate) / 0.08)) : 0; };
-      var wR = (1 - conf) * FACTOR_DEFAULTS.rank + conf * (0.12 + skill(hit.rank));
-      var wL = (1 - conf) * FACTOR_DEFAULTS.league + conf * (0.12 + skill(hit.league));
-      var wT = (1 - conf) * FACTOR_DEFAULTS.team + conf * (0.12 + skill(hit.team));
+      var skill = function (h) { return n ? Math.max(0, Math.min(1, (h / n - baseRate - 0.02) / 0.10)) : 0; };
+      var wR = (1 - conf) * FACTOR_PRIOR.rank + conf * (0.15 + 0.85 * skill(hit.rank));
+      var wL = (1 - conf) * FACTOR_PRIOR.league + conf * (0.03 + 1.10 * skill(hit.league));
+      var wT = (1 - conf) * FACTOR_PRIOR.team + conf * (0.02 + 0.90 * skill(hit.team));
       var wsum = wR + wL + wT || 1;
       var out = {
         rank: wR / wsum, league: wL / wsum, team: wT / wsum,

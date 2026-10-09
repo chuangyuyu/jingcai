@@ -194,7 +194,7 @@
     var w = state.engine.weightsFor(todayStr());
     var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
     return '　｜　多因子权重（滚动自学习）：排名 ' + pct(w.rank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) +
-      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '，基础 ' + pct(w.eval.base) + '）' : '（暂无评测样本）');
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '，基础 ' + pct(w.eval.base) + '；单独命中率需高出基础2个百分点以上才开始获得权重）' : '（暂无评测样本）');
   }
 
   function oddsOfRow(r, g) {
