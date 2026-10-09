@@ -145,7 +145,7 @@
    "away": "热刺",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1753,7 +1753,7 @@
    "away": "町田泽维",
    "matchTime": "18:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2557,7 +2557,7 @@
    "away": "勒沃库森",
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -3361,7 +3361,7 @@
    "away": "马竞",
    "matchTime": "22:15:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -3620,5 +3620,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-09T22:00:21+08:00"
+ "updatedAt": "2026-10-09T23:00:02+08:00"
 }

@@ -11,7 +11,7 @@
    "away": "AC米兰",
    "matchTime": "00:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1351,7 +1351,7 @@
    "away": "罗马",
    "matchTime": "18:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1753,7 +1753,7 @@
    "away": "埃弗顿",
    "matchTime": "21:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2691,7 +2691,7 @@
    "away": "曼城",
    "matchTime": "23:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2950,5 +2950,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-09T22:00:21+08:00"
+ "updatedAt": "2026-10-09T23:00:02+08:00"
 }
