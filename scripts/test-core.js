@@ -292,8 +292,25 @@ console.log('== 多因子修正模型（v4）==');
   const pSmall = engine.predictFor({ businessDate: '2026-02-20', league: '小球联', home: '守强队z', away: '守强队y' }, diffsFlat);
   ok('联赛因子生效：大球联 → 高进球档', pBig && pBig.goal >= 5, 'goal=' + (pBig && pBig.goal));
   ok('联赛因子生效：小球联 → 低进球档', pSmall && pSmall.goal <= 2, 'goal=' + (pSmall && pSmall.goal));
-  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 3 && pBig.info.histN === 80);
+  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 5 && pBig.info.histN === 80);
   ok('球队因子期望进球：攻强队高于未知客队', pBig && pBig.info.lh != null && pBig.info.la != null && pBig.info.lh > pBig.info.la);
+
+  // 市场因子：赔率隐含分布（低赔率档=市场峰值）
+  const md = JC.marketDist([10, 8, 3.2, 4.5, 9, 19, 41, 15]);
+  ok('市场因子：峰值在最低赔率档（2球）', md && md.indexOf(Math.max.apply(null, md)) === 2);
+  ok('市场因子：缺赔率返回 null', JC.marketDist(null) === null && JC.marketDist([]) === null);
+
+  // 趋势因子：较早→最新快照的差值变化（差值缩小的档被看好）
+  const mkTOdds = (g3ttg) => ({
+    goals: [9.5, 4.1, 4.3, g3ttg, 9.0, 19, 41, 15],
+    scores: { '0:0': 9.5, '1:0': 6.4, '0:1': 10.5, '1:1': 6.8, '2:0': 9.0, '0:2': 13.0, '2:1': 8.0, '1:2': 11.0, '3:1': 21.0 }
+  });
+  const td = JC.trendDist([{ at: 'T1', odds: mkTOdds(5.2) }, { at: 'T2', odds: mkTOdds(4.4) }]);
+  // 注意：0球的"拟合差值"随全曲线平移，会与 3球并列峰值（合理行为）；关键是 3球须严格高于未变化的 1/2 球
+  const tdVals = td ? td.filter(v => v != null) : [];
+  ok('趋势因子：3球差值缩小→趋势看好 3球', td && td[3] === Math.max.apply(null, tdVals) && td[3] > td[1] && td[3] > td[2],
+    'td=' + JSON.stringify(td));
+  ok('趋势因子：单快照不参与（null）', JC.trendDist([{ at: 'T1', odds: mkTOdds(5.2) }]) === null && JC.trendDist(null) === null);
 
   // 权重自学习：实盘样本与"实盘大球联"一致（恒 3:2），排名因子全平 → 联赛权重应超过排名权重
   const capOdds = { goals: [2, 2, 2, 2, 2, 2, 2, 2], scores: { '1:0': 5, '0:1': 6 }, other: { win: 15, draw: 21, lose: 25 } };
@@ -312,9 +329,10 @@ console.log('== 多因子修正模型（v4）==');
   const eng2 = JC.factorEngine({ matches: liveMatches, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
   const w = eng2.weightsFor('2026-03-15');
   ok('权重评测：样本数 > 0', w.eval.n > 0, 'n=' + w.eval.n);
+  ok('权重集合完整（5 因子）', w.rank != null && w.league != null && w.team != null && w.market != null && w.trend != null);
   ok('联赛因子单独命中率高（与实盘一致）', w.eval.league != null && w.eval.league >= 0.7, 'league=' + w.eval.league);
   ok('权重自学习：联赛权重 > 排名权重（排名因子无效时自动让位）', w.league > w.rank,
-    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100 }));
+    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));
 
   // 严格防泄漏：给"未来日期"加极端历史，不应影响之前的预测
   const hist2 = JSON.parse(JSON.stringify(histBase));

@@ -137,7 +137,8 @@
     } else if (diffs) {
       var diffsA = (diffs.groups || []).map(function (x) { return x.diffA; });
       var diffsB = (diffs.groups || []).map(function (x) { return x.relB; });
-      var fp = state.engine ? state.engine.predictFor({ businessDate: m.businessDate || DATE, league: m.league, home: m.home, away: m.away }, diffsA) : null;
+      var fp = state.engine ? state.engine.predictFor({ businessDate: m.businessDate || DATE, league: m.league, home: m.home, away: m.away }, diffsA,
+        { ttg: last.odds.goals, captures: m.captures }) : null;
       state.factorInfo = fp ? fp.info : null;
       var liveModelG = fp ? fp.goal : diffs.predBaseA;
       var liveModelB = state.liveModelB ? JC.modelPredict(state.liveModelB, diffsB, null) : null;
@@ -219,7 +220,8 @@
       var finfo = v.pred ? v.pred.factors : state.factorInfo;
       var factTxt = '';
       if (finfo && finfo.w) {
-        factTxt = '<p class="card-sub" style="margin-top:6px">多因子修正：权重（排名 ' + Math.round(finfo.w[0] * 100) + '% · 联赛 ' + Math.round(finfo.w[1] * 100) + '% · 球队 ' + Math.round(finfo.w[2] * 100) + '%）' +
+        factTxt = '<p class="card-sub" style="margin-top:6px">多因子修正：权重（排名 ' + Math.round((finfo.w[0] || 0) * 100) + '% · 联赛 ' + Math.round((finfo.w[1] || 0) * 100) + '% · 球队 ' + Math.round((finfo.w[2] || 0) * 100) + '%' +
+          (finfo.w.length > 4 ? ' · 市场 ' + Math.round((finfo.w[3] || 0) * 100) + '% · 趋势 ' + Math.round((finfo.w[4] || 0) * 100) + '%' : '') + '）' +
           '；本场联赛历史 ' + (finfo.leagueN || 0) + ' 场' + (finfo.lh != null ? '，两队期望进球 ' + finfo.lh + ' : ' + finfo.la : '') +
           '；历史库 ' + (finfo.histN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
       }

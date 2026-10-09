@@ -174,7 +174,7 @@
 
   // 实时模型（与"结算冻结"同算法）：赛前/赛中的模型A/B 预测由这里计算，显示在表格中；
   // 比赛结算时由服务器/本机任务用同一口径冻结存档（回测只认冻结值，防事后修正）。
-  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队，权重自学习）；模型B = v3 对照口径。
+  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队⊕市场⊕趋势，权重自学习）；模型B = v3 对照口径。
   function trainLiveModels() {
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
     var allMatches = [];
@@ -187,14 +187,24 @@
     state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: state.modelCfg.maxActualRank });
     state.engine = JC.factorEngine({ matches: allMatches, history: state.history, model: state.modelCfg });
     state.liveSampleN = state.engine.stateFor(todayStr()).rankUsed;
+    // 每行预计算一次实时预测（含市场/趋势因子），供 predsOf 复用
+    state.rows.forEach(function (r) {
+      if (!r.diffs) { r._fp = null; return; }
+      var groups = r.diffs.groups || [];
+      r._fp = state.engine.predictFor(
+        { businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away },
+        groups.map(function (g) { return g.diffA; }),
+        { ttg: groups.map(function (g) { return g.ttg; }), captures: r.caps }
+      );
+    });
   }
 
   function factorWeightText() {
     if (!state.engine) return '';
     var w = state.engine.weightsFor(todayStr());
     var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
-    return '　｜　多因子权重（滚动自学习）：排名 ' + pct(w.rank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) +
-      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '，基础 ' + pct(w.eval.base) + '；单独命中率需高出基础2个百分点以上才开始获得权重）' : '（暂无评测样本）');
+    return '　｜　多因子权重（滚动自学习）：排名 ' + pct(w.rank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
   }
 
   function oddsOfRow(r, g) {
@@ -220,9 +230,8 @@
     if (!r.diffs || !state.engine) {
       return { baseA: r.predBaseA, modelA: null, modelB: null, oddsBaseA: r.oddsBaseA, oddsA: null, oddsB: null, frozen: false };
     }
-    var dA = (r.diffs.groups || []).map(function (g) { return g.diffA; });
     var dB = (r.diffs.groups || []).map(function (g) { return g.relB; });
-    var fp = state.engine.predictFor({ businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away }, dA);
+    var fp = r._fp || null;   // trainLiveModels 预计算（含市场/趋势因子）
     var modelA = fp ? fp.goal : r.predBaseA;
     var modelB = JC.modelPredict(state.liveModelB, dB, null);
     return {

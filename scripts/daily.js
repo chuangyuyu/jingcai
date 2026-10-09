@@ -223,8 +223,8 @@ function freezeMissingPredictions(config) {
     const hs = JC.historyStats(histDoc);
     const ws = engine.weightsFor(JC.localDateStr());
     log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
-    log(`  多因子权重：排名 ${Math.round(ws.rank * 100)}% · 联赛 ${Math.round(ws.league * 100)}% · 球队 ${Math.round(ws.team * 100)}%` +
-      `（滚动评测 ${ws.eval.n} 场，各自单独命中率：排名 ${fmtRate(ws.eval.rank)}/联赛 ${fmtRate(ws.eval.league)}/球队 ${fmtRate(ws.eval.team)}，基础 ${fmtRate(ws.eval.base)}）；` +
+    log(`  多因子权重：排名 ${Math.round(ws.rank * 100)}% · 联赛 ${Math.round(ws.league * 100)}% · 球队 ${Math.round(ws.team * 100)}% · 市场 ${Math.round(ws.market * 100)}% · 趋势 ${Math.round(ws.trend * 100)}%` +
+      `（滚动评测 ${ws.eval.n} 场，各自命中率：排名 ${fmtRate(ws.eval.rank)}/联赛 ${fmtRate(ws.eval.league)}/球队 ${fmtRate(ws.eval.team)}/市场 ${fmtRate(ws.eval.market)}/趋势 ${fmtRate(ws.eval.trend)}，基础 ${fmtRate(ws.eval.base)}；趋势可用 ${ws.eval.trendN} 场）；` +
       `历史库 ${hs.matches} 场`);
   }
   return frozen;
