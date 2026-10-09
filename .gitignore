@@ -6,3 +6,4 @@ _recon/
 Thumbs.db
 .DS_Store
 _dev/
+.nas-path.txt

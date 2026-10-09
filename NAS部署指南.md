@@ -77,7 +77,7 @@ docker run -d --name jingcai --restart unless-stopped \
    ```
    竞彩进球数预测 · NAS 服务已启动
      网页地址：http://<NAS的IP>:8788/
-     定时执行：11:00(both)、17:00(odds)（容器时区 Asia/Shanghai）
+     定时执行：每天 08:00 ~ 23:00 每小时整点一次（共 16 次；容器时区 Asia/Shanghai）
      数据概况：{"days":13,...,"matches":137,...}
    ```
 2. **开网页**：手机或电脑浏览器打开 `http://NAS的IP:8788` —— 就是完整网页（数据表、模拟投注、统计、详情页、Excel 下载）
@@ -127,11 +127,11 @@ docker run -d --name jingcai --restart unless-stopped \
 
 | 事项 | 操作 |
 |---|---|
-| 自动采集 | 每天 11:00 / 17:00 自动执行（抓赔率 + 回填赛果 + 封盘冻结预测），日志可在 Docker 里看，或项目目录 `logs/daily.log` |
+| 自动采集 | 每天 8:00~23:00 每小时整点自动执行（抓赔率 + 回填赛果 + 封盘冻结预测），日志可在 Docker 里看，或项目目录 `logs/daily.log` |
 | 手动执行 | 直接点网页上的「抓取今日赔率 / 回填赛果」按钮（NAS 本地执行）；或浏览器访问 `http://NAS的IP:8788/api/run?mode=both`；或 SSH：`docker exec jingcai node scripts/daily.js both --no-push` |
-| 改采集时间 | 编辑项目目录 `config.json` 的 `times` → Docker 里重启 `jingcai` 容器 |
+| 改采集时间 | 编辑项目目录 `config.json` 的 `times`（默认 8:00~23:00 每小时）→ Docker 里重启 `jingcai` 容器；或在电脑上改好后双击 `同步到NAS.cmd`（会自动合并时间表并提示重启） |
 | 改网页端口 | 换端口（见上表）→ 重新部署 |
-| 更新代码 | 把新版本代码文件覆盖到 NAS 项目目录（**不要覆盖 `docs/data`、`docs/excel`、`logs`**）；`docs/` 下的网页文件即时生效（无需重启），改了 `scripts/`、`nas/`、`config.json` 才需要重启容器 |
+| 更新代码 | 电脑上双击项目里的 **`同步到NAS.cmd`**：自动同步代码（**不覆盖 NAS 数据/Excel**、只合并时间表）→ 到 NAS Docker 里重启 `jingcai` 容器。`docs/` 网页文件即时生效、无需重启 |
 | 数据备份 | 拷走项目目录的 `docs/data` + `docs/excel`；整个项目文件夹拷回电脑也是一份完整备份 |
 | 环境自检 | SSH：`docker exec jingcai node scripts/daily.js check`（NAS 环境下 GitHub 相关项会自动按"可忽略"处理） |
 

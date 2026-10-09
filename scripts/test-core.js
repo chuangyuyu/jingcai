@@ -267,5 +267,69 @@ console.log('== 取消/推迟场次 ==');
   ok('modelSamples 排除推迟与取消场', s.length === 1 && s[0].actual === 1);
 }
 
+console.log('== 多因子修正模型（v4）==');
+{
+  // 构造一年式历史：'大球联' 恒 4:2（总6球），'小球联' 恒 0:1（总1球）
+  const hist = { days: {} };
+  let id = 1;
+  for (let i = 0; i < 40; i++) {
+    const d = JC.addDays('2026-01-01', i);
+    hist.days[d] = {};
+    hist.days[d]['h' + (id++)] = ['大球联', '攻强队', '客弱队' + i, 4, 2];
+    hist.days[d]['h' + (id++)] = ['小球联', '守强队' + i, '守强队B' + i, 0, 1];
+  }
+  const rows = JC.historyRows(hist, null);
+  ok('historyRows：提取全部比赛行', rows.length === 80);
+  ok('historyRows：按日期过滤（防泄漏）', JC.historyRows(hist, '2026-01-11').length === 20);
+  const t = JC.factorTables(rows);
+  ok('factorTables：统计规模与球队攻防', t.n === 80 && t.leagues['大球联'].n === 40 && t.teams['攻强队'].gf === 160);
+
+  // 无排名样本（diffs 全平）时，预测由联赛/球队因子决定：大球联 → 高进球，小球联 → 低进球
+  const histBase = JSON.parse(JSON.stringify(hist)); // 快照：后续权重测试会往 hist 里追加实盘行
+  const engine = JC.factorEngine({ matches: [], history: histBase, model: { windowDays: 30, maxActualRank: 6 } });
+  const diffsFlat = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
+  const pBig = engine.predictFor({ businessDate: '2026-02-20', league: '大球联', home: '攻强队', away: '某队X' }, diffsFlat);
+  const pSmall = engine.predictFor({ businessDate: '2026-02-20', league: '小球联', home: '守强队z', away: '守强队y' }, diffsFlat);
+  ok('联赛因子生效：大球联 → 高进球档', pBig && pBig.goal >= 5, 'goal=' + (pBig && pBig.goal));
+  ok('联赛因子生效：小球联 → 低进球档', pSmall && pSmall.goal <= 2, 'goal=' + (pSmall && pSmall.goal));
+  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 3 && pBig.info.histN === 80);
+  ok('球队因子期望进球：攻强队高于未知客队', pBig && pBig.info.lh != null && pBig.info.la != null && pBig.info.lh > pBig.info.la);
+
+  // 权重自学习：实盘样本与"实盘大球联"一致（恒 3:2），排名因子全平 → 联赛权重应超过排名权重
+  const capOdds = { goals: [2, 2, 2, 2, 2, 2, 2, 2], scores: { '1:0': 5, '0:1': 6 }, other: { win: 15, draw: 21, lose: 25 } };
+  const liveMatches = [];
+  for (let i = 0; i < 40; i++) {
+    const day = JC.addDays('2026-02-01', i);
+    hist.days[day] = hist.days[day] || {};
+    hist.days[day]['L' + i] = ['实盘大球联', 'X' + i, 'Y' + i, 3, 2];
+    liveMatches.push({
+      matchId: 100 + i, businessDate: day, matchDate: day, matchNumStr: '周一' + (100 + i),
+      league: '实盘大球联', home: 'A' + i, away: 'B' + i,
+      captures: [{ at: day + 'T11:00:00+08:00', odds: JSON.parse(JSON.stringify(capOdds)) }],
+      result: { score: '3:2', goals: 5, at: day + 'T23:00:00+08:00' }, pred: null
+    });
+  }
+  const eng2 = JC.factorEngine({ matches: liveMatches, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
+  const w = eng2.weightsFor('2026-03-15');
+  ok('权重评测：样本数 > 0', w.eval.n > 0, 'n=' + w.eval.n);
+  ok('联赛因子单独命中率高（与实盘一致）', w.eval.league != null && w.eval.league >= 0.7, 'league=' + w.eval.league);
+  ok('权重自学习：联赛权重 > 排名权重（排名因子无效时自动让位）', w.league > w.rank,
+    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100 }));
+
+  // 严格防泄漏：给"未来日期"加极端历史，不应影响之前的预测
+  const hist2 = JSON.parse(JSON.stringify(histBase));
+  hist2.days['2026-06-01'] = { z1: ['大球联', '攻强队', '某队X', 9, 9] };
+  const engineB = JC.factorEngine({ matches: [], history: hist2, model: { windowDays: 30, maxActualRank: 6 } });
+  const pBig2 = engineB.predictFor({ businessDate: '2026-02-20', league: '大球联', home: '攻强队', away: '某队X' }, diffsFlat);
+  ok('严格防泄漏：未来日期的历史不参与当日预测', pBig2.goal === pBig.goal && pBig2.info.histN === pBig.info.histN);
+
+  // historyDayFromResults：销售日归属 + 字段解析
+  const rs = JC.parseResults([{ matchId: 9, sectionsNo999: '2:1', sectionsNo1: '1:0', matchResultStatus: '2',
+    matchDate: '2026-09-02', matchNumStr: '周三005', leagueNameAbbr: '英超', homeTeam: '曼城', awayTeam: '阿森纳' }]);
+  const hm = JC.historyDayFromResults(rs, '2026-09-02');
+  ok('historyDayFromResults：归属与字段', hm[9] && hm[9][0] === '英超' && hm[9][3] === 2 && hm[9][4] === 1);
+  ok('historyStats：统计', JC.historyStats({ days: { 'D1': { a: [1], b: [2] }, 'D2': { c: [3] } } }).matches === 3);
+}
+
 console.log('\n结果：' + pass + ' 通过，' + fail + ' 失败');
 process.exit(fail ? 1 : 0);

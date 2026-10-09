@@ -4,8 +4,8 @@
  * ============================================================
  * 运行于 Docker 容器内（见仓库根目录 docker-compose.yml），零第三方依赖。
  *   · 静态网页：把 docs/ 作为网站根目录对外提供（默认端口 8788）
- *   · 定时任务：按 config.json 的 times（默认 11:00 / 17:00，北京时间）自动执行
- *     node scripts/daily.js（11:00 = both；17:00 = odds，均含赛果回填与封盘冻结）
+ *   · 定时任务：按 config.json 的 times（默认 8:00~23:00 每小时，北京时间）自动执行
+ *     node scripts/daily.js（抓赔率 + 回填赛果 + 编号/历史维护 + 封盘冻结，完整流程）
  *   · 启动补跑：容器启动时若今日还没有抓取记录，立即补跑一次
  *   · 手动执行：浏览器访问 /api/run?mode=both（可选在 config.json 的 nas.runKey 设访问口令）
  *   · 状态查询：/api/status 返回时间、下次执行、数据概况
@@ -28,12 +28,13 @@ function loadConfig() {
   catch (e) { return {}; }
 }
 const CONFIG = loadConfig();
-const TIMES = (Array.isArray(CONFIG.times) && CONFIG.times.length >= 2) ? CONFIG.times : ['11:00', '17:00'];
+// 定时槽位：config.json 的 times 数组（默认 8:00~23:00 每小时整点；夜间 0-8 点不执行）
+const TIMES = (Array.isArray(CONFIG.times) && CONFIG.times.length)
+  ? CONFIG.times.map(function (t) { return String(t); }).filter(function (t) { return /^\d{1,2}:\d{2}$/.test(t); })
+  : ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'];
 const RUN_KEY = (CONFIG.nas && CONFIG.nas.runKey) || '';
-const SLOTS = [
-  { time: TIMES[0], mode: 'both' },   // 上午：赔率 + 赛果回填 + 封盘冻结
-  { time: TIMES[1], mode: 'odds' }    // 下午：再抓一次赔率（同样回填/冻结）
-];
+// 每个整点执行完整流程（both：抓赔率 + 回填赛果 + 编号/历史维护 + 封盘冻结）
+const SLOTS = TIMES.map(function (t) { return { time: t, mode: 'both' }; });
 
 function coreVersion() {
   try {
@@ -220,7 +221,7 @@ const server = http.createServer(function (req, res) {
 server.listen(PORT, function () {
   log('竞彩进球数预测 · NAS 服务已启动');
   log('  网页地址：http://<NAS的IP>:' + PORT + '/');
-  log('  定时执行：' + SLOTS.map(function (s) { return s.time + '(' + s.mode + ')'; }).join('、') + '（容器时区 ' + (process.env.TZ || '系统') + '）');
+  log('  定时执行：每天 ' + SLOTS[0].time + ' ~ ' + SLOTS[SLOTS.length - 1].time + ' 每小时整点一次（共 ' + SLOTS.length + ' 次；容器时区 ' + (process.env.TZ || '系统') + '）');
   log('  手动执行：http://<NAS的IP>:' + PORT + '/api/run?mode=both' + (RUN_KEY ? '&key=口令' : ''));
   log('  核心库版本：' + coreVersion());
   log('  数据概况：' + JSON.stringify(readDataSummary()));

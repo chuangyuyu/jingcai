@@ -81,8 +81,14 @@
         (state.allDays || []).forEach(function (doc) { (doc.matches || []).forEach(function (m) { all.push(m); }); });
         state.allMatches = all;
         var today = JC.localDateStr();
-        var samples = JC.modelSamples(all, 'diffA', { windowDays: 30, endDate: JC.addDays(today, 1) });
-        state.liveModel = JC.modelTrain(samples, { maxActualRank: 6 });
+        // 模型B（v3 对照口径：相对差值排名表）
+        var samplesB = JC.modelSamples(all, 'relB', { windowDays: 30, endDate: JC.addDays(today, 1) });
+        state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: 6 });
+        // 模型A（v4 多因子引擎）：联赛/球队历史库 data/history.json
+        return fetch('data/history.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
+          .then(function (hist) {
+            state.engine = JC.factorEngine({ matches: all, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
+          });
       });
   }
 
@@ -102,6 +108,7 @@
 
   function computeView() {
     var m = state.match;
+    state.factorInfo = null;
     var caps = m.captures || [];
     var last = caps[caps.length - 1] || null;
     var diffs = last ? JC.goalDiffs(last.odds) : null;
@@ -124,16 +131,20 @@
     if (pred) {
       tracks = [
         { key: 'baseA', name: '基线A（差值最小项）', g: pred.baseA, odds: oddsOf(pred.baseA) },
-        { key: 'modelA', name: '模型A（自修正）', g: pred.modelA, odds: oddsOf(pred.modelA) },
+        { key: 'modelA', name: '模型A（多因子·自修正）', g: pred.modelA, odds: oddsOf(pred.modelA) },
         { key: 'modelB', name: '模型B（B口径·对照）', g: pred.modelB, odds: oddsOf(pred.modelB) }
       ];
     } else if (diffs) {
       var diffsA = (diffs.groups || []).map(function (x) { return x.diffA; });
-      var liveModelG = state.liveModel ? JC.modelPredict(state.liveModel, diffsA, diffs.predBaseA) : null;
+      var diffsB = (diffs.groups || []).map(function (x) { return x.relB; });
+      var fp = state.engine ? state.engine.predictFor({ businessDate: m.businessDate || DATE, league: m.league, home: m.home, away: m.away }, diffsA) : null;
+      state.factorInfo = fp ? fp.info : null;
+      var liveModelG = fp ? fp.goal : diffs.predBaseA;
+      var liveModelB = state.liveModelB ? JC.modelPredict(state.liveModelB, diffsB, null) : null;
       tracks = [
         { key: 'baseA', name: '基线A（差值最小项）', g: diffs.predBaseA, odds: oddsOf(diffs.predBaseA) },
-        { key: 'modelA', name: '模型A（实时自修正）', g: liveModelG, odds: oddsOf(liveModelG) },
-        { key: 'modelB', name: '模型B（实时·对照）', g: null, odds: null }
+        { key: 'modelA', name: '模型A（多因子·实时）', g: liveModelG, odds: oddsOf(liveModelG) },
+        { key: 'modelB', name: '模型B（实时·对照）', g: liveModelB, odds: oddsOf(liveModelB) }
       ];
     }
     var actual = (m.result && m.result.goals != null) ? JC.bucketOfGoals(m.result.goals) : null;
@@ -205,7 +216,14 @@
         html += '<tr><td>' + esc(t.name) + '</td><td><b>' + JC.labelG(t.g) + '</b></td><td>' + fmtOdds(t.odds) +
           '</td><td class="' + hitCls + '">' + hitTxt + '</td><td class="' + pnlCls + '"><b>' + fmtMoney(t.pnl) + '</b></td></tr>';
       });
-      html += '</tbody></table></div>' +
+      var finfo = v.pred ? v.pred.factors : state.factorInfo;
+      var factTxt = '';
+      if (finfo && finfo.w) {
+        factTxt = '<p class="card-sub" style="margin-top:6px">多因子修正：权重（排名 ' + Math.round(finfo.w[0] * 100) + '% · 联赛 ' + Math.round(finfo.w[1] * 100) + '% · 球队 ' + Math.round(finfo.w[2] * 100) + '%）' +
+          '；本场联赛历史 ' + (finfo.leagueN || 0) + ' 场' + (finfo.lh != null ? '，两队期望进球 ' + finfo.lh + ' : ' + finfo.la : '') +
+          '；历史库 ' + (finfo.histN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
+      }
+      html += '</tbody></table></div>' + factTxt +
         (v.pred ? '' : '<p class="card-sub" style="margin-top:6px">（未冻结：赛前显示实时预测，赛果落定后冻结存档）</p>') +
         '</div>';
     }

@@ -139,7 +139,7 @@ function addDiffDetailSheet(wb, rows) {
 }
 
 // ---------------- 模型统计 ----------------
-function addModelSheet(wb, rows, config) {
+function addModelSheet(wb, rows, config, factorWeights) {
   const ws = wb.addWorksheet('模型统计');
   ws.columns = [{ width: 22 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 40 }];
   const modelCfg = (config && config.model) || { windowDays: 30, maxActualRank: 6 };
@@ -152,10 +152,24 @@ function addModelSheet(wb, rows, config) {
   ws.addRow(['已出赛果场次', st.settled]);
   ws.addRow(['其中有预测的场次', st.withPred]);
   ws.addRow(['基线A 命中率（差值最小项）', st.baseA.n ? (st.baseA.hit + '/' + st.baseA.n + ' = ' + pct(st.baseA.rate)) : '—']);
-  ws.addRow(['模型A 命中率（自修正）', st.modelA.n ? (st.modelA.hit + '/' + st.modelA.n + ' = ' + pct(st.modelA.rate)) : '—']);
+  ws.addRow(['模型A 命中率（多因子·自修正）', st.modelA.n ? (st.modelA.hit + '/' + st.modelA.n + ' = ' + pct(st.modelA.rate)) : '—']);
   ws.addRow(['模型B 命中率（简单平均口径·对照）', st.modelB.n ? (st.modelB.hit + '/' + st.modelB.n + ' = ' + pct(st.modelB.rate)) : '—']);
   ws.addRow(['说明：口径B的平均赔率随比分个数放大，差值不可跨档比较，不产出基线预测（详见"说明"表）。']).font = { color: { argb: COLOR_MUTED } };
   ws.addRow([]);
+
+  // v4 多因子修正（模型A）：排名⊕联赛⊕球队，权重按近期实盘表现自学习
+  if (factorWeights && factorWeights.eval) {
+    const w = factorWeights;
+    const pw = v => (v == null ? '—' : Math.round(v * 100) + '%');
+    ws.addRow(['多因子修正（模型A = 排名⊕联赛⊕球队 加权融合）']).font = { bold: true, size: 12 };
+    ws.addRow(['当前因子权重（滚动自学习）', '排名 ' + pw(w.rank) + ' · 联赛 ' + pw(w.league) + ' · 球队 ' + pw(w.team)]);
+    if (w.eval.n) {
+      ws.addRow(['权重评测样本', w.eval.n + ' 场（各自单独命中率：排名 ' + pw(w.eval.rank) + ' · 联赛 ' + pw(w.eval.league) +
+        ' · 球队 ' + pw(w.eval.team) + ' · 基础 ' + pw(w.eval.base) + '）']);
+    }
+    ws.addRow(['说明：表现≈"盲猜最常见进球数"的因子权重自动趋近 0（休眠、不干扰预测）；联赛因子=该联赛历史进球分布（收缩到全局），球队因子=两队攻防强度泊松合成。']).font = { color: { argb: COLOR_MUTED } };
+    ws.addRow([]);
+  }
 
   // 近 N 天窗口
   const endDate = JC.localDateStr();
@@ -277,9 +291,14 @@ function addHelpSheet(wb, config) {
     '',
     '【预测双轨】',
     '  基线：预测 = 差值最小的进球数（0球用拟合值参与比较）',
-    '  自修正模型：按"差值排名 × 进球数"统计近 ' + (modelCfg.windowDays || 30) + ' 天的历史命中率，',
-    '    取"该进球数在当前排名下命中率最高"者作为预测；',
-    '    稳健性：赛果排名 ≥ ' + (modelCfg.maxActualRank || 6) + ' 的深冷门场次不纳入学习（防爆冷破坏函数）。',
+    '  自修正模型（v4 多因子）：模型A = 排名因子 ⊕ 联赛因子 ⊕ 球队因子，按各自近期实盘表现',
+    '    自学习权重做加权对数池融合，取综合最高的进球数；',
+    '    · 排名因子：按"差值排名 × 进球数"统计近 ' + (modelCfg.windowDays || 30) + ' 天历史命中率；',
+    '      稳健性：赛果排名 ≥ ' + (modelCfg.maxActualRank || 6) + ' 的深冷门场次不纳入学习（防爆冷破坏函数）。',
+    '    · 联赛因子：该联赛历史进球分布（贝叶斯收缩到全局分布，样本少时≈全局→自动休眠）；',
+    '    · 球队因子：两队攻防强度（队均进球/失球，收缩到全局均值）→ 独立泊松合成总进球分布；',
+    '    · 权重每次运行按最近实盘滚动评测重算——单独命中率≈盲猜的因子权重趋近 0（休眠、不干扰预测）；',
+    '    · 联赛/球队历史来自赛果接口回补的一年数据（docs/data/history.json），身价/伤停等外部数据将来可按同结构接入。',
     '  每场比赛的预测在其赛果落定时冻结（只使用该场之前的数据，杜绝未来数据泄漏），两轨同场对比。',
     '  · 竞彩比赛开赛即封盘：到开赛时间后，最后一份赔率算出的预测即最终存档值（无需等赛果）。',
     '  · 取消或推迟补赛的场次：结果照常记录与展示，但不纳入模型学习与模拟投注回测（意外情况造成偏差）。',
@@ -317,7 +336,7 @@ function addBetSheet(wb, rows, config) {
   ws.addRow([]);
   ws.addRow(['汇总']).font = { bold: true, size: 12 };
   styleHeader(ws.addRow(['轨道', '投注场次', '命中', '总投入', '总回报', '净盈亏', '回报率']));
-  const betLabel = { modelA: '模型A（自修正）', baseA: '基线A（差值最小项）', modelB: '模型B（对照）' };
+  const betLabel = { modelA: '模型A（多因子·自修正）', baseA: '基线A（差值最小项）', modelB: '模型B（对照）' };
   ['modelA', 'baseA', 'modelB'].forEach(k => {
     const t = bet.tracks[k];
     const r = ws.addRow([betLabel[k], t.bets, t.wins, t.staked, t.returned, t.profit, t.roi == null ? null : t.roi]);
@@ -354,17 +373,19 @@ async function generateExcel() {
   const docs = dates.map(d => loadJson(path.join(DAYS_DIR, d + '.json'), null)).filter(Boolean);
   const rows = JC.flatRows(docs);
 
-  // 未结算场次的"实时模型"预测（同算法，近30天滚动；结算场次用冻结存档值）
+  // 未结算场次的"实时模型"预测（同算法；结算场次用冻结存档值）。
+  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队，权重自学习）；模型B = v3 对照口径。
   const modelCfg = (config.model) || { windowDays: 30, maxActualRank: 6 };
   const winFrom = JC.addDays(JC.localDateStr(), -(modelCfg.windowDays || 30));
-  const samplesA = [], samplesB = [];
+  const samplesB = [];
   rows.forEach(r => {
     if (r.actual == null || !r.diffs || r.date < winFrom) return;
-    samplesA.push({ date: r.date, diffs: (r.diffs.groups || []).map(g => g.diffA), actual: r.actual });
     samplesB.push({ date: r.date, diffs: (r.diffs.groups || []).map(g => g.relB), actual: r.actual });
   });
-  const liveA = JC.modelTrain(samplesA, { maxActualRank: modelCfg.maxActualRank });
   const liveB = JC.modelTrain(samplesB, { maxActualRank: modelCfg.maxActualRank });
+  const allMatches = [];
+  docs.forEach(d => (d.matches || []).forEach(m => allMatches.push(m)));
+  const engine = JC.factorEngine({ matches: allMatches, history: loadJson(path.join(DATA_DIR, 'history.json'), null), model: modelCfg });
   const oddsOfRow = (r, g) => {
     if (g == null || !r.diffs) return null;
     let out = null;
@@ -375,11 +396,13 @@ async function generateExcel() {
     if (r.predA != null || !r.diffs) return;
     const dA = (r.diffs.groups || []).map(g => g.diffA);
     const dB = (r.diffs.groups || []).map(g => g.relB);
-    r.predALive = JC.modelPredict(liveA, dA, r.predBaseA);
+    const fp = engine.predictFor({ businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away }, dA);
+    r.predALive = fp ? fp.goal : r.predBaseA;
     r.predBLive = JC.modelPredict(liveB, dB, null);
     r.oddsALive = oddsOfRow(r, r.predALive);
     r.oddsBLive = oddsOfRow(r, r.predBLive);
   });
+  const factorWeights = engine.weightsFor(JC.localDateStr());
 
   const wb = new ExcelJS.Workbook();
   wb.creator = 'jingcai-goals-predict';
@@ -393,7 +416,7 @@ async function generateExcel() {
   Object.keys(months).sort().forEach(m => addMonthSheet(wb, m, months[m]));
   if (!rows.length) wb.addWorksheet('数据（暂无）');
   addDiffDetailSheet(wb, rows);
-  addModelSheet(wb, rows, config);
+  addModelSheet(wb, rows, config, factorWeights);
   addBetSheet(wb, rows, config);
   addNumbersSheets(wb, loadJson(path.join(DATA_DIR, 'numbers.json'), null));
   addHelpSheet(wb, config);

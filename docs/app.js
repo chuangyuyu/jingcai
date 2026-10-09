@@ -129,6 +129,7 @@
     state.dirty = local;
     loadModelCfg();
     var numbersPromise = fetchJsonRel('data/numbers.json').then(function (d) { return d; }, function () { return null; });
+    var historyPromise = fetchJsonRel('data/history.json').then(function (d) { return d; }, function () { return null; });
     return fetchJsonRel('data/index.json').catch(function () { return { dates: {} }; })
       .then(function (index) {
         var dates = Object.keys(index.dates || {});
@@ -151,11 +152,13 @@
         state.days = {};
         (pairs || []).forEach(function (p) { if (p && p[1]) state.days[p[0]] = p[1]; });
         rebuildRows();
-        return numbersPromise;
+        return Promise.all([numbersPromise, historyPromise]);
       })
-      .then(function (numsDoc) {
-        state.numbers = numsDoc;
-        state.betStake = (numsDoc && numsDoc.betStake) || 100;
+      .then(function (extra) {
+        state.numbers = extra[0];
+        state.history = extra[1];
+        state.betStake = (state.numbers && state.numbers.betStake) || 100;
+        rebuildRows(); // 历史库到位后重建实时模型（联赛/球队因子参与）
         render();
         updateStatusLine();
       })
@@ -171,17 +174,27 @@
 
   // 实时模型（与"结算冻结"同算法）：赛前/赛中的模型A/B 预测由这里计算，显示在表格中；
   // 比赛结算时由服务器/本机任务用同一口径冻结存档（回测只认冻结值，防事后修正）。
+  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队，权重自学习）；模型B = v3 对照口径。
   function trainLiveModels() {
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
-    var samplesA = [], samplesB = [];
+    var allMatches = [];
+    Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { allMatches.push(m); }); });
+    var samplesB = [];
     state.rows.forEach(function (r) {
       if (r.actual == null || !r.diffs || r.date < winFrom) return;
-      samplesA.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.diffA; }), actual: r.actual });
       samplesB.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.relB; }), actual: r.actual });
     });
-    state.liveModelA = JC.modelTrain(samplesA, { maxActualRank: state.modelCfg.maxActualRank });
     state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: state.modelCfg.maxActualRank });
-    state.liveSampleN = state.liveModelA.used;
+    state.engine = JC.factorEngine({ matches: allMatches, history: state.history, model: state.modelCfg });
+    state.liveSampleN = state.engine.stateFor(todayStr()).rankUsed;
+  }
+
+  function factorWeightText() {
+    if (!state.engine) return '';
+    var w = state.engine.weightsFor(todayStr());
+    var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
+    return '　｜　多因子权重（滚动自学习）：排名 ' + pct(w.rank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) +
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '，基础 ' + pct(w.eval.base) + '）' : '（暂无评测样本）');
   }
 
   function oddsOfRow(r, g) {
@@ -204,12 +217,13 @@
     if (r.predA != null) {
       return { baseA: r.predBaseA, modelA: r.predA, modelB: r.predB, oddsBaseA: r.oddsBaseA, oddsA: r.oddsA, oddsB: r.oddsB, frozen: true };
     }
-    if (!r.diffs || !state.liveModelA) {
+    if (!r.diffs || !state.engine) {
       return { baseA: r.predBaseA, modelA: null, modelB: null, oddsBaseA: r.oddsBaseA, oddsA: null, oddsB: null, frozen: false };
     }
     var dA = (r.diffs.groups || []).map(function (g) { return g.diffA; });
     var dB = (r.diffs.groups || []).map(function (g) { return g.relB; });
-    var modelA = JC.modelPredict(state.liveModelA, dA, r.predBaseA);
+    var fp = state.engine.predictFor({ businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away }, dA);
+    var modelA = fp ? fp.goal : r.predBaseA;
     var modelB = JC.modelPredict(state.liveModelB, dB, null);
     return {
       baseA: r.predBaseA, modelA: modelA, modelB: modelB,
@@ -337,6 +351,7 @@
   function freezeLocalPredictions() {
     var all = [];
     Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { all.push(m); }); });
+    var engine = state.engine || JC.factorEngine({ matches: all, history: state.history, model: state.modelCfg });
     var frozen = 0;
     Object.keys(state.days).forEach(function (d) {
       var doc = state.days[d];
@@ -345,7 +360,7 @@
         if (m.pred && m.pred.ver === JC.VERSION) return;
         var kickoffMs = (m.matchDate && m.matchTime) ? Date.parse(m.matchDate + 'T' + m.matchTime + '+08:00') : null;
         if (kickoffMs == null || !isFinite(kickoffMs) || Date.now() < kickoffMs) return;
-        var p = JC.freezePrediction(m, all, { model: state.modelCfg });
+        var p = JC.freezePrediction(m, all, { model: state.modelCfg, engine: engine });
         if (p) { m.pred = p; changed = true; frozen++; }
       });
       if (changed) markDirty(d);
@@ -752,7 +767,7 @@
     }
     tbody.innerHTML = html;
     $('#model-sample').textContent = '学习样本 ' + model.used + ' 场（另剔除爆冷 ' + model.excluded +
-      ' 场；窗口 ' + winFrom + ' ~ ' + todayStr() + '，口径A）';
+      ' 场；窗口 ' + winFrom + ' ~ ' + todayStr() + '，口径A）' + factorWeightText();
   }
 
   // 即将开赛的预测列表（未出结果、有明细）

@@ -16,7 +16,11 @@
  *     0球的差值由【全进球数曲线拟合】（二次拟合，g=1..7 的差值 → g=0 的预测值）给出。
  *   · 预测双轨：
  *       基线 = 差值最小的进球数（0球用拟合值参与比较）
- *       自修正模型 = 近30天"差值排名 × 进球数"的经验命中率表（稳健：爆冷场次不纳入更新）
+ *       自修正模型（v4 多因子）= 排名因子（近30天"差值排名×进球数"命中率表，爆冷不纳入更新）
+ *         ⊕ 联赛因子（该联赛历史进球分布，收缩到全局）
+ *         ⊕ 球队因子（两队攻防强度 → 独立泊松合成总进球分布）
+ *         各因子按近期实盘表现自学习权重（表现≈盲猜的因子权重趋近 0、自动休眠），
+ *         预测 = 加权对数池（几何平均）取最大——因子不需全部激活，数据说话。
  *   · 每场在赛果落定时冻结当时的预测（用该场之前的窗口，杜绝未来数据泄漏），长期对比两轨命中率。
  *
  * 数据来源（中国体育彩票官方 Web API，需中国大陆网络）：
@@ -29,7 +33,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '3.4.0';
+  var VERSION = '4.0.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -416,7 +420,8 @@
       var slate = m.businessDate || dateOf(cap.at);
       if (endDate && slate >= endDate) return;   // 只用窗口截止日之前的数据（防泄漏）
       if (windowDays && endDate && daysBetween(slate, endDate) > windowDays) return;
-      out.push({ date: slate, diffs: diffs, actual: bucketOfGoals(goalsFromScore(m.result.score)) });
+      out.push({ date: slate, diffs: diffs, actual: bucketOfGoals(goalsFromScore(m.result.score)),
+        league: m.league || '', home: m.home || '', away: m.away || '' });
     });
     return out;
   }
@@ -424,6 +429,271 @@
   function lastCaptureBefore(m) {
     m = normalizeMatch(m);
     return m.captures.length ? m.captures[m.captures.length - 1] : null;
+  }
+
+  // ---------------------------------------------------------------- 多因子修正模型（v4）
+  //
+  // 用户思路：像神经网络一样纳入尽可能多的修正因子，但因子不必全部"激活"——
+  //   每个因子按【近期实盘表现】自动决定话语权：单独预测命中率好于"总是猜最常见
+  //   进球数"的基础命中率才拿到权重，表现平平的因子权重趋近 0（休眠，不干扰预测）。
+  //   预测 = 各因子分布的加权对数池（加权几何平均）取最大档。
+  //
+  // 已实现的因子（都有真实数据来源）：
+  //   ① 排名因子：差值排名 × 进球数 经验命中率（近 windowDays 天，剔除深冷门）——原自修正模型
+  //   ② 联赛因子：该联赛历史进球分布（竞彩赛果按联赛累计，贝叶斯收缩到全局分布）
+  //   ③ 球队因子：两队攻防强度（队均进球/失球，收缩到全局均值）→ 独立泊松合成总进球分布
+  // 预留扩展位：身价/伤停/海拔等外部数据若能拿到，按同样"返回 8 档分布"的因子接入即自动参与权重学习。
+  //
+  // 数据：docs/data/history.json —— 赛果接口回补的一年比赛（按销售日）：
+  //   { days: { 'YYYY-MM-DD': { matchId: [联赛, 主队, 客队, 主队进球, 客队进球] } } }
+  // 严格防泄漏：预测某销售日 S 的比赛只用 日期 < S 的历史；权重评测同样逐场重建。
+
+  var FACTOR_DEFAULTS = { rank: 1, league: 0.35, team: 0.15 };  // 评测样本不足时的先验占比
+  var K_LEAGUE = 20, K_TEAM = 6;  // 收缩强度：样本量远小于 K 时因子贴近全局（近乎休眠）
+
+  // history 文档 → 比赛行（只取 beforeDate 之前，严格 < 防同日泄漏）
+  function historyRows(histDoc, beforeDate) {
+    var out = [];
+    var days = (histDoc && histDoc.days) || {};
+    Object.keys(days).forEach(function (d) {
+      if (beforeDate && !(d < beforeDate)) return;
+      var day = days[d] || {};
+      Object.keys(day).forEach(function (mid) {
+        var r = day[mid];
+        if (!r || r.length < 5) return;
+        var hg = Number(r[3]), ag = Number(r[4]);
+        if (!isFinite(hg) || !isFinite(ag)) return;
+        out.push({
+          date: d, league: String(r[0] || '').trim(), home: String(r[1] || '').trim(),
+          away: String(r[2] || '').trim(), hg: hg, ag: ag, g: bucketOfGoals(hg + ag)
+        });
+      });
+    });
+    return out;
+  }
+
+  // 从赛果接口结果构造某销售日的 history 记录 { matchId: [联赛,主,客,主进球,客进球] }
+  function historyDayFromResults(results, slate) {
+    var map = {};
+    (results || []).forEach(function (r) {
+      if (!r.matchId || !r.score) return;
+      if (slateDateOf(r.matchNumStr, r.date) !== slate) return;
+      var m = /^(\d{1,2}):(\d{1,2})$/.exec(String(r.score).trim());
+      if (!m) return;
+      map[r.matchId] = [r.league || '', r.home || '', r.away || '', Number(m[1]), Number(m[2])];
+    });
+    return map;
+  }
+
+  function historyStats(histDoc) {
+    var days = Object.keys((histDoc && histDoc.days) || {}).sort();
+    var n = 0;
+    days.forEach(function (d) { n += Object.keys(histDoc.days[d] || {}).length; });
+    return { days: days.length, first: days[0] || null, last: days[days.length - 1] || null, matches: n };
+  }
+
+  // 拉普拉斯平滑的 8 档分布
+  function distOf(counts) {
+    var d = new Array(8), s = 0, i;
+    for (i = 0; i < 8; i++) { d[i] = (counts[i] || 0) + 0.5; s += d[i]; }
+    for (i = 0; i < 8; i++) d[i] /= s;
+    return d;
+  }
+
+  function argmaxDist(d) {
+    var best = null, bv = -Infinity;
+    for (var i = 0; i < 8; i++) { if (d[i] != null && d[i] > bv) { bv = d[i]; best = i; } }
+    return best;
+  }
+
+  // 因子表：全局分布 + 联赛分布 + 球队攻防 + 主客场基准进球
+  function factorTables(rows) {
+    var t = { n: 0, global: [0, 0, 0, 0, 0, 0, 0, 0], leagues: {}, teams: {}, homeAvg: 1.45, awayAvg: 1.15, muTeam: 1.3 };
+    var sumH = 0, sumA = 0, n = 0;
+    (rows || []).forEach(function (r) {
+      if (r.g == null) return;
+      n++;
+      t.global[r.g]++;
+      var lc = t.leagues[r.league] || (t.leagues[r.league] = { n: 0, c: [0, 0, 0, 0, 0, 0, 0, 0] });
+      lc.n++; lc.c[r.g]++;
+      if (r.home) { var th = t.teams[r.home] || (t.teams[r.home] = { n: 0, gf: 0, ga: 0 }); th.n++; th.gf += r.hg; th.ga += r.ag; }
+      if (r.away) { var ta = t.teams[r.away] || (t.teams[r.away] = { n: 0, gf: 0, ga: 0 }); ta.n++; ta.gf += r.ag; ta.ga += r.hg; }
+      sumH += r.hg; sumA += r.ag;
+    });
+    t.n = n;
+    if (n) { t.homeAvg = sumH / n; t.awayAvg = sumA / n; t.muTeam = (sumH + sumA) / (2 * n); }
+    return t;
+  }
+
+  // 联赛分布（收缩到全局：样本少时≈全局 → 该因子近乎休眠）
+  function leagueDist(t, league) {
+    var g = distOf(t.global);
+    var L = league ? t.leagues[league] : null;
+    if (!L || !L.n) return g;
+    var d = new Array(8);
+    for (var i = 0; i < 8; i++) d[i] = (L.c[i] + K_LEAGUE * g[i]) / (L.n + K_LEAGUE);
+    return d;
+  }
+
+  function poissonPmf(lam, kmax) {
+    var out = [Math.exp(-lam)], p = out[0];
+    for (var k = 1; k <= kmax; k++) { p = p * lam / k; out.push(p); }
+    return out;
+  }
+
+  // 两队独立泊松 → 总进球 8 档分布（末档为 7+ 合并）
+  function poissonTotalDist(lh, la) {
+    var KM = 12;
+    var ph = poissonPmf(lh, KM), pa = poissonPmf(la, KM);
+    var d = [0, 0, 0, 0, 0, 0, 0, 0], h, a;
+    for (h = 0; h <= KM; h++) for (a = 0; a <= KM; a++) d[Math.min(h + a, 7)] += ph[h] * pa[a];
+    var s = 0;
+    for (h = 0; h < 8; h++) s += d[h];
+    if (s > 0) for (h = 0; h < 8; h++) d[h] /= s;
+    return d;
+  }
+
+  // 球队因子：攻防强度（收缩到全局）→ 期望进球 → 分布；无任何历史时返回 null（不参与）
+  function teamDist(t, home, away) {
+    if (!t || !t.n || (!home && !away)) return null;
+    var att = function (name) {
+      var x = t.teams[name];
+      if (!x || !x.n) return 1;
+      return ((x.gf + K_TEAM * t.muTeam) / (x.n + K_TEAM)) / t.muTeam;
+    };
+    var def = function (name) {
+      var x = t.teams[name];
+      if (!x || !x.n) return 1;
+      return ((x.ga + K_TEAM * t.muTeam) / (x.n + K_TEAM)) / t.muTeam;
+    };
+    var lh = t.homeAvg * att(home) * def(away);
+    var la = t.awayAvg * att(away) * def(home);
+    lh = Math.max(0.2, Math.min(4.5, lh));
+    la = Math.max(0.2, Math.min(4.5, la));
+    return { dist: poissonTotalDist(lh, la), lh: Math.round(lh * 100) / 100, la: Math.round(la * 100) / 100 };
+  }
+
+  // 排名因子：把"排名×进球数"命中率表转成 8 档分布（归一化伪似然）
+  function rankDist(model, diffs) {
+    if (!model || !diffs) return null;
+    var s = [null, null, null, null, null, null, null, null], sum = 0, g;
+    for (g = 0; g <= 7; g++) {
+      if (diffs[g] == null) continue;
+      var rk = modelRank(0, diffs, g);
+      if (rk == null) continue;
+      var cell = model.table[g][rk];
+      var v = (cell.hit + 0.5) / (cell.total + 1.5);
+      s[g] = v; sum += v;
+    }
+    if (!sum) return null;
+    for (g = 0; g <= 7; g++) if (s[g] != null) s[g] /= sum;
+    return s;
+  }
+
+  // 因子引擎：按销售日建表/评测（全部 memo，严格只用该日之前的数据），权重滚动自学习。
+  // opts: { matches 全部比赛（排名样本）, history history 文档, model {windowDays,maxActualRank},
+  //         evalDays 权重评测窗口(默认60天), evalMax 评测样本上限(默认150) }
+  function factorEngine(opts) {
+    opts = opts || {};
+    var modelCfg = opts.model || {};
+    var windowDays = modelCfg.windowDays || 30;
+    var maxRank = modelCfg.maxActualRank || 6;
+    var evalDays = opts.evalDays || 60;
+    var evalMax = opts.evalMax || 150;
+    var allRows = historyRows(opts.history, null);
+    var memo = {}, wMemo = {};
+
+    function stateFor(slate) {
+      var key = slate || '';
+      if (memo[key]) return memo[key];
+      var rows = slate ? allRows.filter(function (r) { return r.date < slate; }) : allRows;
+      var samples = modelSamples(opts.matches, 'diffA', { windowDays: windowDays, endDate: slate });
+      var rankModel = modelTrain(samples, { maxActualRank: maxRank });
+      var st = { slate: slate, rows: rows, tables: factorTables(rows), rankModel: rankModel, rankUsed: rankModel.used };
+      memo[key] = st;
+      return st;
+    }
+
+    // 权重学习：用最近 evalDays 的实盘样本滚动评测——每个因子单独预测的命中率
+    // 对比"全局分布最大档"的基础命中率；好于基础才拿权重（差距/8% 封顶 1），
+    // 评测样本少时向先验权重回退（新因子先"试用"再"转正"，表现差的自动休眠）。
+    function weightsFor(slate) {
+      var key = slate || '';
+      if (wMemo[key]) return wMemo[key];
+      var evalSamples = modelSamples(opts.matches, 'diffA', { windowDays: evalDays, endDate: slate });
+      if (evalSamples.length > evalMax) evalSamples = evalSamples.slice(evalSamples.length - evalMax);
+      var hit = { rank: 0, league: 0, team: 0, base: 0 }, n = 0;
+      evalSamples.forEach(function (sm) {
+        var est = stateFor(sm.date); // 严格用该场之前的数据重建（防泄漏）
+        if (argmaxDist(distOf(est.tables.global)) === sm.actual) hit.base++;
+        var PR = rankDist(est.rankModel, sm.diffs);
+        if (PR && argmaxDist(PR) === sm.actual) hit.rank++;
+        if (est.tables.n) {
+          if (argmaxDist(leagueDist(est.tables, sm.league)) === sm.actual) hit.league++;
+          var TD = teamDist(est.tables, sm.home, sm.away);
+          if (TD && argmaxDist(TD.dist) === sm.actual) hit.team++;
+        }
+        n++;
+      });
+      var baseRate = n ? hit.base / n : 0;
+      var conf = n / (n + 40); // 置信度：评测样本越多，越相信自己测出的表现
+      var skill = function (h) { return n ? Math.max(0, Math.min(1, (h / n - baseRate) / 0.08)) : 0; };
+      var wR = (1 - conf) * FACTOR_DEFAULTS.rank + conf * (0.12 + skill(hit.rank));
+      var wL = (1 - conf) * FACTOR_DEFAULTS.league + conf * (0.12 + skill(hit.league));
+      var wT = (1 - conf) * FACTOR_DEFAULTS.team + conf * (0.12 + skill(hit.team));
+      var wsum = wR + wL + wT || 1;
+      var out = {
+        rank: wR / wsum, league: wL / wsum, team: wT / wsum,
+        eval: {
+          n: n, base: n ? Math.round(hit.base / n * 100) / 100 : null,
+          rank: n ? Math.round(hit.rank / n * 100) / 100 : null,
+          league: n ? Math.round(hit.league / n * 100) / 100 : null,
+          team: n ? Math.round(hit.team / n * 100) / 100 : null
+        }
+      };
+      wMemo[key] = out;
+      return out;
+    }
+
+    // 对一场比赛预测（加权对数池）。match: { businessDate, league, home, away }；diffs: 8 档差值数组
+    function predictFor(match, diffs) {
+      if (!match || !diffs) return null;
+      var slate = match.businessDate || match.matchDate || null;
+      var st = stateFor(slate);
+      var ws = weightsFor(slate);
+      var PR = rankDist(st.rankModel, diffs);
+      if (!PR) return null;
+      var PL = st.tables.n ? leagueDist(st.tables, match.league || '') : null;
+      var TD = teamDist(st.tables, match.home || '', match.away || '');
+      var PT = TD ? TD.dist : null;
+      var logS = [0, 0, 0, 0, 0, 0, 0, 0];
+      var addF = function (P, w) {
+        if (!P || !(w > 0)) return;
+        for (var g = 0; g <= 7; g++) {
+          var v = P[g] == null ? 1e-6 : P[g];
+          logS[g] += w * Math.log(v + 1e-9);
+        }
+      };
+      addF(PR, ws.rank); addF(PL, ws.league); addF(PT, ws.team);
+      var best = null, bv = -Infinity;
+      for (var g = 0; g <= 7; g++) {
+        if (diffs[g] == null) continue; // 与基线口径一致：只考虑有差值的档
+        if (logS[g] > bv) { bv = logS[g]; best = g; }
+      }
+      if (best == null) return null;
+      return {
+        goal: best,
+        info: {
+          w: [Math.round(ws.rank * 100) / 100, Math.round(ws.league * 100) / 100, Math.round(ws.team * 100) / 100],
+          evalN: ws.eval.n, evalHit: ws.eval,
+          histN: st.tables.n, rankN: st.rankUsed,
+          leagueN: (match.league && st.tables.leagues[match.league]) ? st.tables.leagues[match.league].n : 0,
+          lh: TD ? TD.lh : null, la: TD ? TD.la : null
+        }
+      };
+    }
+
+    return { stateFor: stateFor, weightsFor: weightsFor, predictFor: predictFor, rows: allRows };
   }
 
   // ---------------------------------------------------------------- 合并 / 规整
@@ -568,6 +838,9 @@
   }
 
   // 赛果落定后为一场比赛冻结预测（窗口 = 该场销售日之前，防泄漏）
+  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队，权重自学习）；
+  // 模型B = v3 口径（相对差值排名表）作为对照保留。
+  // opts.engine 可传入复用的因子引擎（批量冻结时避免重复建表）；不传则内部新建。
   function freezePrediction(match, allMatches, opts) {
     opts = opts || {};
     var cap = lastCaptureBefore(match);
@@ -579,15 +852,16 @@
     var slate = match.businessDate || match.matchDate;
     var windowDays = (opts.model && opts.model.windowDays) || 30;
     var maxRank = (opts.model && opts.model.maxActualRank) || 6;
-    var samplesA = modelSamples(allMatches, 'diffA', { windowDays: windowDays, endDate: slate });
     var samplesB = modelSamples(allMatches, 'relB', { windowDays: windowDays, endDate: slate });
-    var modelA = modelTrain(samplesA, { maxActualRank: maxRank });
     var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
+    var engine = opts.engine || factorEngine({ matches: allMatches, history: opts.history, model: opts.model });
+    var fp = engine.predictFor(match, diffsA);
     return {
-      baseA: d.predBaseA, modelA: modelPredict(modelA, diffsA, d.predBaseA),
+      baseA: d.predBaseA, modelA: fp ? fp.goal : d.predBaseA,
       baseB: null, modelB: modelPredict(modelB, diffsB, null),
       fit0A: d.fit0A, fit0B: d.fit0B,
-      windowA: modelA.used, windowB: modelB.used,
+      windowA: fp ? fp.info.rankN : 0, windowB: modelB.used,
+      factors: fp ? fp.info : null,
       ver: VERSION,
       at: nowIso()
     };
@@ -885,6 +1159,12 @@
     modelPredict: modelPredict,
     modelSamples: modelSamples,
     freezePrediction: freezePrediction,
+    // v4 多因子
+    factorEngine: factorEngine,
+    factorTables: factorTables,
+    historyRows: historyRows,
+    historyDayFromResults: historyDayFromResults,
+    historyStats: historyStats,
     goalsFromScore: goalsFromScore,
     bucketOfGoals: bucketOfGoals,
     bucketLabel: bucketLabel,

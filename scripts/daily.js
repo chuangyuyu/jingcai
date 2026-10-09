@@ -9,7 +9,7 @@
  *   node scripts/daily.js both --push  # 完成后 git 提交并推送（--push 也可省略，默认读 config.json）
  *   node scripts/daily.js odds --no-push --no-excel   # 只抓数据，不推送、不生成 Excel
  *   node scripts/daily.js check        # 环境自检（迁移/排障用）
- *   node scripts/daily.js numbers --backfill 400   # 一次性回补编号历史（默认回补 180 天）
+ *   node scripts/daily.js numbers --backfill 400   # 一次性回补编号历史 + 联赛/球队历史（多因子模型用，默认 180 天）
  *
  * 说明：无论哪种模式都会回填赛果（含凌晨场：查询范围自动 +1 天），
  *       并维护"编号 × 进球数"历史（docs/data/numbers.json，用于编号追踪警戒）。
@@ -196,12 +196,15 @@ async function runOdds() {
 // 为已封盘（开赛）但尚未冻结预测（或预测由旧版本算法生成）的场次补/重冻结预测。
 // 竞彩比赛开赛即封盘、赔率定格 —— 所以到开赛时间后，最后一份快照算出的结果就是最终存档值，
 // 无需等赛果；窗口=该场销售日之前，防未来数据泄漏。算法修正后旧版预测作废重算（修 bug 非调参）。
+// v4：模型A 由多因子引擎（排名⊕联赛⊕球队，权重自学习）给出，引擎在本函数内建一次复用。
 function freezeMissingPredictions(config) {
   const index = loadIndex();
   const dates = Object.keys(index.dates || {}).sort();
   const docs = dates.map(d => loadDay(d)).filter(Boolean);
   const all = [];
   docs.forEach(doc => (doc.matches || []).forEach(m => all.push(m)));
+  const histDoc = loadHistory();
+  const engine = JC.factorEngine({ matches: all, history: histDoc, model: config.model });
   let frozen = 0, refrozen = 0;
   docs.forEach(doc => {
     let changed = false;
@@ -211,14 +214,23 @@ function freezeMissingPredictions(config) {
       const started = kickoffMs != null && isFinite(kickoffMs) && Date.now() >= kickoffMs;
       if (!started) return; // 尚未开赛：等最后一份赔率再冻
       if (m.pred) refrozen++;
-      const p = JC.freezePrediction(m, all, { model: config.model });
+      const p = JC.freezePrediction(m, all, { model: config.model, engine });
       if (p) { m.pred = p; changed = true; frozen++; }
     });
     if (changed) saveDay(doc);
   });
-  if (frozen) log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
+  if (frozen) {
+    const hs = JC.historyStats(histDoc);
+    const ws = engine.weightsFor(JC.localDateStr());
+    log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
+    log(`  多因子权重：排名 ${Math.round(ws.rank * 100)}% · 联赛 ${Math.round(ws.league * 100)}% · 球队 ${Math.round(ws.team * 100)}%` +
+      `（滚动评测 ${ws.eval.n} 场，各自单独命中率：排名 ${fmtRate(ws.eval.rank)}/联赛 ${fmtRate(ws.eval.league)}/球队 ${fmtRate(ws.eval.team)}，基础 ${fmtRate(ws.eval.base)}）；` +
+      `历史库 ${hs.matches} 场`);
+  }
   return frozen;
 }
+
+function fmtRate(v) { return v == null ? '—' : Math.round(v * 100) + '%'; }
 
 // ---------------------------------------------------------------- 赛果回填
 
@@ -261,9 +273,10 @@ async function runResults(config) {
   return { changed: totalChanged, filled: totalFilled, dates: touchedDates, frozen };
 }
 
-// ---------------------------------------------------------------- 编号追踪（编号 × 总进球数 历史）
+// ---------------------------------------------------------------- 编号追踪 + 联赛/球队历史（一次请求维护两个文件）
 
 const NUMBERS_FILE = path.join(DATA_DIR, 'numbers.json');
+const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 
 function loadNumbers() {
   const doc = loadJson(NUMBERS_FILE, null);
@@ -271,11 +284,17 @@ function loadNumbers() {
   return doc;
 }
 
-// 维护 docs/data/numbers.json：每天（按"销售日"）记录 { 编号: 总进球数 }
+function loadHistory() {
+  const doc = loadJson(HISTORY_FILE, null);
+  if (!doc || typeof doc !== 'object' || !doc.days) return { updatedAt: null, days: {} };
+  return doc;
+}
+
+// 维护 docs/data/numbers.json（编号 × 进球数）与 docs/data/history.json（联赛/球队历史，多因子模型用）：
 //   · 编号只在销售日内唯一（周三004 与 周二004 可能是两场比赛），因此一天的数据 =
 //     真实日期 s 的日间场 + 真实日期 s+1 的凌晨场；一次查询 [s, s+1] 后按销售日归属；
 //   · 每次运行保证最近 3 个销售日为最新；更早的销售日已定稿就跳过；
-//   · --backfill N 时向后回补 N 天（一次性种子历史，限速请求）。
+//   · --backfill N 时向后回补 N 天（一次性种子历史，限速请求；两个文件同时回补）。
 const NUMBERS_SCHEMA = 2;
 
 async function runNumbers(config, opts) {
@@ -295,18 +314,21 @@ async function runNumbers(config, opts) {
   doc.buckets = JC.parseGoalGroups(track.goalGroups) || undefined;
   if (!doc.buckets) delete doc.buckets;
 
+  const hist = loadHistory();
   const today = JC.localDateStr();
   // 销售日 s 的数据 = 真实日期 s（日间场）+ s+1（凌晨场）；查询后按前缀星期归属
   const from = opts.backfillDays ? JC.addDays(today, -opts.backfillDays) : JC.addDays(today, -2);
   let fetched = 0, written = 0;
   for (let s = from; s <= today; s = JC.addDays(s, 1)) {
     const settled = s <= JC.addDays(today, -2); // 销售日过去两天后数据已定稿
-    if (settled && doc.days[s]) continue;
+    const needNumbers = !(settled && doc.days[s]);
+    const needHist = !(settled && hist.days[s]);
+    if (!needNumbers && !needHist) continue;
     let rs;
     try {
       rs = await JC.fetchAllResults(s, JC.addDays(s, 1), true);
     } catch (e) {
-      log(`  编号历史 ${s}: 接口出错 — ${e.message}`);
+      log(`  编号/历史 ${s}: 接口出错 — ${e.message}`);
       continue;
     }
     const map = {};
@@ -317,14 +339,21 @@ async function runNumbers(config, opts) {
       if (num && g != null) map[num] = g;
     });
     if (Object.keys(map).length) { doc.days[s] = map; written++; }
+    const hmap = JC.historyDayFromResults(rs, s);
+    if (Object.keys(hmap).length) hist.days[s] = hmap;
     fetched++;
     if (opts.backfillDays) await new Promise(r => setTimeout(r, 120)); // 回补历史时限速
   }
   doc.updatedAt = JC.nowIso();
   saveJson(NUMBERS_FILE, doc);
+  hist.schema = 1;
+  hist.updatedAt = JC.nowIso();
+  saveJson(HISTORY_FILE, hist);
 
   const st = JC.numbersStats(doc, { alertCount: doc.alertCount });
   log(`编号历史：共 ${st.days} 个销售日（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
+  const hs = JC.historyStats(hist);
+  log(`联赛/球队历史：共 ${hs.days} 个销售日（${hs.first || '—'} ~ ${hs.last || '—'}），${hs.matches} 场（多因子模型用）`);
   if (st.alerts.length) {
     log(`⚠ 编号追踪：${st.alerts.length} 项已连续 ≥${st.alertCount} 次未出现 —— ` +
       st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（连续 ${a.streak} 次，最近 ${a.lastDate}）`).join('；') +
@@ -401,20 +430,19 @@ async function runCheck() {
 
   if (isWin) {
     try {
-      execFileSync('schtasks', ['/query', '/tn', '竞彩1球-上午抓取'], { stdio: 'pipe', encoding: 'buffer' });
-      ok('计划任务（每天 11:00 / 17:00 两次）', true, '已注册（上午抓取 / 下午抓取）');
+      execFileSync('schtasks', ['/query', '/tn', '竞彩进球数-整点抓取'], { stdio: 'pipe', encoding: 'buffer' });
+      ok('计划任务（每天 8:00~23:00 每小时）', true, '已注册（竞彩进球数-整点抓取）');
     } catch (e) {
       let legacy = false;
-      try {
-        execFileSync('schtasks', ['/query', '/tn', '竞彩1球-早间抓取回填'], { stdio: 'pipe', encoding: 'buffer' });
-        legacy = true;
-      } catch (e2) { /* 新旧都没有 */ }
-      ok('计划任务（每天 11:00 / 17:00 两次）', false, legacy
-        ? '仍是旧版任务（晚间 21:00）：请用管理员 PowerShell 重新运行 scripts\\register-tasks.ps1 -InteractiveUser 更新为 11:00/17:00'
+      for (const n of ['竞彩1球-上午抓取', '竞彩1球-下午抓取', '竞彩1球-早间抓取回填', '竞彩1球-晚间抓取']) {
+        try { execFileSync('schtasks', ['/query', '/tn', n], { stdio: 'pipe', encoding: 'buffer' }); legacy = true; } catch (e2) { /* 没有这个任务 */ }
+      }
+      ok('计划任务（每天 8:00~23:00 每小时）', false, legacy
+        ? '仍是旧版任务（每天两次）：请用管理员 PowerShell 重新运行 scripts\\register-tasks.ps1 -InteractiveUser 更新为整点抓取'
         : '未注册：管理员 PowerShell 运行 scripts\\register-tasks.ps1 -InteractiveUser');
     }
   } else {
-    ok('定时执行（NAS 容器内定时器）', true, '由 nas/server.js 负责（11:00/17:00；状态见 http://<NAS>:端口/api/status）');
+    ok('定时执行（NAS 容器内定时器）', true, '由 nas/server.js 负责（按 config.json 的 times 整点执行；状态见 http://<NAS>:端口/api/status）');
   }
 
   const index = loadIndex();
@@ -428,6 +456,13 @@ async function runCheck() {
       ? (nst.days + ' 天（' + nst.firstDate + ' ~ ' + nst.lastDate + '），当前警戒 ' + nst.alerts.length + ' 项')
       : '暂无：运行 node scripts\\daily.js numbers --backfill 400 回补历史');
   } catch (e) { ok('编号追踪数据', false, e.message); }
+
+  try {
+    const hs = JC.historyStats(loadHistory());
+    ok('联赛/球队历史（多因子模型）', true, hs.matches
+      ? (hs.days + ' 天（' + hs.first + ' ~ ' + hs.last + '），' + hs.matches + ' 场')
+      : '暂无：运行 node scripts\\daily.js numbers --backfill 400 回补（与编号历史同一次回补）');
+  } catch (e) { ok('联赛/球队历史（多因子模型）', false, e.message); }
 
   console.log('\n结果：' + (fails ? fails + ' 项需要处理（见上方 [需处理] 项）' : '全部通过 ✓'));
   if (fails) process.exitCode = 1;

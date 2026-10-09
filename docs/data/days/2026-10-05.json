@@ -83,15 +83,35 @@
    },
    "pred": {
     "baseA": 2,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 1.003,
     "fit0B": -5,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 2.01,
+     "la": 0.85
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -176,15 +196,35 @@
    },
    "pred": {
     "baseA": 1,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 1.448,
     "fit0B": -5,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 1.58,
+     "la": 1.69
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -269,15 +309,35 @@
    },
    "pred": {
     "baseA": 4,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 2.341,
     "fit0B": -5,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 2.51,
+     "la": 1.42
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -362,15 +422,35 @@
    },
    "pred": {
     "baseA": 4,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 1.976,
     "fit0B": -5,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 2.1,
+     "la": 1.22
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -455,15 +535,35 @@
    },
    "pred": {
     "baseA": 0,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": -0.957,
     "fit0B": -2.975,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 1.57,
+     "la": 0.9
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -548,15 +648,35 @@
    },
    "pred": {
     "baseA": 2,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 2.454,
     "fit0B": -5,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 2.41,
+     "la": 1.32
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   },
   {
@@ -641,15 +761,35 @@
    },
    "pred": {
     "baseA": 2,
-    "modelA": 0,
+    "modelA": 3,
     "baseB": null,
     "modelB": 1,
     "fit0A": 2.619,
     "fit0B": -4.486,
     "windowA": 0,
     "windowB": 0,
-    "ver": "3.4.0",
-    "at": "2026-10-06T17:49:44+08:00"
+    "factors": {
+     "w": [
+      0.67,
+      0.23,
+      0.1
+     ],
+     "evalN": 0,
+     "evalHit": {
+      "n": 0,
+      "base": null,
+      "rank": null,
+      "league": null,
+      "team": null
+     },
+     "histN": 5430,
+     "rankN": 0,
+     "leagueN": 37,
+     "lh": 1.84,
+     "la": 1.19
+    },
+    "ver": "4.0.0",
+    "at": "2026-10-09T12:49:12+08:00"
    }
   }
  ],
