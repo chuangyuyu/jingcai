@@ -131,7 +131,8 @@ docker run -d --name jingcai --restart unless-stopped \
 | 手动执行 | 直接点网页上的「抓取今日赔率 / 回填赛果」按钮（NAS 本地执行）；或浏览器访问 `http://NAS的IP:8788/api/run?mode=both`；或 SSH：`docker exec jingcai node scripts/daily.js both --no-push` |
 | 改采集时间 | 编辑项目目录 `config.json` 的 `times`（默认 8:00~23:00 每小时）→ Docker 里重启 `jingcai` 容器；或在电脑上改好后双击 `同步到NAS.cmd`（会自动合并时间表并提示重启） |
 | 改网页端口 | 换端口（见上表）→ 重新部署 |
-| 更新代码 | 电脑上双击项目里的 **`同步到NAS.cmd`**：自动同步代码（**不覆盖 NAS 数据/Excel**、只合并时间表）→ 到 NAS Docker 里重启 `jingcai` 容器。`docs/` 网页文件即时生效、无需重启 |
+| 更新代码（同一局域网） | 电脑上双击项目里的 **`同步到NAS.cmd`**：自动同步代码（**不覆盖 NAS 数据/Excel**、只合并时间表）→ 到 NAS Docker 里重启 `jingcai` 容器 |
+| 更新代码（不在同一网络） | 电脑上双击 **`制作NAS更新包.cmd`** 生成 `NAS更新包.zip` → 飞牛「远程访问」→「文件」应用 → 上传到项目文件夹 → 解压（覆盖）→ 按包内 `UPDATE-README.txt` 操作（用 `config.nas.json` 覆盖配置，或手改 `times`）→ 重启 `jingcai` 容器 |
 | 数据备份 | 拷走项目目录的 `docs/data` + `docs/excel`；整个项目文件夹拷回电脑也是一份完整备份 |
 | 环境自检 | SSH：`docker exec jingcai node scripts/daily.js check`（NAS 环境下 GitHub 相关项会自动按"可忽略"处理） |
 

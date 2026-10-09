@@ -12,7 +12,7 @@
 
 **预测双轨，长期对比命中率**：
 - 基线 = 「差值最小的进球数」（口径A；0球用拟合值参与比较）
-- 自修正模型（v4 多因子）= **排名因子**（近 30 天「差值排名 × 进球数」经验命中率，**赛果排名垫底的深冷门场次不纳入学习**、防止爆冷破坏函数）⊕ **联赛因子**（该联赛历史进球分布，贝叶斯收缩到全局）⊕ **球队因子**（两队攻防强度 → 独立泊松合成总进球分布），权重按各因子近期实盘表现**自学习**——表现≈盲猜的因子权重趋近 0、自动休眠，不需要全部"激活"；联赛/球队数据来自赛果接口回补的一年历史（`docs/data/history.json`）。每场比赛的预测在其**封盘（开赛）**时冻结（只用该场之前的数据，杜绝未来数据泄漏）；模型B（相对差值口径）作为对照
+- 自修正模型（v4 多因子）= **排名因子**（近 30 天「差值排名 × 进球数」经验命中率，**赛果排名垫底的深冷门场次不纳入学习**、防止爆冷破坏函数）⊕ **联赛因子**（该联赛历史进球分布，贝叶斯收缩到全局）⊕ **球队因子**（两队攻防强度 → 独立泊松合成总进球分布），权重按各因子近期实盘表现**自学习**——**因子单独命中率需高出"基础命中率"（总是猜最常见进球数）2 个百分点以上才开始获得权重，12 个百分点封顶**，达不到的自动休眠、权重≈0，不干扰差值信号；联赛/球队数据来自赛果接口回补的一年历史（`docs/data/history.json`）。每场比赛的预测在其**封盘（开赛）**时冻结（只用该场之前的数据，杜绝未来数据泄漏）；模型B（相对差值口径）作为对照
 
 > 仅供个人数据分析，不构成投注建议。数据版权归中国体育彩票（sporttery.cn）所有，请勿高频抓取。
 
@@ -168,7 +168,8 @@ docker run -d --name jingcai --restart unless-stopped -e TZ=Asia/Shanghai -e POR
 | 改网页端口 | 编辑 `docker-compose.yml` 的 `ports` 与 `PORT`（两处改成同一端口）→ 重新部署 |
 | 访问口令（可选） | `config.json` 的 `nas.runKey` 填一个口令 → 网页按钮首次使用时输入一次（浏览器记住），手动接口需带 `?key=口令`；网页浏览不受影响 |
 | 数据备份 | 备份项目目录的 `docs/data`（核心数据）+ `docs/excel`；整个项目文件夹拷回电脑也是一份完整备份 |
-| 更新代码 | 电脑上双击项目目录里的 **`同步到NAS.cmd`**：自动同步代码到 NAS（**不覆盖 NAS 数据与 Excel**，只把抓取时间表合并进 NAS 配置）；之后到 NAS 的 Docker 里重启 `jingcai` 容器。手动方式：把代码文件覆盖过去（**不要覆盖 `docs/data`、`docs/excel`、`logs`**）；`docs/` 网页文件即时生效、无需重启 |
+| 更新代码（同一局域网） | 电脑上双击 **`同步到NAS.cmd`**：自动同步代码（**不覆盖 NAS 数据与 Excel**，只合并时间表）→ 到 NAS 的 Docker 里重启 `jingcai` 容器 |
+| 更新代码（不在同一网络） | 双击 **`制作NAS更新包.cmd`** 生成 `NAS更新包.zip` → 打开飞牛「远程访问」→「文件」应用 → 上传到项目文件夹 → 解压（覆盖）→ 按包内 `UPDATE-README.txt` 操作（用 `config.nas.json` 覆盖配置或手改 `times`）→ 重启 `jingcai` 容器 |
 | 排障 | 环境自检：`docker exec jingcai node scripts/daily.js check`（NAS 环境下 GitHub/Windows 任务项自动按"可忽略"处理） |
 
 **常见问题**
@@ -275,7 +276,8 @@ scripts/
   export-excel.js        由 JSON 生成 Excel（daily.js 会自动调用）
   build-userscript.js    把 core.js 内联进油猴脚本
   register-tasks.ps1     注册/删除 Windows 计划任务（单任务「竞彩进球数-整点抓取」）
-  sync-to-nas.ps1        同步代码到 NAS 项目目录（不覆盖 NAS 数据与配置，只合并时间表）
+  sync-to-nas.ps1        同步代码到 NAS 项目目录（同一局域网；不覆盖 NAS 数据与配置，只合并时间表）
+  make-nas-update.ps1    生成 NAS更新包.zip（与 NAS 不在同一网络时，经飞牛远程访问上传解压）
   setup.ps1              一键部署
   test-core.js           核心逻辑自检（node scripts/test-core.js）
 userscript/
@@ -284,7 +286,8 @@ userscript/
 nas/
   server.js              NAS/容器服务：本地网页 + 定时抓取（零依赖）
 docker-compose.yml      Docker 部署配置（飞牛 NAS / 任意 Docker 环境）
-同步到NAS.cmd            一键把代码同步到 NAS 项目目录（双击即可，不覆盖 NAS 数据）
+同步到NAS.cmd            一键把代码同步到 NAS 项目目录（同一局域网，双击即可，不覆盖 NAS 数据）
+制作NAS更新包.cmd        生成 NAS更新包.zip（与 NAS 不在同一网络时：远程访问上传→解压覆盖）
 NAS部署指南.md          飞牛NAS 详细部署指引（逐字段说明 + 容器启动失败排查表）
 config.json              autoPush / 回填窗口 / 定时时间 / 模型参数 / 编号追踪 / NAS 口令
 logs/daily.log           计划任务运行日志
