@@ -88,6 +88,25 @@ console.log('== 进球数差值（两种口径）==');
     const dr2 = JC.goalDiffs(noOther);
     ok('缺其他档时 7+ 差值为 null 且不参与预测', dr2.groups[7].diffA === null && dr2.predBaseA !== 7);
   }
+
+  // ★ 回归测试（用户核对）：3球必须包含全部四个比分 0:3 / 1:2 / 2:1 / 3:0，
+  //   优化赔率A = 四者赔率倒数和的倒数；且 3:1（总4球）必须归入 4球档。
+  {
+    const odds3 = {
+      goals: [9.5, 4.1, 4.3, 5.2, 9.0, 19, 41, 15],
+      scores: {
+        '0:0': 9.5, '1:0': 6.4, '0:1': 10.5, '1:1': 6.8, '2:0': 9.0, '0:2': 13.0,
+        '3:0': 17.0, '2:1': 7.0, '1:2': 11.0, '0:3': 55.0, '3:1': 12.0
+      }
+    };
+    const d3 = JC.goalDiffs(odds3);
+    const g3s = d3.groups[3].scores.map(s => s.score).sort();
+    ok('3球包含全部四个比分（0:3/1:2/2:1/3:0）', g3s.join(',') === '0:3,1:2,2:1,3:0', 'got=' + g3s.join(','));
+    const expOpt3 = 1 / (1 / 17 + 1 / 7 + 1 / 11 + 1 / 55);
+    ok('3球优化赔率A = 四比分倒数和的倒数', near(d3.groups[3].optA, Math.round(expOpt3 * 1000) / 1000, 0.002),
+      'optA=' + d3.groups[3].optA + ' expect≈' + Math.round(expOpt3 * 1000) / 1000);
+    ok('3:1（总4球）归入 4球档而非 3球', d3.groups[4].scores.some(s => s.score === '3:1') && !g3s.includes('3:1'));
+  }
 }
 
 console.log('== 自修正模型（排名×进球数 命中率表）==');
