@@ -681,7 +681,7 @@
    "away": "纽卡斯尔",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": false,
+   "isSingleWin": true,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1208,5 +1208,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-11T11:00:03+08:00"
+ "updatedAt": "2026-10-11T12:00:02+08:00"
 }
