@@ -279,6 +279,8 @@ scripts/
   register-tasks.ps1     注册/删除 Windows 计划任务（单任务「竞彩进球数-整点抓取」）
   sync-to-nas.ps1        同步代码到 NAS 项目目录（同一局域网；不覆盖 NAS 数据与配置，只合并时间表）
   make-nas-update.ps1    生成 NAS更新包.zip（与 NAS 不在同一网络时，经飞牛远程访问上传解压）
+  diag-analyze.js        诊断：基线/冻结/v3/当前引擎 四路预测对比（只读）
+  diag-fit.js            诊断：0球拟合负值处理对比（只读）
   setup.ps1              一键部署
   test-core.js           核心逻辑自检（node scripts/test-core.js）
 userscript/
@@ -291,6 +293,7 @@ docker-compose.yml      Docker 部署配置（飞牛 NAS / 任意 Docker 环境�
 制作NAS更新包.cmd        生成 NAS更新包.zip（与 NAS 不在同一网络时：远程访问上传→解压覆盖）
 NAS部署指南.md          飞牛NAS 详细部署指引（逐字段说明 + 容器启动失败排查表）
 config.json              autoPush / 回填窗口 / 定时时间 / 模型参数 / 编号追踪 / NAS 口令
+交接文档.md              给接手项目的 AI Agent 的交接文档（约定/雷区/recipes/当前状态）
 logs/daily.log           计划任务运行日志
 ```
 

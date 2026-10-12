@@ -43,7 +43,7 @@ robocopy (Join-Path $Root "docs") (Join-Path $NasPath "docs") /E /XD (Join-Path 
 foreach ($d in @("scripts", "nas", "userscript")) {
     robocopy (Join-Path $Root $d) (Join-Path $NasPath $d) /E /NFL /NDL /NJH /NJS /NP | Out-Null
 }
-foreach ($f in @("package.json", "package-lock.json", "docker-compose.yml", "README.md", "NAS部署指南.md", "手动执行.cmd", "一键安装.cmd", "环境自检.cmd")) {
+foreach ($f in @("package.json", "package-lock.json", "docker-compose.yml", "README.md", "NAS部署指南.md", "交接文档.md", "手动执行.cmd", "一键安装.cmd", "环境自检.cmd")) {
     $src = Join-Path $Root $f
     if (Test-Path $src) { Copy-Item $src (Join-Path $NasPath $f) -Force }
 }

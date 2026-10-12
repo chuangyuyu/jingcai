@@ -29,7 +29,7 @@ foreach ($f in @("history.json", "numbers.json")) {
 foreach ($d in @("scripts", "nas")) {
     robocopy (Join-Path $Root $d) (Join-Path $stage $d) /E /NFL /NDL /NJH /NJS /NP | Out-Null
 }
-foreach ($f in @("package.json", "docker-compose.yml", "README.md")) {
+foreach ($f in @("package.json", "docker-compose.yml", "README.md", "交接文档.md")) {
     $src = Join-Path $Root $f
     if (Test-Path $src) { Copy-Item $src (Join-Path $stage $f) -Force }
 }
