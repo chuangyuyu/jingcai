@@ -34,7 +34,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '4.2.0';
+  var VERSION = '4.3.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -281,6 +281,24 @@
     return coef[0]; // x=0 处
   }
 
+  // 负差值的稳健化（用于 0 球拟合）：负值 = 该档总进球赔率低于其多选合成赔率——
+  // 属于"被牺牲"的档位（平衡挪到了其他档；6/7+球还叠加比分池结构性缺格：
+  // 6:0/0:6 等在「胜其他/负其他」里且与≥7球混合）。直接进拟合会拉偏曲线；
+  // 用"前后最近非负值的平均"替代（无邻居则取 0），保持趋势形状。
+  // 注意：仅用于拟合；展示 / 排名因子用的原始差值保持不变。
+  function stabilizeNeg(vals) {
+    var out = vals.slice();
+    for (var i = 0; i < out.length; i++) {
+      var v = out[i];
+      if (v == null || v >= 0) continue;
+      var l = null, r = null;
+      for (var j = i - 1; j >= 0; j--) if (vals[j] != null && vals[j] >= 0) { l = vals[j]; break; }
+      for (var k = i + 1; k < vals.length; k++) if (vals[k] != null && vals[k] >= 0) { r = vals[k]; break; }
+      out[i] = (l != null && r != null) ? (l + r) / 2 : (l != null ? l : (r != null ? r : 0));
+    }
+    return out;
+  }
+
   // 由一次赔率快照计算全部进球数的差值（两种口径）+ 0球拟合值 + 基线预测
   // 关键口径：竞彩比分矩阵只覆盖到 5:2 / 2:5（总进球≥7 仅这两个格子），
   //   真正的 7+ 比分（6:0、4:3、6:1…）全部在「胜其他/平其他/负其他」三档里，
@@ -288,7 +306,6 @@
   function goalDiffs(odds) {
     if (!odds || !odds.goals || !odds.scores) return null;
     var groups = [];
-    var xsA = [], ysA = [], xsB = [], ysB = [];
     for (var g = 0; g <= 7; g++) {
       var ttg = odds.goals[g] != null ? odds.goals[g] : null;
       var list = [];
@@ -316,14 +333,27 @@
       var diffB = (avgB != null && ttg != null) ? round3(ttg - avgB) : null;
       var relA = (optA != null && ttg != null) ? Math.round((ttg / optA - 1) * 10000) / 10000 : null;
       var relB = (avgB != null && ttg != null) ? Math.round((ttg / avgB - 1) * 10000) / 10000 : null;
-      if (g >= 1) {
-        if (diffA != null) { xsA.push(g); ysA.push(Math.max(-5, Math.min(15, diffA))); }
-        if (diffB != null) { xsB.push(g); ysB.push(Math.max(-5, Math.min(15, diffB))); }
-      }
       groups.push({ g: g, label: bucketLabel(g), ttg: ttg, optA: optA, avgB: avgB, diffA: diffA, diffB: diffB, relA: relA, relB: relB, scores: list });
     }
-    var fit0A = fitValueAt0(xsA, ysA);
-    var fit0B = fitValueAt0(xsB, ysB);
+    // 0球拟合：用 g=1..5 的差值外推（负值先稳健化，且只在窗口内取邻居——
+    // 6/7+ 结构性缺格、结构不同，不能作为 1..5 的修复邻居）。
+    // 实测 100 场：只用 1..5 后 fit0 误当最小值的次数 9→1；1..5 有效点不足两点时退回全部档。
+    var rawA = [], rawB = [];
+    for (var g4 = 1; g4 <= 7; g4++) { rawA.push(groups[g4].diffA); rawB.push(groups[g4].diffB); }
+    var fitPts = function (raw) {
+      var seg = stabilizeNeg(raw.slice(0, 5));
+      var xs = [], ys = [], i, j;
+      for (i = 0; i < 5; i++) if (seg[i] != null) { xs.push(i + 1); ys.push(Math.max(-5, Math.min(15, seg[i]))); }
+      if (xs.length < 2) {
+        seg = stabilizeNeg(raw.slice(0, 7));
+        xs = []; ys = [];
+        for (j = 0; j < 7; j++) if (seg[j] != null) { xs.push(j + 1); ys.push(Math.max(-5, Math.min(15, seg[j]))); }
+      }
+      return { xs: xs, ys: ys };
+    };
+    var pA = fitPts(rawA), pB = fitPts(rawB);
+    var fit0A = fitValueAt0(pA.xs, pA.ys);
+    var fit0B = fitValueAt0(pB.xs, pB.ys);
     if (fit0A != null) groups[0].diffA = round3(fit0A);
     if (fit0B != null) groups[0].diffB = round3(fit0B);
     // 基线预测只用口径A：口径B的"平均赔率"随档位指数放大（多选个数的天然效应），
@@ -454,9 +484,9 @@
   //   { days: { 'YYYY-MM-DD': { matchId: [联赛, 主队, 客队, 主队进球, 客队进球] } } }
   // 严格防泄漏：预测某销售日 S 的比赛只用 日期 < S 的历史；权重评测同样逐场重建。
 
-  var FACTOR_PRIOR = { rank: 1, league: 0.05, team: 0.03, market: 0.12, trend: 0.05 };
+  var FACTOR_PRIOR = { rank: 1, relrank: 0.06, league: 0.05, team: 0.03, market: 0.12, trend: 0.05 };
   // 先验：证据不足时以排名因子为骨架；市场因子略高于其他（赔率信息先验可信度较高）；
-  // 联赛/球队/趋势≈休眠，必须用实盘表现证明自己。
+  // 排名B（口径B相对差值的排名表，即"模型B"信号）与联赛/球队/趋势≈休眠，必须用实盘表现证明自己。
   var K_LEAGUE = 20, K_TEAM = 6;  // 收缩强度：样本量远小于 K 时因子贴近全局（近乎休眠）
 
   // history 文档 → 比赛行（只取 beforeDate 之前，严格 < 防同日泄漏）
@@ -672,7 +702,10 @@
       var rows = slate ? allRows.filter(function (r) { return r.date < slate; }) : allRows;
       var samples = modelSamples(opts.matches, 'diffA', { windowDays: windowDays, endDate: slate });
       var rankModel = modelTrain(samples, { maxActualRank: maxRank });
-      var st = { slate: slate, rows: rows, tables: factorTables(rows), rankModel: rankModel, rankUsed: rankModel.used };
+      // 排名B：口径B（相对差值）的排名表——即"模型B"的信号，作为独立因子参与权重学习
+      var samplesB = modelSamples(opts.matches, 'relB', { windowDays: windowDays, endDate: slate });
+      var rankB = modelTrain(samplesB, { maxActualRank: maxRank });
+      var st = { slate: slate, rows: rows, tables: factorTables(rows), rankModel: rankModel, rankUsed: rankModel.used, rankB: rankB };
       memo[key] = st;
       return st;
     }
@@ -688,12 +721,14 @@
       var key = slate || '';
       if (wMemo[key]) return wMemo[key];
       var evalSamples = modelSamples(opts.matches, 'diffA', { windowDays: evalDays, endDate: slate });
+      var evalSamplesB = modelSamples(opts.matches, 'relB', { windowDays: evalDays, endDate: slate });
       if (evalSamples.length > evalMax) evalSamples = evalSamples.slice(evalSamples.length - evalMax);
-      var cnt = { base: 0, rank: 0, league: 0, team: 0, market: 0, trend: 0 };
-      var hit = { base: 0, rank: 0, league: 0, team: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
-      var ll = { base: 0, rank: 0, league: 0, team: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
+      if (evalSamplesB.length > evalMax) evalSamplesB = evalSamplesB.slice(evalSamplesB.length - evalMax);
+      var cnt = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };
+      var hit = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
+      var ll = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
       var n = 0;
-      evalSamples.forEach(function (sm) {
+      evalSamples.forEach(function (sm, i) {
         var est = stateFor(sm.date); // 严格用该场之前的数据重建（防泄漏）
         n++;
         var take = function (f, P) {
@@ -704,6 +739,7 @@
         };
         take('base', distOf(est.tables.global));
         take('rank', rankDist(est.rankModel, sm.diffs));
+        take('relrank', i < evalSamplesB.length ? rankDist(est.rankB, evalSamplesB[i].diffs) : null);
         if (est.tables.n) {
           take('league', leagueDist(est.tables, sm.league));
           var TD = teamDist(est.tables, sm.home, sm.away);
@@ -721,29 +757,31 @@
         return Math.max(0, Math.min(1, (m - baseLL - 0.01) / 0.12));
       };
       var wR = (1 - conf) * FACTOR_PRIOR.rank + conf * (0.12 + 0.88 * skill('rank'));
+      var wRB = (1 - conf) * FACTOR_PRIOR.relrank + conf * (0.02 + 1.00 * skill('relrank'));
       var wL = (1 - conf) * FACTOR_PRIOR.league + conf * (0.02 + 1.20 * skill('league'));
       var wT = (1 - conf) * FACTOR_PRIOR.team + conf * (0.02 + 0.90 * skill('team'));
       var wM = (1 - conf) * FACTOR_PRIOR.market + conf * (0.02 + 1.20 * skill('market'));
       var wTr = (1 - conf) * FACTOR_PRIOR.trend + conf * (0.02 + 1.00 * skill('trend'));
-      var wsum = wR + wL + wT + wM + wTr || 1;
+      var wsum = wR + wRB + wL + wT + wM + wTr || 1;
       var r2 = function (v) { return v == null ? null : Math.round(v * 100) / 100; };
       var rateOf = function (f) { return cnt[f] ? hit[f] / cnt[f] : null; };
       var out = {
-        rank: wR / wsum, league: wL / wsum, team: wT / wsum, market: wM / wsum, trend: wTr / wsum,
+        rank: wR / wsum, relrank: wRB / wsum, league: wL / wsum, team: wT / wsum, market: wM / wsum, trend: wTr / wsum,
         eval: {
           n: n, base: r2(rateOf('base')),
-          rank: r2(rateOf('rank')), league: r2(rateOf('league')), team: r2(rateOf('team')),
+          rank: r2(rateOf('rank')), relrank: r2(rateOf('relrank')), league: r2(rateOf('league')), team: r2(rateOf('team')),
           market: r2(rateOf('market')), trend: r2(rateOf('trend')),
-          marketN: cnt.market, trendN: cnt.trend, conf: r2(conf)
+          marketN: cnt.market, trendN: cnt.trend, relN: cnt.relrank, conf: r2(conf)
         }
       };
       wMemo[key] = out;
       return out;
     }
 
-    // 对一场比赛预测（5 因子加权对数池）。
-    // match: { businessDate, league, home, away }；diffs: 8 档差值数组；
-    // extra: { ttg: 总进球赔率数组, captures: 快照数组 }（缺省时市场/趋势因子不参与）
+    // 对一场比赛预测（6 因子加权对数池）。
+    // match: { businessDate, league, home, away }；diffs: 8 档差值数组（口径A）；
+    // extra: { ttg: 总进球赔率数组, captures: 快照数组, rel: 口径B相对差值数组 }
+    //        （缺省时对应因子不参与）
     function predictFor(match, diffs, extra) {
       if (!match || !diffs) return null;
       var slate = match.businessDate || match.matchDate || null;
@@ -751,6 +789,8 @@
       var ws = weightsFor(slate);
       var PR = rankDist(st.rankModel, diffs);
       if (!PR) return null;
+      var rel = extra && extra.rel ? extra.rel : null;
+      var PRB = rel ? rankDist(st.rankB, rel) : null;
       var PL = st.tables.n ? leagueDist(st.tables, match.league || '') : null;
       var TD = teamDist(st.tables, match.home || '', match.away || '');
       var PT = TD ? TD.dist : null;
@@ -760,11 +800,12 @@
       var addF = function (P, w) {
         if (!P || !(w > 0)) return;
         for (var g2 = 0; g2 <= 7; g2++) {
-          var v = P[g2] == null ? 1e-6 : P[g2];
+          var v = P[g2];
+          if (v == null) continue;   // 该因子对此档无定义则不投票（不拉黑）
           logS[g2] += w * Math.log(v + 1e-9);
         }
       };
-      addF(PR, ws.rank); addF(PL, ws.league); addF(PT, ws.team); addF(PM, ws.market); addF(PTr, ws.trend);
+      addF(PR, ws.rank); addF(PRB, ws.relrank); addF(PL, ws.league); addF(PT, ws.team); addF(PM, ws.market); addF(PTr, ws.trend);
       var best = null, bv = -Infinity;
       for (g = 0; g <= 7; g++) {
         if (diffs[g] == null) continue; // 与基线口径一致：只考虑有差值的档
@@ -772,16 +813,15 @@
       }
       if (best == null) return null;
       var r2 = function (v) { return Math.round(v * 100) / 100; };
-      var rr = function (v) { return v == null ? null : r2(v); };
       return {
         goal: best,
         info: {
-          w: [r2(ws.rank), r2(ws.league), r2(ws.team), r2(ws.market), r2(ws.trend)],
+          w: [r2(ws.rank), r2(ws.relrank), r2(ws.league), r2(ws.team), r2(ws.market), r2(ws.trend)],
           evalN: ws.eval.n, evalHit: ws.eval,
           histN: st.tables.n, rankN: st.rankUsed,
           leagueN: (match.league && st.tables.leagues[match.league]) ? st.tables.leagues[match.league].n : 0,
           lh: TD ? TD.lh : null, la: TD ? TD.la : null,
-          hasTrend: !!PTr, hasMarket: !!PM
+          hasTrend: !!PTr, hasMarket: !!PM, hasRel: !!PRB
         }
       };
     }
@@ -948,7 +988,7 @@
     var samplesB = modelSamples(allMatches, 'relB', { windowDays: windowDays, endDate: slate });
     var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
     var engine = opts.engine || factorEngine({ matches: allMatches, history: opts.history, model: opts.model });
-    var fp = engine.predictFor(match, diffsA, { ttg: cap.odds.goals, captures: match.captures });
+    var fp = engine.predictFor(match, diffsA, { ttg: cap.odds.goals, captures: match.captures, rel: diffsB });
     return {
       baseA: d.predBaseA, modelA: fp ? fp.goal : d.predBaseA,
       baseB: null, modelB: modelPredict(modelB, diffsB, null),
@@ -1134,6 +1174,27 @@
     return { stake: stake, tracks: tracks, summaryDaily: summaryDaily, details: details };
   }
 
+  // ---------------------------------------------------------------- 投注单（结构化复制）
+
+  // 生成"投注单"文本（可整段复制发给店主）：玩法 = 总进球数；
+  // rows: 要投注的场次行（flatRows 行）；opts.track = 'modelA'（默认）| 'baseA'。
+  function betSlipText(rows, opts) {
+    opts = opts || {};
+    var track = opts.track === 'baseA' ? 'baseA' : 'modelA';
+    var lines = [], dates = {}, n = 0;
+    (rows || []).forEach(function (r) {
+      var g = track === 'baseA' ? r.predBaseA : r.predA;
+      if (g == null) return;
+      n++;
+      dates[r.date] = true;
+      lines.push(n + '. ' + (r.matchNumStr || '') + ' ' + (r.home || '') + ' vs ' + (r.away || '') + ' —— 总进球 ' + bucketLabel(g));
+    });
+    var dlist = Object.keys(dates).sort();
+    var head = '竞彩足球 · 总进球数 投注单（' + (dlist.length ? dlist.join(' / ') : localDateStr()) + '）' + (track === 'baseA' ? '【基线A】' : '【模型A】');
+    if (!n) return head + '\n（没有可投注的场次：请先勾选未开赛的比赛）';
+    return head + '\n' + lines.join('\n') + '\n共 ' + n + ' 场（未开赛方可投注，以出票机为准）';
+  }
+
   // ---------------------------------------------------------------- 编号追踪（保持）
 
   var DEFAULT_NUM_BUCKETS = [
@@ -1258,9 +1319,11 @@
     factorTables: factorTables,
     marketDist: marketDist,
     trendDist: trendDist,
+    stabilizeNeg: stabilizeNeg,
     historyRows: historyRows,
     historyDayFromResults: historyDayFromResults,
     historyStats: historyStats,
+    betSlipText: betSlipText,
     goalsFromScore: goalsFromScore,
     bucketOfGoals: bucketOfGoals,
     bucketLabel: bucketLabel,

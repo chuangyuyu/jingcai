@@ -162,12 +162,12 @@ function addModelSheet(wb, rows, config, factorWeights) {
     const w = factorWeights;
     const pw = v => (v == null ? '—' : Math.round(v * 100) + '%');
     ws.addRow(['多因子修正（模型A = 排名⊕联赛⊕球队 加权融合）']).font = { bold: true, size: 12 };
-    ws.addRow(['当前因子权重（滚动自学习）', '排名 ' + pw(w.rank) + ' · 联赛 ' + pw(w.league) + ' · 球队 ' + pw(w.team) + ' · 市场 ' + pw(w.market) + ' · 趋势 ' + pw(w.trend)]);
+    ws.addRow(['当前因子权重（滚动自学习）', '排名A ' + pw(w.rank) + ' · 排名B ' + pw(w.relrank) + ' · 联赛 ' + pw(w.league) + ' · 球队 ' + pw(w.team) + ' · 市场 ' + pw(w.market) + ' · 趋势 ' + pw(w.trend)]);
     if (w.eval.n) {
-      ws.addRow(['权重评测样本', w.eval.n + ' 场（各自单独命中率：排名 ' + pw(w.eval.rank) + ' · 联赛 ' + pw(w.eval.league) +
+      ws.addRow(['权重评测样本', w.eval.n + ' 场（各自单独命中率：排名A ' + pw(w.eval.rank) + ' · 排名B ' + pw(w.eval.relrank) + ' · 联赛 ' + pw(w.eval.league) +
         ' · 球队 ' + pw(w.eval.team) + ' · 市场 ' + pw(w.eval.market) + ' · 趋势 ' + pw(w.eval.trend) + ' · 基础 ' + pw(w.eval.base) + '）']);
     }
-    ws.addRow(['说明：因子对真实结果的"信息量"（对数似然）需超过基础分布才获得权重（0.12 纳特封顶），达不到的自动休眠、权重≈0；市场因子=总进球赔率隐含分布（赔率已含伤停/战意等公开信息），趋势因子=快照间差值变化的 softmax 内嵌函数。']).font = { color: { argb: COLOR_MUTED } };
+    ws.addRow(['说明：因子对真实结果的"信息量"（对数似然）需超过基础分布才获得权重（0.12 纳特封顶），达不到的自动休眠、权重≈0；排名B=口径B相对差值的排名表（原"模型B"信号），市场因子=总进球赔率隐含分布，趋势因子=快照间差值变化的 softmax 内嵌函数。']).font = { color: { argb: COLOR_MUTED } };
     ws.addRow([]);
   }
 
@@ -287,14 +287,14 @@ function addHelpSheet(wb, config) {
     '    差值A = 总进球G赔率 − 优化赔率A；差值B = 总进球G赔率 − 平均赔率B',
     '    相对差值 = 总进球G赔率 ÷ 优化(平均)赔率 − 1（百分比，仅记录参考）',
     '  · 0球只有 0:0 一个比分，无法优化/平均 → 无差值；',
-    '    0球的差值由"全进球数二次曲线拟合"给出（用 g=1..7 的真实差值外推，不按 0 硬填）。',
+    '    0球的差值由 1~5 球差值曲线拟合外推（负值先做"被牺牲档"稳健化；6/7+ 球结构性缺格不参与）。',
     '',
     '【预测双轨】',
     '  基线：预测 = 差值最小的进球数（0球用拟合值参与比较）',
-    '  自修正模型（v4 多因子）：模型A = 排名因子 ⊕ 联赛因子 ⊕ 球队因子 ⊕ 市场因子 ⊕ 趋势因子，',
+    '  自修正模型（v4 多因子）：模型A = 排名A因子 ⊕ 排名B因子 ⊕ 联赛因子 ⊕ 球队因子 ⊕ 市场因子 ⊕ 趋势因子，',
     '    按各自近期实盘表现自学习权重做加权对数池融合，取综合最高的进球数；',
-    '    · 排名因子：按"差值排名 × 进球数"统计近 ' + (modelCfg.windowDays || 30) + ' 天历史命中率；',
-    '      稳健性：赛果排名 ≥ ' + (modelCfg.maxActualRank || 6) + ' 的深冷门场次不纳入学习（防爆冷破坏函数）。',
+    '    · 排名A因子：口径A差值排名 × 进球数 命中率（近 ' + (modelCfg.windowDays || 30) + ' 天，爆冷剔除）；',
+    '    · 排名B因子：口径B相对差值的排名表（即原"模型B"信号，并入模型A参与权重学习）；',
     '    · 联赛因子：该联赛历史进球分布（贝叶斯收缩到全局分布，样本少时≈全局→自动休眠）；',
     '    · 球队因子：两队主/客场攻防强度（主队用主场数据、客队用客场数据，收缩到对应基准）→ 泊松合成；',
     '    · 市场因子：总进球赔率隐含的进球分布（赔率本身已包含伤停/战意等一切公开信息）；',
@@ -401,7 +401,7 @@ async function generateExcel() {
     const dA = (r.diffs.groups || []).map(g => g.diffA);
     const dB = (r.diffs.groups || []).map(g => g.relB);
     const fp = engine.predictFor({ businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away }, dA,
-      { ttg: (r.diffs.groups || []).map(g => g.ttg), captures: r.caps });
+      { ttg: (r.diffs.groups || []).map(g => g.ttg), captures: r.caps, rel: dB });
     r.predALive = fp ? fp.goal : r.predBaseA;
     r.predBLive = JC.modelPredict(liveB, dB, null);
     r.oddsALive = oddsOfRow(r, r.predALive);

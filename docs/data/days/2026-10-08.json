@@ -145,16 +145,17 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 4,
-    "fit0A": 1.038,
-    "fit0B": -5,
-    "windowA": 22,
+    "fit0A": 1.578,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -162,24 +163,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 119,
      "lh": 1.59,
      "la": 0.93,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -326,16 +330,17 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 1.239,
-    "fit0B": -5,
-    "windowA": 22,
+    "fit0A": 0.998,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -343,24 +348,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 56,
      "lh": 0.79,
      "la": 1.38,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -507,16 +515,17 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 2.932,
-    "fit0B": -4.389,
-    "windowA": 22,
+    "fit0A": 1.944,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -524,24 +533,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 56,
      "lh": 1.73,
      "la": 0.95,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -685,19 +697,20 @@
    },
    "pred": {
     "baseA": 2,
-    "modelA": 4,
+    "modelA": 3,
     "baseB": null,
     "modelB": 4,
-    "fit0A": 2.981,
-    "fit0B": -5,
-    "windowA": 22,
+    "fit0A": 1.903,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -705,24 +718,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 56,
      "lh": 1.56,
      "la": 1.09,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -869,16 +885,17 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 4,
-    "fit0A": 2.728,
-    "fit0B": -5,
-    "windowA": 22,
+    "fit0A": 1.233,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -886,24 +903,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 56,
      "lh": 1.49,
      "la": 0.81,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1050,16 +1070,17 @@
     "modelA": 2,
     "baseB": null,
     "modelB": 4,
-    "fit0A": 2.213,
-    "fit0B": -5,
-    "windowA": 22,
+    "fit0A": 0.576,
+    "fit0B": 0,
+    "windowA": 23,
     "windowB": 17,
     "factors": {
      "w": [
-      0.7,
-      0.15,
+      0.66,
+      0.04,
+      0.14,
       0.03,
-      0.09,
+      0.08,
       0.04
      ],
      "evalN": 25,
@@ -1067,24 +1088,27 @@
       "n": 25,
       "base": 0.28,
       "rank": 0.2,
+      "relrank": 0.38,
       "league": 0.28,
       "team": 0.16,
       "market": 0.2,
       "trend": 0,
       "marketN": 25,
       "trendN": 5,
+      "relN": 21,
       "conf": 0.38
      },
      "histN": 5455,
-     "rankN": 22,
+     "rankN": 23,
      "leagueN": 119,
      "lh": 1.35,
      "la": 1.32,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-09T13:11:14+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   }
  ],

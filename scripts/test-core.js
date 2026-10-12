@@ -311,7 +311,7 @@ console.log('== 多因子修正模型（v4）==');
   const pSmall = engine.predictFor({ businessDate: '2026-02-20', league: '小球联', home: '守强队z', away: '守强队y' }, diffsFlat);
   ok('联赛因子生效：大球联 → 高进球档', pBig && pBig.goal >= 5, 'goal=' + (pBig && pBig.goal));
   ok('联赛因子生效：小球联 → 低进球档', pSmall && pSmall.goal <= 2, 'goal=' + (pSmall && pSmall.goal));
-  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 5 && pBig.info.histN === 80);
+  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 6 && pBig.info.histN === 80);
   ok('球队因子期望进球：攻强队高于未知客队', pBig && pBig.info.lh != null && pBig.info.la != null && pBig.info.lh > pBig.info.la);
 
   // 市场因子：赔率隐含分布（低赔率档=市场峰值）
@@ -331,6 +331,49 @@ console.log('== 多因子修正模型（v4）==');
     'td=' + JSON.stringify(td));
   ok('趋势因子：单快照不参与（null）', JC.trendDist([{ at: 'T1', odds: mkTOdds(5.2) }]) === null && JC.trendDist(null) === null);
 
+  // 负值稳健化（0球拟合用）：负值被替换为前后最近非负值的平均
+  const sn = JC.stabilizeNeg([0.5, -0.3, 1.0, -0.2, 2.0, 3.0, -0.4]);
+  ok('stabilizeNeg：邻居平均替换', near(sn[1], 0.75) && near(sn[3], 1.5) && near(sn[6], 3.0) && sn[0] === 0.5);
+  ok('stabilizeNeg：无负值时原样返回', JSON.stringify(JC.stabilizeNeg([1, 2, null, 3])) === JSON.stringify([1, 2, null, 3]));
+
+  // 0球拟合只用 g=1..5（6/7+ 结构性缺格，距离远易带偏）：拟合值应与"仅用 1..5 手算"一致
+  {
+    const oddsFit = {
+      goals: [10, 5, 4.0, 6.0, 9.0, 20, 30, 45],
+      scores: { '0:0': 10, '1:0': 6, '0:1': 11, '1:1': 7, '2:0': 9, '0:2': 14, '2:1': 8.5, '1:2': 12, '3:1': 18, '2:2': 15, '4:1': 40, '2:3': 30, '5:2': 200, '2:5': 250 },
+      other: { win: 60, draw: 300, lose: 400 }
+    };
+    const df = JC.goalDiffs(oddsFit);
+    const gs = df.groups;
+    const xs = [], ys = [];
+    for (let g = 1; g <= 5; g++) { if (gs[g].diffA != null) { xs.push(g); ys.push(Math.max(-5, Math.min(15, gs[g].diffA))); } }
+    const expFit = JC.fitValueAt0(xs, ys);
+    ok('0球拟合仅用 g=1..5', near(gs[0].diffA, Math.round(expFit * 1000) / 1000, 0.002), 'fit0=' + gs[0].diffA + ' exp=' + expFit);
+    // 若把 g7（+13.25）也算进拟合，fit0 会被明显带偏 —— 验证确实没有用它
+    const xsAll = xs.slice(), ysAll = ys.slice();
+    for (let g = 6; g <= 7; g++) { if (gs[g].diffA != null) { xsAll.push(g); ysAll.push(Math.max(-5, Math.min(15, gs[g].diffA))); } }
+    const fitAll = JC.fitValueAt0(xsAll, ysAll);
+    ok('0球拟合不受 6/7+ 档影响', fitAll != null && Math.abs(gs[0].diffA - Math.round(fitAll * 1000) / 1000) > 0.05,
+      'fit0=' + gs[0].diffA + ' fitAll=' + fitAll);
+  }
+
+  // 投注单文本（结构化复制）
+  {
+    const mkR = (date, numStr, home, away, predA, predBaseA) => ({ date, matchNumStr: numStr, home, away, predA, predBaseA });
+    const slipRows = [
+      mkR('2026-10-12', '周一001', '首尔', '蔚山', 2, 3),
+      mkR('2026-10-12', '周一002', '川崎', '横滨', null, 1),
+      mkR('2026-10-13', '周二003', '曼城', '利物浦', 7, 2)
+    ];
+    const s1 = JC.betSlipText(slipRows, { track: 'modelA' });
+    ok('投注单：模型A轨道（跳过无预测，含日期与场次）', s1.indexOf('周一001 首尔 vs 蔚山 —— 总进球 2球') > 0 &&
+      s1.indexOf('周二003 曼城 vs 利物浦 —— 总进球 7+球') > 0 && s1.indexOf('川崎') < 0 &&
+      s1.indexOf('2026-10-12 / 2026-10-13') > 0 && s1.indexOf('共 2 场') > 0);
+    const s2 = JC.betSlipText(slipRows, { track: 'baseA' });
+    ok('投注单：基线A轨道', s2.indexOf('【基线A】') > 0 && s2.indexOf('总进球 3球') > 0 && s2.indexOf('总进球 1球') > 0);
+    ok('投注单：空列表提示', JC.betSlipText([], {}).indexOf('没有可投注的场次') > 0);
+  }
+
   // 权重自学习：实盘样本与"实盘大球联"一致（恒 3:2），排名因子全平 → 联赛权重应超过排名权重
   const capOdds = { goals: [2, 2, 2, 2, 2, 2, 2, 2], scores: { '1:0': 5, '0:1': 6 }, other: { win: 15, draw: 21, lose: 25 } };
   const liveMatches = [];
@@ -348,10 +391,10 @@ console.log('== 多因子修正模型（v4）==');
   const eng2 = JC.factorEngine({ matches: liveMatches, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
   const w = eng2.weightsFor('2026-03-15');
   ok('权重评测：样本数 > 0', w.eval.n > 0, 'n=' + w.eval.n);
-  ok('权重集合完整（5 因子）', w.rank != null && w.league != null && w.team != null && w.market != null && w.trend != null);
+  ok('权重集合完整（6 因子）', w.rank != null && w.relrank != null && w.league != null && w.team != null && w.market != null && w.trend != null);
   ok('联赛因子单独命中率高（与实盘一致）', w.eval.league != null && w.eval.league >= 0.7, 'league=' + w.eval.league);
   ok('权重自学习：联赛权重 > 排名权重（排名因子无效时自动让位）', w.league > w.rank,
-    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));
+    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, rb: Math.round(w.relrank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));
 
   // 严格防泄漏：给"未来日期"加极端历史，不应影响之前的预测
   const hist2 = JSON.parse(JSON.stringify(histBase));

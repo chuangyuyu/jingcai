@@ -145,41 +145,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.302,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.02,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 385,
      "lh": 0.96,
      "la": 1.45,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -323,44 +327,48 @@
    },
    "pred": {
     "baseA": 6,
-    "modelA": 1,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 2.097,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.414,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 397,
      "lh": 1.91,
      "la": 0.89,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -504,44 +512,48 @@
    },
    "pred": {
     "baseA": 4,
-    "modelA": 1,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 3.821,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 2.849,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 190,
      "lh": 2.84,
      "la": 0.83,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -688,41 +700,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.878,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.309,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 138,
      "lh": 1.51,
      "la": 1.76,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -869,41 +885,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 4.471,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 2.375,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 385,
      "lh": 0.93,
      "la": 1.2,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1050,41 +1070,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.536,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.504,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 233,
      "lh": 1.95,
      "la": 1.51,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1231,41 +1255,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -1.055,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.031,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 397,
      "lh": 1.95,
      "la": 1.13,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1412,41 +1440,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 2.274,
-    "fit0B": -2.879,
-    "windowA": 60,
+    "fit0A": 2.676,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 61,
      "lh": 1.38,
      "la": 1.22,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1593,41 +1625,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.756,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 0.791,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 109,
      "lh": 1.59,
      "la": 1.38,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1774,41 +1810,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 2.325,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 2.52,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 161,
      "lh": 1.14,
      "la": 0.89,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T13:00:04+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -1951,45 +1991,49 @@
     "at": "2026-10-12T10:00:04+08:00"
    },
    "pred": {
-    "baseA": 0,
-    "modelA": 2,
+    "baseA": 7,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -1.638,
-    "fit0B": -3.971,
-    "windowA": 60,
+    "fit0A": 1.132,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 53,
      "lh": 1.66,
      "la": 1.32,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T14:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -2136,41 +2180,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.867,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.142,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 156,
      "lh": 2.31,
      "la": 1.37,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T15:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -2317,41 +2365,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 1.924,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.971,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 203,
      "lh": 1.39,
      "la": 1.81,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T19:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -2498,41 +2550,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.151,
-    "fit0B": -4.357,
-    "windowA": 60,
+    "fit0A": 1.736,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 385,
      "lh": 1.23,
      "la": 1,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T19:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -2676,44 +2732,48 @@
    },
    "pred": {
     "baseA": 6,
-    "modelA": 2,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.813,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.951,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 264,
      "lh": 2.02,
      "la": 0.57,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T19:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -2860,41 +2920,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -0.052,
-    "fit0B": -3.039,
-    "windowA": 60,
+    "fit0A": 1.413,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 397,
      "lh": 1.15,
      "la": 1.24,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T20:00:05+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3038,44 +3102,48 @@
    },
    "pred": {
     "baseA": 7,
-    "modelA": 1,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -2.631,
-    "fit0B": -3.071,
-    "windowA": 60,
+    "fit0A": 1.115,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 121,
      "lh": 0.83,
      "la": 0.93,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T20:00:05+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3222,41 +3290,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.566,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.222,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 203,
      "lh": 1.14,
      "la": 1.51,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3403,41 +3475,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -0.607,
-    "fit0B": -3.907,
-    "windowA": 60,
+    "fit0A": 1.12,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 138,
      "lh": 1.43,
      "la": 1.62,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3580,45 +3656,49 @@
     "at": "2026-10-12T10:00:04+08:00"
    },
    "pred": {
-    "baseA": 0,
+    "baseA": 2,
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -0.123,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 0.966,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 360,
      "lh": 0.98,
      "la": 1.08,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3761,45 +3841,49 @@
     "at": "2026-10-12T10:00:04+08:00"
    },
    "pred": {
-    "baseA": 0,
+    "baseA": 2,
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.117,
-    "fit0B": -3.907,
-    "windowA": 60,
+    "fit0A": 0.84,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 360,
      "lh": 1.34,
      "la": 1.42,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -3946,41 +4030,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 1.016,
-    "fit0B": -4.454,
-    "windowA": 60,
+    "fit0A": 2.371,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 385,
      "lh": 1.45,
      "la": 1.24,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -4124,44 +4212,48 @@
    },
    "pred": {
     "baseA": 6,
-    "modelA": 1,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -0.784,
-    "fit0B": -3.714,
-    "windowA": 60,
+    "fit0A": 0.789,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 385,
      "lh": 0.92,
      "la": 1.46,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -4308,41 +4400,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.312,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.428,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 233,
      "lh": 1.57,
      "la": 1.7,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T21:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -4489,41 +4585,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.582,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.152,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 310,
      "lh": 1.86,
      "la": 1.54,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T22:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -4667,44 +4767,48 @@
    },
    "pred": {
     "baseA": 6,
-    "modelA": 1,
+    "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 1.578,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 1.614,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 397,
      "lh": 1.55,
      "la": 1.59,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-11T23:00:04+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -4851,41 +4955,45 @@
     "modelA": 3,
     "baseB": null,
     "modelB": 3,
-    "fit0A": 0.384,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 0.31,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 360,
      "lh": 1.29,
      "la": 1.55,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   },
   {
@@ -5029,44 +5137,48 @@
    },
    "pred": {
     "baseA": 7,
-    "modelA": 3,
+    "modelA": 2,
     "baseB": null,
     "modelB": 3,
-    "fit0A": -0.229,
-    "fit0B": -5,
-    "windowA": 60,
+    "fit0A": 0.91,
+    "fit0B": 0,
+    "windowA": 61,
     "windowB": 47,
     "factors": {
      "w": [
-      0.69,
-      0.14,
+      0.65,
+      0.05,
+      0.13,
       0.04,
-      0.09,
+      0.08,
       0.05
      ],
      "evalN": 72,
      "evalHit": {
       "n": 72,
       "base": 0.28,
-      "rank": 0.21,
+      "rank": 0.19,
+      "relrank": 0.27,
       "league": 0.31,
       "team": 0.13,
       "market": 0.19,
-      "trend": 0,
+      "trend": 0.02,
       "marketN": 72,
       "trendN": 52,
+      "relN": 66,
       "conf": 0.64
      },
      "histN": 5502,
-     "rankN": 60,
+     "rankN": 61,
      "leagueN": 310,
      "lh": 2.06,
      "la": 1.14,
      "hasTrend": true,
-     "hasMarket": true
+     "hasMarket": true,
+     "hasRel": true
     },
-    "ver": "4.2.0",
-    "at": "2026-10-12T08:00:03+08:00"
+    "ver": "4.3.0",
+    "at": "2026-10-12T22:19:26+08:00"
    }
   }
  ],

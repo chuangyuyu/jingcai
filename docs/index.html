@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>竞彩进球数差值分析与预测</title>
 <meta name="description" content="竞彩足球：各进球数（0~7+球）赔率与比分优化赔率的差值分析，双轨预测每场比赛的总进球数（个人数据分析工具）">
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -165,9 +165,10 @@
         · <b>口径A（多选优化保底）</b>：优化赔率 = 1 ÷ Σ(1/该进球数每个比分的赔率)——把 1 元按赔率倒数比例拆注押该进球数的所有比分，无论哪个比分命中，保底回报就是优化赔率（1球时即 6.40×10.50÷(6.40+10.50) 这类公式）；差值A = 总进球赔率 − 优化赔率。<br>
         · <b>口径B（简单平均，仅记录对照）</b>：平均赔率 = 该进球数各比分赔率的算术平均；差值B = 总进球赔率 − 平均赔率。由于平均赔率随比分个数放大，B 的差值不可跨档比较，<b>不产出基线预测</b>，仅保留差值记录与"模型B"学习用于对照。<br>
         · <b>7+球口径</b>：竞彩比分矩阵只列到 5:2 / 2:5（总进球≥7 仅此两格），真正的 6:0、4:3、6:1 等都在「胜其他/平其他/负其他」三档里——7+球 = 矩阵≥7 的格子 ∪ 其他三档；缺其他档时不参与预测。</p>
-        <p><b>0球</b>只有 0:0 一个比分，无法优化/平均 → 没有差值；其差值由<b>全进球数二次曲线拟合</b>给出（用 1~7+球的真实差值外推，不按 0 硬填），在差值概览中以 <b>0*</b> 标注。</p>
-        <p><b>预测双轨</b>：<b>基线</b> = 差值最小的进球数（0球用拟合值参与比较）；<b>模型A（多因子·自修正）</b> = <b>排名因子</b>（近30天"差值排名 × 进球数"命中率，报冷场次不学习）⊕ <b>联赛因子</b>（联赛历史进球分布）⊕ <b>球队因子</b>（两队主/客场攻防强度泊松合成）⊕ <b>市场因子</b>（总进球赔率隐含分布）⊕ <b>趋势因子</b>（较早→最新快照的差值变化 softmax），按各因子近期实盘表现<b>自学习权重</b>加权融合——<b>因子信息量（对数似然）需超过基础分布才获得权重</b>，达不到的自动休眠、权重≈0。每场预测在封盘/结算时<b>冻结</b>（只用该场之前的数据，杜绝未来数据泄漏），双轨同场对比；模型B（相对差值口径）作为对照。</p>
-        <p><b>生效范围</b>：新功能需要快照携带完整比分矩阵——仅对升级后抓取的场次生效（旧快照只有1球数据，显示为空）。每天 11:00 / 17:00 定时抓取，赛果与预测随之自动更新。</p>
+        <p><b>0球</b>只有 0:0 一个比分，无法优化/平均 → 没有差值；其差值由<b>1~5 球差值曲线拟合</b>给出（负值先做"被牺牲档"稳健化；6/7+球因比分池结构性缺格、距离远，不参与拟合），在差值概览中以 <b>0*</b> 标注。</p>
+        <p><b>预测双轨</b>：<b>基线</b> = 差值最小的进球数（0球用拟合值参与比较）；<b>模型A（多因子·自修正）</b> = <b>排名A</b>（口径A差值排名×进球数命中率）⊕ <b>排名B</b>（口径B相对差值排名信号）⊕ <b>联赛</b>（联赛历史进球分布）⊕ <b>球队</b>（主/客场攻防强度泊松合成）⊕ <b>市场</b>（总进球赔率隐含分布）⊕ <b>趋势</b>（快照间差值变化 softmax），按各因子近期实盘表现<b>自学习权重</b>加权融合——<b>因子信息量（对数似然）需超过基础分布才获得权重</b>，达不到的自动休眠、权重≈0。每场预测在封盘/结算时<b>冻结</b>（只用该场之前的数据，杜绝未来数据泄漏），双轨同场对比；模型B（相对差值口径）作为对照。</p>
+        <p><b>投注单</b>：数据表页勾选未开赛的场次（支持"全选该日 / 全选筛选"），点"生成投注单"得到 场次编号 + 队伍 + 投注进球数 的结构化文本，一键复制发给店主。</p>
+        <p><b>生效范围</b>：新功能需要快照携带完整比分矩阵——仅对升级后抓取的场次生效（旧快照只有1球数据，显示为空）。每天 8:00~23:00 每小时整点抓取，赛果与预测随之自动更新。</p>
         <p>数据来自中国体育彩票官方接口。仅为个人数据分析用途，数据版权归中国体育彩票（sporttery.cn）所有，不构成投注建议，请理性购彩。</p>
       </div>
     </details>
@@ -186,10 +187,20 @@
       <label class="chk"><input type="checkbox" id="only-settled2"> 只看已出赛果</label>
       <label class="chk"><input type="checkbox" id="only-single2"> 只看单关</label>
     </div>
+    <div class="sel-bar">
+      <span class="muted">投注单：勾选场次（未开赛方可投注）→</span>
+      <select id="sel-date"></select>
+      <button id="btn-sel-day">全选该日</button>
+      <button id="btn-sel-all">全选筛选</button>
+      <button id="btn-sel-none">清空</button>
+      <span class="muted" id="sel-count">已选 0 场</span>
+      <button id="btn-slip" class="primary">生成投注单</button>
+    </div>
     <div class="card">
       <div class="table-scroll data-desktop">
         <table class="grid data-table" id="data-table">
           <thead><tr>
+            <th>选</th>
             <th data-sort="date">日期</th><th>编号</th><th>联赛</th><th>对阵</th><th data-sort="kickoff">开赛</th><th>单关</th>
             <th data-sort="actual">实际进球</th>
             <th>基线A</th><th>模型A</th><th>模型B</th>
@@ -226,11 +237,30 @@
   </form>
 </dialog>
 
+<!-- 投注单对话框 -->
+<dialog id="dlg-slip">
+  <form method="dialog" class="dlg">
+    <h2>投注单（总进球数）</h2>
+    <label>预测轨道
+      <select id="slip-track">
+        <option value="modelA">模型A（多因子自学习）</option>
+        <option value="baseA">基线A（差值最小项）</option>
+      </select>
+    </label>
+    <p class="muted small">结构：场次编号 + 队伍 + 投注进球数。整段复制发给店主即可；<b>未开赛</b>比赛才可投注。</p>
+    <textarea id="slip-text" class="slip-area" readonly></textarea>
+    <div class="dlg-actions">
+      <button value="cancel" class="ghost">关闭</button>
+      <button id="btn-slip-copy" type="button" class="primary">复制投注单</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="toast" hidden></div>
 <div id="tooltip" hidden></div>
 
 <script src="vendor/xlsx.full.min.js?v=1"></script>
-<script src="core.js?v=13"></script>
-<script src="app.js?v=14"></script>
+<script src="core.js?v=14"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

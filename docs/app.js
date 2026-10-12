@@ -26,7 +26,9 @@
     betStake: 100,
     _bet: null,
     busy: false,
-    nas: { enabled: false, runKeyRequired: false }
+    nas: { enabled: false, runKeyRequired: false },
+    sel: {},                 // 投注单勾选：matchId -> true
+    slipTrack: 'modelA'
   };
 
   var LS_SETTINGS = 'jc_settings_v1';
@@ -194,7 +196,7 @@
       r._fp = state.engine.predictFor(
         { businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away },
         groups.map(function (g) { return g.diffA; }),
-        { ttg: groups.map(function (g) { return g.ttg; }), captures: r.caps }
+        { ttg: groups.map(function (g) { return g.ttg; }), captures: r.caps, rel: groups.map(function (g) { return g.relB; }) }
       );
     });
   }
@@ -203,8 +205,95 @@
     if (!state.engine) return '';
     var w = state.engine.weightsFor(todayStr());
     var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
-    return '　｜　多因子权重（滚动自学习）：排名 ' + pct(w.rank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
-      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名 ' + pct(w.eval.rank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
+    return '　｜　多因子权重（滚动自学习）：排名A ' + pct(w.rank) + ' · 排名B ' + pct(w.relrank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名A ' + pct(w.eval.rank) + '/排名B ' + pct(w.eval.relrank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
+  }
+
+  // ---------------------------------------------------------------- 投注单（勾选场次 → 结构化复制）
+
+  // 可投注 = 有预测、未开赛、未取消
+  function isBettable(r) {
+    return r.matchId != null && r.actual == null && !r.cancelled && r.diffs &&
+      (r.predBaseA != null || r.predA != null) && !hasStarted(r);
+  }
+
+  function renderSelBar() {
+    var sel = $('#sel-date');
+    if (!sel) return;
+    var cur = sel.value;
+    var dates = {};
+    state.rows.forEach(function (r) { if (isBettable(r)) dates[r.date] = (dates[r.date] || 0) + 1; });
+    var ds = Object.keys(dates).sort();
+    sel.innerHTML = ds.map(function (d) { return '<option value="' + d + '">' + d + '（' + dates[d] + ' 场未开赛）</option>'; }).join('');
+    if (ds.indexOf(cur) >= 0) sel.value = cur;
+    updateSelCount();
+  }
+
+  function updateSelCount() {
+    var n = 0;
+    state.rows.forEach(function (r) { if (state.sel[r.matchId] && isBettable(r)) n++; });
+    var el = $('#sel-count');
+    if (el) el.textContent = '已选 ' + n + ' 场';
+  }
+
+  function selBox(r) {
+    var ok = isBettable(r);
+    return '<input type="checkbox" class="sel-box" data-id="' + r.matchId + '"' +
+      (state.sel[r.matchId] && ok ? ' checked' : '') + (ok ? '' : ' disabled') +
+      ' title="' + (ok ? '勾选加入投注单' : '已开赛/无预测，不可投注') + '">';
+  }
+
+  function refreshSelUI() {
+    renderDataTable(filteredRows());
+    updateSelCount();
+  }
+
+  function selectRows(rows) {
+    rows.forEach(function (r) { if (isBettable(r)) state.sel[r.matchId] = true; });
+    refreshSelUI();
+  }
+
+  function slipRows() {
+    return state.rows.filter(function (r) { return state.sel[r.matchId] && isBettable(r); });
+  }
+
+  function fillSlip() {
+    $('#slip-track').value = state.slipTrack;
+    // 未开赛场次的模型A是"实时预测"（predsOf 里算），行上的 predA 只对已冻结场次有值
+    var rows = slipRows().map(function (r) {
+      var p = predsOf(r);
+      return {
+        date: r.date, matchNumStr: r.matchNumStr, home: r.home, away: r.away,
+        predBaseA: p.baseA != null ? p.baseA : r.predBaseA,
+        predA: p.modelA != null ? p.modelA : r.predA
+      };
+    });
+    $('#slip-text').value = JC.betSlipText(rows, { track: state.slipTrack });
+  }
+
+  function openSlip() {
+    fillSlip();
+    var dlg = $('#dlg-slip');
+    if (!dlg.open) dlg.showModal();
+  }
+
+  function copySlip() {
+    var ta = $('#slip-text');
+    var done = function () { toast('投注单已复制，粘贴发给店主即可'); };
+    var fallback = function () {
+      try {
+        ta.removeAttribute('readonly');
+        ta.focus();
+        ta.select();
+        ta.setSelectionRange(0, ta.value.length);
+        document.execCommand('copy');
+        ta.setAttribute('readonly', 'readonly');
+        done();
+      } catch (e) { toast('复制失败：请长按文本全选后手动复制', true); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(ta.value).then(done, fallback);
+    } else fallback();
   }
 
   function oddsOfRow(r, g) {
@@ -549,6 +638,7 @@
     renderModelTable(state.rows);
     renderUpcomingCard(state.rows);
     renderDataTable(rows);
+    renderSelBar();
     renderLeagueOptions();
     renderAlerts();
     renderNumbers();
@@ -842,6 +932,7 @@
       var actualTxt = r.cancelled ? '<span class="muted">已取消</span>' :
         ('<b>' + JC.labelG(r.actual) + '</b>' + (r.rescheduled ? ' <span class="tiny" style="color:#b85c00">推迟</span>' : ''));
       return '<tr>' +
+        '<td class="sel-cell">' + selBox(r) + '</td>' +
         '<td>' + r.date + '</td>' +
         '<td>' + escapeHtml(r.matchNumStr) + '</td>' +
         '<td>' + escapeHtml(r.league) + '</td>' +
@@ -875,7 +966,7 @@
       var oddsTxt = function (g, od) { return JC.labelG(g) + (od != null ? ' <span class="tiny muted">@' + Number(od).toFixed(2) + '</span>' : ''); };
       var actualCard = r.cancelled ? '<span class="muted">已取消</span>' : (r.actual != null ? JC.labelG(r.actual) + '（' + r.score + '）' + (r.rescheduled ? ' 推迟' : '') : '—');
       return '<div class="mcard">' +
-        '<div class="mc-head"><span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
+        '<div class="mc-head">' + selBox(r) + '<span class="mc-num">' + escapeHtml(r.matchNumStr) + '</span>' +
         '<span class="mc-lg">' + escapeHtml(r.league) + '</span>' +
         (r.isSingleWin ? '<span class="mc-single">单关</span>' : '') +
         '<span class="mc-time">' + escapeHtml(r.kickoff) + '</span></div>' +
@@ -1183,6 +1274,24 @@
       };
     });
     $('#btn-more-rows').onclick = function () { state.shownRows += 300; renderDataTable(filteredRows()); };
+
+    // 投注单：勾选、全选、生成、复制
+    $('#view-data').addEventListener('change', function (ev) {
+      var t = ev.target;
+      if (!t || !t.classList || !t.classList.contains('sel-box')) return;
+      var id = Number(t.dataset.id);
+      if (t.checked) state.sel[id] = true; else delete state.sel[id];
+      updateSelCount();
+    });
+    $('#btn-sel-day').onclick = function () {
+      var d = $('#sel-date').value;
+      selectRows(state.rows.filter(function (r) { return r.date === d; }));
+    };
+    $('#btn-sel-all').onclick = function () { selectRows(filteredRows()); };
+    $('#btn-sel-none').onclick = function () { state.sel = {}; refreshSelUI(); };
+    $('#btn-slip').onclick = openSlip;
+    $('#btn-slip-copy').onclick = copySlip;
+    $('#slip-track').onchange = function () { state.slipTrack = this.value; fillSlip(); };
 
     $('#num-select').onchange = function () { renderNumQuery(); };
     $('#bucket-select').onchange = function () { renderNumQuery(); };
