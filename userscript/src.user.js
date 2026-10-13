@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         竞彩进球数预测助手
 // @namespace    jingcai-1qiu-diff
-// @version      4.3.0
+// @version      5.0.0
 // @description  在体彩官网抓取竞彩足球各进球数赔率与比分优化赔率，浮窗显示每场比赛的进球数预测（模型/基线）、编号追踪警戒；可同步到你的 GitHub 仓库（配合 GitHub Pages 网页使用）
 // @author       jingcai-1qiu-diff
 // @updateURL    https://raw.githubusercontent.com/chuangyuyu/jingcai/main/userscript/jingcai.user.js
@@ -440,17 +440,16 @@
     var today = JC.localDateStr();
     if (days[today]) showDate = today;
 
-    // 本地自修正模型（近30天，剔除深冷门）
+    // 本地数据核心模型（近30天排名表，剔除深冷门；另含赔率隐含分布/趋势等因子，见网页说明）
     var all = [];
     dates.forEach(function (d) { (days[d].matches || []).forEach(function (m) { all.push(m); }); });
-    var samples = JC.modelSamples(all, 'diffA', { windowDays: 30, endDate: JC.addDays(today, 1) });
-    var model = JC.modelTrain(samples, { maxActualRank: 6 });
+    var eng = JC.factorEngine({ matches: all, model: { windowDays: 30, maxActualRank: 6 } });
 
     var rows = JC.flatRows([days[showDate]]);
     var dirty = getDirty();
     var withPred = rows.filter(function (r) { return r.diffs; }).length;
     statEl.textContent = showDate + ' · ' + rows.length + ' 场 · 可预测 ' + withPred +
-      ' · 样本 ' + model.used + ' 场' +
+      ' · 样本 ' + eng.stateFor(showDate).rankUsed + ' 场' +
       (dirty.length ? ' · 待同步 ' + dirty.length + ' 天' : (canSync() ? ' · 已配置云端' : ' · 未配置云端'));
     if (alertInfo && alertInfo.alerts.length) {
       statEl.textContent += ' · ⚠ ' + alertInfo.alerts.length + '项连续未出≥' + alertInfo.alertCount + '次';
@@ -463,8 +462,13 @@
       var modelG = null, baseG = r.predBaseA;
       if (r.predA != null) { modelG = r.predA; }
       else if (r.diffs) {
-        var diffsA = (r.diffs.groups || []).map(function (x) { return x.diffA; });
-        modelG = JC.modelPredict(model, diffsA, r.predBaseA);
+        var groups = r.diffs.groups || [];
+        var fp = eng.predictFor(
+          { businessDate: r.date, matchDate: r.matchDate },
+          groups.map(function (x) { return x.diffA; }),
+          { ttg: groups.map(function (x) { return x.ttg; }), captures: r.caps, rel: groups.map(function (x) { return x.relB; }) }
+        );
+        modelG = fp ? fp.goal : r.predBaseA;
       }
       var oddsOf = function (g) {
         if (g == null || !r.diffs) return null;

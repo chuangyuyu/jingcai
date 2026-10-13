@@ -9,7 +9,7 @@
  *   node scripts/daily.js both --push  # 完成后 git 提交并推送（--push 也可省略，默认读 config.json）
  *   node scripts/daily.js odds --no-push --no-excel   # 只抓数据，不推送、不生成 Excel
  *   node scripts/daily.js check        # 环境自检（迁移/排障用）
- *   node scripts/daily.js numbers --backfill 400   # 一次性回补编号历史 + 联赛/球队历史（多因子模型用，默认 180 天）
+ *   node scripts/daily.js numbers --backfill 400   # 一次性回补编号历史 + 历史档案（默认 180 天）
  *
  * 说明：无论哪种模式都会回填赛果（含凌晨场：查询范围自动 +1 天），
  *       并维护"编号 × 进球数"历史（docs/data/numbers.json，用于编号追踪警戒）。
@@ -196,15 +196,15 @@ async function runOdds() {
 // 为已封盘（开赛）但尚未冻结预测（或预测由旧版本算法生成）的场次补/重冻结预测。
 // 竞彩比赛开赛即封盘、赔率定格 —— 所以到开赛时间后，最后一份快照算出的结果就是最终存档值，
 // 无需等赛果；窗口=该场销售日之前，防未来数据泄漏。算法修正后旧版预测作废重算（修 bug 非调参）。
-// v4：模型A 由多因子引擎（排名⊕联赛⊕球队，权重自学习）给出，引擎在本函数内建一次复用。
+// v5：模型A 由数据核心引擎（排名A⊕排名B⊕市场⊕趋势，只吃赔率与赔率变化，权重自学习）给出，
+// 引擎在本函数内建一次复用；history.json 已不参与预测（保留为分析档案）。
 function freezeMissingPredictions(config) {
   const index = loadIndex();
   const dates = Object.keys(index.dates || {}).sort();
   const docs = dates.map(d => loadDay(d)).filter(Boolean);
   const all = [];
   docs.forEach(doc => (doc.matches || []).forEach(m => all.push(m)));
-  const histDoc = loadHistory();
-  const engine = JC.factorEngine({ matches: all, history: histDoc, model: config.model });
+  const engine = JC.factorEngine({ matches: all, model: config.model });
   let frozen = 0, refrozen = 0;
   docs.forEach(doc => {
     let changed = false;
@@ -220,12 +220,10 @@ function freezeMissingPredictions(config) {
     if (changed) saveDay(doc);
   });
   if (frozen) {
-    const hs = JC.historyStats(histDoc);
     const ws = engine.weightsFor(JC.localDateStr());
     log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
-    log(`  多因子权重：排名A ${Math.round(ws.rank * 100)}% · 排名B ${Math.round(ws.relrank * 100)}% · 联赛 ${Math.round(ws.league * 100)}% · 球队 ${Math.round(ws.team * 100)}% · 市场 ${Math.round(ws.market * 100)}% · 趋势 ${Math.round(ws.trend * 100)}%` +
-      `（滚动评测 ${ws.eval.n} 场，各自命中率：排名A ${fmtRate(ws.eval.rank)}/排名B ${fmtRate(ws.eval.relrank)}/联赛 ${fmtRate(ws.eval.league)}/球队 ${fmtRate(ws.eval.team)}/市场 ${fmtRate(ws.eval.market)}/趋势 ${fmtRate(ws.eval.trend)}，基础 ${fmtRate(ws.eval.base)}；趋势可用 ${ws.eval.trendN} 场）；` +
-      `历史库 ${hs.matches} 场`);
+    log(`  数据核心权重：排名A ${Math.round(ws.rank * 100)}% · 排名B ${Math.round(ws.relrank * 100)}% · 市场 ${Math.round(ws.market * 100)}% · 趋势 ${Math.round(ws.trend * 100)}%` +
+      `（滚动评测 ${ws.eval.n} 场，各自命中率：排名A ${fmtRate(ws.eval.rank)}/排名B ${fmtRate(ws.eval.relrank)}/市场 ${fmtRate(ws.eval.market)}/趋势 ${fmtRate(ws.eval.trend)}，基础 ${fmtRate(ws.eval.base)}；市场可用 ${ws.eval.marketN} 场、趋势可用 ${ws.eval.trendN} 场）`);
   }
   return frozen;
 }
@@ -273,7 +271,7 @@ async function runResults(config) {
   return { changed: totalChanged, filled: totalFilled, dates: touchedDates, frozen };
 }
 
-// ---------------------------------------------------------------- 编号追踪 + 联赛/球队历史（一次请求维护两个文件）
+// ---------------------------------------------------------------- 编号追踪 + 历史档案（一次请求维护两个文件）
 
 const NUMBERS_FILE = path.join(DATA_DIR, 'numbers.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
@@ -290,7 +288,8 @@ function loadHistory() {
   return doc;
 }
 
-// 维护 docs/data/numbers.json（编号 × 进球数）与 docs/data/history.json（联赛/球队历史，多因子模型用）：
+// 维护 docs/data/numbers.json（编号 × 进球数）与 docs/data/history.json（历史档案：
+//   联赛/主客队/比分——v5 起引擎不再读取，仍随编号历史一并维护，保留为分析档案）：
 //   · 编号只在销售日内唯一（周三004 与 周二004 可能是两场比赛），因此一天的数据 =
 //     真实日期 s 的日间场 + 真实日期 s+1 的凌晨场；一次查询 [s, s+1] 后按销售日归属；
 //   · 每次运行保证最近 3 个销售日为最新；更早的销售日已定稿就跳过；
@@ -353,7 +352,7 @@ async function runNumbers(config, opts) {
   const st = JC.numbersStats(doc, { alertCount: doc.alertCount });
   log(`编号历史：共 ${st.days} 个销售日（${st.firstDate} ~ ${st.lastDate}），本次检查 ${fetched} 天、写入 ${written} 天`);
   const hs = JC.historyStats(hist);
-  log(`联赛/球队历史：共 ${hs.days} 个销售日（${hs.first || '—'} ~ ${hs.last || '—'}），${hs.matches} 场（多因子模型用）`);
+  log(`历史档案：共 ${hs.days} 个销售日（${hs.first || '—'} ~ ${hs.last || '—'}），${hs.matches} 场（v5 引擎不使用，仅存档）`);
   if (st.alerts.length) {
     log(`⚠ 编号追踪：${st.alerts.length} 项已连续 ≥${st.alertCount} 次未出现 —— ` +
       st.alerts.slice(0, 5).map(a => `${a.num}的${a.label}（连续 ${a.streak} 次，最近 ${a.lastDate}）`).join('；') +
@@ -459,10 +458,10 @@ async function runCheck() {
 
   try {
     const hs = JC.historyStats(loadHistory());
-    ok('联赛/球队历史（多因子模型）', true, hs.matches
+    ok('历史档案（引擎外，仅存档）', true, hs.matches
       ? (hs.days + ' 天（' + hs.first + ' ~ ' + hs.last + '），' + hs.matches + ' 场')
       : '暂无：运行 node scripts\\daily.js numbers --backfill 400 回补（与编号历史同一次回补）');
-  } catch (e) { ok('联赛/球队历史（多因子模型）', false, e.message); }
+  } catch (e) { ok('历史档案（引擎外，仅存档）', false, e.message); }
 
   console.log('\n结果：' + (fails ? fails + ' 项需要处理（见上方 [需处理] 项）' : '全部通过 ✓'));
   if (fails) process.exitCode = 1;

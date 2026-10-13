@@ -286,9 +286,9 @@ console.log('== 取消/推迟场次 ==');
   ok('modelSamples 排除推迟与取消场', s.length === 1 && s[0].actual === 1);
 }
 
-console.log('== 多因子修正模型（v4）==');
+console.log('== 数据核心修正模型（v5：只吃赔率与赔率变化）==');
 {
-  // 构造一年式历史：'大球联' 恒 4:2（总6球），'小球联' 恒 0:1（总1球）
+  // historyRows 仍保留（history.json 维护为分析档案用）：构造一年式历史
   const hist = { days: {} };
   let id = 1;
   for (let i = 0; i < 40; i++) {
@@ -300,19 +300,16 @@ console.log('== 多因子修正模型（v4）==');
   const rows = JC.historyRows(hist, null);
   ok('historyRows：提取全部比赛行', rows.length === 80);
   ok('historyRows：按日期过滤（防泄漏）', JC.historyRows(hist, '2026-01-11').length === 20);
-  const t = JC.factorTables(rows);
-  ok('factorTables：统计规模与球队攻防', t.n === 80 && t.leagues['大球联'].n === 40 && t.teams['攻强队'].gf === 160);
 
-  // 无排名样本（diffs 全平）时，预测由联赛/球队因子决定：大球联 → 高进球，小球联 → 低进球
-  const histBase = JSON.parse(JSON.stringify(hist)); // 快照：后续权重测试会往 hist 里追加实盘行
-  const engine = JC.factorEngine({ matches: [], history: histBase, model: { windowDays: 30, maxActualRank: 6 } });
+  // v5 引擎不再读任何历史档案：无样本时排名表均匀投票，市场因子（先验 0.12 > 趋势 0.05）起决定作用
+  const engine = JC.factorEngine({ matches: [], model: { windowDays: 30, maxActualRank: 6 } });
   const diffsFlat = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
-  const pBig = engine.predictFor({ businessDate: '2026-02-20', league: '大球联', home: '攻强队', away: '某队X' }, diffsFlat);
-  const pSmall = engine.predictFor({ businessDate: '2026-02-20', league: '小球联', home: '守强队z', away: '守强队y' }, diffsFlat);
-  ok('联赛因子生效：大球联 → 高进球档', pBig && pBig.goal >= 5, 'goal=' + (pBig && pBig.goal));
-  ok('联赛因子生效：小球联 → 低进球档', pSmall && pSmall.goal <= 2, 'goal=' + (pSmall && pSmall.goal));
-  ok('预测附带因子信息（权重/历史样本数）', pBig && pBig.info && pBig.info.w.length === 6 && pBig.info.histN === 80);
-  ok('球队因子期望进球：攻强队高于未知客队', pBig && pBig.info.lh != null && pBig.info.la != null && pBig.info.lh > pBig.info.la);
+  const pM = engine.predictFor({ businessDate: '2026-02-20' }, diffsFlat, { ttg: [15, 15, 1.5, 15, 15, 15, 15, 15] });
+  ok('市场因子生效：赔率最低档 → 预测该档（2球）', pM && pM.goal === 2, 'goal=' + (pM && pM.goal));
+  ok('预测附带 4 因子权重信息', !!(pM && pM.info && pM.info.w.length === 4), 'w=' + JSON.stringify(pM && pM.info && pM.info.w));
+  ok('因子可用标记（本场：市场有、趋势无）', !!(pM && pM.info && pM.info.hasMarket === true && pM.info.hasTrend === false && pM.info.hasRel === false));
+  const w0 = engine.weightsFor('2026-02-20');
+  ok('引擎已移除联赛/球队因子（纯赔率数据核心）', w0.league === undefined && w0.team === undefined);
 
   // 市场因子：赔率隐含分布（低赔率档=市场峰值）
   const md = JC.marketDist([10, 8, 3.2, 4.5, 9, 19, 41, 15]);
@@ -374,34 +371,36 @@ console.log('== 多因子修正模型（v4）==');
     ok('投注单：空列表提示', JC.betSlipText([], {}).indexOf('没有可投注的场次') > 0);
   }
 
-  // 权重自学习：实盘样本与"实盘大球联"一致（恒 3:2），排名因子全平 → 联赛权重应超过排名权重
-  const capOdds = { goals: [2, 2, 2, 2, 2, 2, 2, 2], scores: { '1:0': 5, '0:1': 6 }, other: { win: 15, draw: 21, lose: 25 } };
+  // 权重自学习：30 场实盘，赔率最低档 = 真实进球数（1/2/3 球轮转）——
+  // 市场因子应证明自己并获得权重；基础分布 = 评测窗口内实际进球数的经验分布。
   const liveMatches = [];
-  for (let i = 0; i < 40; i++) {
+  const mkPool = (b) => {
+    const goals = [8, 8, 8, 8, 8, 8, 8, 8];
+    goals[b] = 1.1;
+    return { goals: goals, scores: { '1:0': 6, '0:1': 9, '1:1': 7, '2:1': 9.5, '1:2': 11, '2:0': 13, '0:2': 16 } };
+  };
+  const scoreOf = { 1: '1:0', 2: '1:1', 3: '2:1' }; // 分别是 1/2/3 球
+  for (let i = 0; i < 30; i++) {
     const day = JC.addDays('2026-02-01', i);
-    hist.days[day] = hist.days[day] || {};
-    hist.days[day]['L' + i] = ['实盘大球联', 'X' + i, 'Y' + i, 3, 2];
+    const b = (i % 3) + 1;
     liveMatches.push({
       matchId: 100 + i, businessDate: day, matchDate: day, matchNumStr: '周一' + (100 + i),
-      league: '实盘大球联', home: 'A' + i, away: 'B' + i,
-      captures: [{ at: day + 'T11:00:00+08:00', odds: JSON.parse(JSON.stringify(capOdds)) }],
-      result: { score: '3:2', goals: 5, at: day + 'T23:00:00+08:00' }, pred: null
+      league: '联赛X', home: '主' + i, away: '客' + i,
+      captures: [{ at: day + 'T11:00:00+08:00', odds: mkPool(b) }],
+      result: { score: scoreOf[b], goals: b, at: day + 'T23:00:00+08:00' }, pred: null
     });
   }
-  const eng2 = JC.factorEngine({ matches: liveMatches, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
+  const eng2 = JC.factorEngine({ matches: liveMatches, model: { windowDays: 30, maxActualRank: 6 } });
   const w = eng2.weightsFor('2026-03-15');
   ok('权重评测：样本数 > 0', w.eval.n > 0, 'n=' + w.eval.n);
-  ok('权重集合完整（6 因子）', w.rank != null && w.relrank != null && w.league != null && w.team != null && w.market != null && w.trend != null);
-  ok('联赛因子单独命中率高（与实盘一致）', w.eval.league != null && w.eval.league >= 0.7, 'league=' + w.eval.league);
-  ok('权重自学习：联赛权重 > 排名权重（排名因子无效时自动让位）', w.league > w.rank,
-    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, rb: Math.round(w.relrank * 100) / 100, l: Math.round(w.league * 100) / 100, t: Math.round(w.team * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));
+  ok('权重集合完整（排名A/排名B/市场/趋势）', w.rank != null && w.relrank != null && w.market != null && w.trend != null);
+  ok('市场因子单独命中率高（与实盘赔率一致）', w.eval.market != null && w.eval.market >= 0.9, 'market=' + w.eval.market);
+  ok('权重自学习：市场因子明显获得权重（不再是先验水平）', w.market > 0.15,
+    'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, rb: Math.round(w.relrank * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));
 
-  // 严格防泄漏：给"未来日期"加极端历史，不应影响之前的预测
-  const hist2 = JSON.parse(JSON.stringify(histBase));
-  hist2.days['2026-06-01'] = { z1: ['大球联', '攻强队', '某队X', 9, 9] };
-  const engineB = JC.factorEngine({ matches: [], history: hist2, model: { windowDays: 30, maxActualRank: 6 } });
-  const pBig2 = engineB.predictFor({ businessDate: '2026-02-20', league: '大球联', home: '攻强队', away: '某队X' }, diffsFlat);
-  ok('严格防泄漏：未来日期的历史不参与当日预测', pBig2.goal === pBig.goal && pBig2.info.histN === pBig.info.histN);
+  // 严格防泄漏：stateFor(销售日) 只用日期 < 该日的样本
+  ok('防泄漏：当日样本不参与当日模型（rankUsed=0）', eng2.stateFor('2026-02-01').rankUsed === 0);
+  ok('防泄漏：后续模型包含此前全部样本', eng2.stateFor('2026-03-03').rankUsed === 30, 'rankUsed=' + eng2.stateFor('2026-03-03').rankUsed);
 
   // historyDayFromResults：销售日归属 + 字段解析
   const rs = JC.parseResults([{ matchId: 9, sectionsNo999: '2:1', sectionsNo1: '1:0', matchResultStatus: '2',

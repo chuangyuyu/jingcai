@@ -1,5 +1,5 @@
 /*!
- * 竞彩足球「各进球数赔率 vs 比分多选优化赔率」差值分析与进球数预测 — 共享核心库 v3
+ * 竞彩足球「各进球数赔率 vs 比分多选优化赔率」差值分析与进球数预测 — 共享核心库（版本见 VERSION）
  * ============================================================
  * 本文件是全部业务逻辑的唯一事实来源，同时被三端使用：
  *   1. GitHub Pages 网页      docs/app.js（浏览器直接 <script> 引入）
@@ -16,13 +16,14 @@
  *     0球的差值由【全进球数曲线拟合】（二次拟合，g=1..7 的差值 → g=0 的预测值）给出。
  *   · 预测双轨：
  *       基线 = 差值最小的进球数（0球用拟合值参与比较）
- *       自修正模型（v4 多因子）= 排名因子（近30天"差值排名×进球数"命中率表，爆冷不纳入更新）
- *         ⊕ 联赛因子（该联赛历史进球分布，收缩到全局）
- *         ⊕ 球队因子（两队主/客场攻防强度 → 独立泊松合成总进球分布）
- *         ⊕ 市场因子（总进球赔率隐含分布）⊕ 趋势因子（快照间差值变化的 softmax 内嵌函数）
+ *       自修正模型（v5 数据核心）= 只吃【赔率】与【赔率的整点变化】两样根本数据
+ *         （一切调整最终都通过赔率反映——赔率已含市场对伤停/战意/阵容/场地等全部公开信息的定价，
+ *           联赛/球队等外部数据因子已全部下线）：
+ *         ①排名A（差值排名×进球数命中率表，近30天，爆冷剔除）②排名B（口径B相对差值排名表）
+ *         ③市场（总进球赔率隐含分布）④趋势（快照间差值变化的 softmax 内嵌函数）
  *         各因子按近期实盘表现的"信息量"（对数似然）自学习权重：未超过基础分布的自动休眠，
  *         预测 = 加权对数池（几何平均）取最大——因子不需全部激活，数据说话，每次运行自更新。
- *   · 每场在赛果落定时冻结当时的预测（用该场之前的窗口，杜绝未来数据泄漏），长期对比两轨命中率。
+ *   · 每场在封盘（开赛）时冻结当时的预测（用该场之前的窗口，杜绝未来数据泄漏），长期对比各轨命中率。
  *
  * 数据来源（中国体育彩票官方 Web API，需中国大陆网络）：
  *   赔率: /gateway/jc/football/getMatchCalculatorV1.qry   赛果: /gateway/uniform/football/getUniformMatchResultV1.qry
@@ -34,7 +35,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '4.3.0';
+  var VERSION = '5.0.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -463,31 +464,34 @@
     return m.captures.length ? m.captures[m.captures.length - 1] : null;
   }
 
-  // ---------------------------------------------------------------- 多因子修正模型（v4）
+  // ---------------------------------------------------------------- 数据核心修正模型（v5）
   //
-  // 用户思路：像神经网络一样纳入尽可能多的修正因子，但因子不必全部"激活"——
+  // 用户拍板的建模哲学（2026-10-13）：模型多次叠加参数后反而表现不佳——不应考虑过多参数，
+  //   因为【一切调整最终都通过赔率反映】：赔率就是市场对伤停/战意/阵容/场地等全部公开信息的
+  //   定价，外部数据因子（联赛/球队历史等）只会重复计入并引入噪声，已全部下线。
+  //   自学习模型只吃两样根本数据：
+  //     ① 赔率（及其推导出的差值结构）——市场对每场比赛的完整定价；
+  //     ② 赔率的整点变化——资金流向 / 市场修正方向（用好每小时抓取）。
+  //   四个因子全部由这两样数据派生：
+  //   ① 排名A：口径A差值排名 × 进球数 经验命中率（近 windowDays 天，剔除深冷门）——原自修正模型
+  //   ② 排名B：口径B相对差值的排名表（原"模型B"信号）
+  //   ③ 市场：总进球赔率隐含的进球分布（1/赔率归一化）
+  //   ④ 趋势（内嵌函数）：较早快照→最新快照的差值变化 softmax——用好整点更新数据
   //   每个因子按【近期实盘表现】自动决定话语权：对真实结果的"信息量"（对数似然）
   //   超过基础分布才拿到权重，表现平平的因子权重趋近 0（休眠，不干扰预测）。
   //   预测 = 各因子分布的加权对数池（加权几何平均）取最大档。
-  //   权重、排名表、联赛/球队/市场/趋势分布全部每次运行重新学习更新——函数自更新。
+  //   权重与排名表每次运行重新学习更新——函数自更新。
   //
-  // 已实现的因子（都有真实数据来源）：
-  //   ① 排名因子：差值排名 × 进球数 经验命中率（近 windowDays 天，剔除深冷门）——原自修正模型
-  //   ② 联赛因子：该联赛历史进球分布（竞彩赛果按联赛累计，贝叶斯收缩到全局分布）
-  //   ③ 球队因子：两队主/客场攻防强度（主队用主场数据、客队用客场数据，收缩到对应基准）
-  //      → 独立泊松合成总进球分布
-  //   ④ 市场因子：总进球赔率隐含的进球分布（1/赔率归一化）——赔率已包含伤停/战意等一切公开信息
-  //   ⑤ 趋势因子（内嵌函数）：较早快照→最新快照的差值变化 softmax——用好整点更新数据
-  // 预留扩展位：裁判/教练/战意/场地等数据源将来能拿到时，按"返回 8 档分布"的因子接入即自动参与权重学习。
+  // 特殊情况（不纳入学习修正）：取消/推迟补赛（意外情况，excluded）；
+  //   深冷门（赛果差值排名 ≥ maxActualRank 不更新排名表）；6/7+ 球结构性缺格不参与 0 球拟合。
+  // 严格防泄漏：预测某销售日 S 的比赛只用 日期 < S 的样本；权重评测同样逐场重建。
   //
-  // 数据：docs/data/history.json —— 赛果接口回补的一年比赛（按销售日）：
-  //   { days: { 'YYYY-MM-DD': { matchId: [联赛, 主队, 客队, 主队进球, 客队进球] } } }
-  // 严格防泄漏：预测某销售日 S 的比赛只用 日期 < S 的历史；权重评测同样逐场重建。
+  // 注：docs/data/history.json（联赛/球队历史档案）仍随编号历史一并维护（零额外请求），
+  //   但 v5 引擎不再读取——保留为分析档案与将来可选的扩展数据源。
 
-  var FACTOR_PRIOR = { rank: 1, relrank: 0.06, league: 0.05, team: 0.03, market: 0.12, trend: 0.05 };
+  var FACTOR_PRIOR = { rank: 1, relrank: 0.06, market: 0.12, trend: 0.05 };
   // 先验：证据不足时以排名因子为骨架；市场因子略高于其他（赔率信息先验可信度较高）；
-  // 排名B（口径B相对差值的排名表，即"模型B"信号）与联赛/球队/趋势≈休眠，必须用实盘表现证明自己。
-  var K_LEAGUE = 20, K_TEAM = 6;  // 收缩强度：样本量远小于 K 时因子贴近全局（近乎休眠）
+  // 排名B（口径B相对差值的排名表，即"模型B"信号）与趋势≈休眠，必须用实盘表现证明自己。
 
   // history 文档 → 比赛行（只取 beforeDate 之前，严格 < 防同日泄漏）
   function historyRows(histDoc, beforeDate) {
@@ -542,80 +546,6 @@
     var best = null, bv = -Infinity;
     for (var i = 0; i < 8; i++) { if (d[i] != null && d[i] > bv) { bv = d[i]; best = i; } }
     return best;
-  }
-
-  // 因子表：全局分布 + 联赛分布 + 球队攻防（含主/客场拆分） + 主客场基准进球
-  function factorTables(rows) {
-    var t = { n: 0, global: [0, 0, 0, 0, 0, 0, 0, 0], leagues: {}, teams: {}, homeAvg: 1.45, awayAvg: 1.15, muTeam: 1.3 };
-    var sumH = 0, sumA = 0, n = 0;
-    (rows || []).forEach(function (r) {
-      if (r.g == null) return;
-      n++;
-      t.global[r.g]++;
-      var lc = t.leagues[r.league] || (t.leagues[r.league] = { n: 0, c: [0, 0, 0, 0, 0, 0, 0, 0] });
-      lc.n++; lc.c[r.g]++;
-      if (r.home) {
-        var th = t.teams[r.home] || (t.teams[r.home] = { n: 0, gf: 0, ga: 0, hn: 0, hgf: 0, hga: 0, an: 0, agf: 0, aga: 0 });
-        th.n++; th.gf += r.hg; th.ga += r.ag;
-        th.hn++; th.hgf += r.hg; th.hga += r.ag;      // 该队作主场：进球 / 失球
-      }
-      if (r.away) {
-        var ta = t.teams[r.away] || (t.teams[r.away] = { n: 0, gf: 0, ga: 0, hn: 0, hgf: 0, hga: 0, an: 0, agf: 0, aga: 0 });
-        ta.n++; ta.gf += r.ag; ta.ga += r.hg;
-        ta.an++; ta.agf += r.ag; ta.aga += r.hg;      // 该队作客场：进球 / 失球
-      }
-      sumH += r.hg; sumA += r.ag;
-    });
-    t.n = n;
-    if (n) { t.homeAvg = sumH / n; t.awayAvg = sumA / n; t.muTeam = (sumH + sumA) / (2 * n); }
-    return t;
-  }
-
-  // 联赛分布（收缩到全局：样本少时≈全局 → 该因子近乎休眠）
-  function leagueDist(t, league) {
-    var g = distOf(t.global);
-    var L = league ? t.leagues[league] : null;
-    if (!L || !L.n) return g;
-    var d = new Array(8);
-    for (var i = 0; i < 8; i++) d[i] = (L.c[i] + K_LEAGUE * g[i]) / (L.n + K_LEAGUE);
-    return d;
-  }
-
-  function poissonPmf(lam, kmax) {
-    var out = [Math.exp(-lam)], p = out[0];
-    for (var k = 1; k <= kmax; k++) { p = p * lam / k; out.push(p); }
-    return out;
-  }
-
-  // 两队独立泊松 → 总进球 8 档分布（末档为 7+ 合并）
-  function poissonTotalDist(lh, la) {
-    var KM = 12;
-    var ph = poissonPmf(lh, KM), pa = poissonPmf(la, KM);
-    var d = [0, 0, 0, 0, 0, 0, 0, 0], h, a;
-    for (h = 0; h <= KM; h++) for (a = 0; a <= KM; a++) d[Math.min(h + a, 7)] += ph[h] * pa[a];
-    var s = 0;
-    for (h = 0; h < 8; h++) s += d[h];
-    if (s > 0) for (h = 0; h < 8; h++) d[h] /= s;
-    return d;
-  }
-
-  // 球队因子：主/客分别的攻防强度（收缩到对应主客场基准）→ 期望进球 → 独立泊松合成总进球分布。
-  // 主队期望 = 主场基准 × 主队"主场进球强度" × 客队"客场失球强度"；客队对称。
-  // 某队主场/客场样本薄时收缩回基准（≈中性），不会给出虚假信号。
-  function teamDist(t, home, away) {
-    if (!t || !t.n || (!home && !away)) return null;
-    var K = 6;
-    var rate = function (num, den, prior) { return (num + K * prior) / (den + K); };
-    var th = t.teams[home] || null, ta = t.teams[away] || null;
-    var attH = th && th.hn ? rate(th.hgf, th.hn, t.homeAvg) / t.homeAvg : 1;   // 主队主场进球强度
-    var defH = th && th.hn ? rate(th.hga, th.hn, t.awayAvg) / t.awayAvg : 1;   // 主队主场失球强度
-    var attA = ta && ta.an ? rate(ta.agf, ta.an, t.awayAvg) / t.awayAvg : 1;   // 客队客场进球强度
-    var defA = ta && ta.an ? rate(ta.aga, ta.an, t.homeAvg) / t.homeAvg : 1;   // 客队客场失球强度
-    var lh = t.homeAvg * attH * defA;
-    var la = t.awayAvg * attA * defH;
-    lh = Math.max(0.2, Math.min(4.5, lh));
-    la = Math.max(0.2, Math.min(4.5, la));
-    return { dist: poissonTotalDist(lh, la), lh: Math.round(lh * 100) / 100, la: Math.round(la * 100) / 100 };
   }
 
   // 市场因子：总进球赔率隐含的进球分布（1/赔率 归一化 + 少量均匀平滑防零锁）。
@@ -683,8 +613,8 @@
     return s;
   }
 
-  // 因子引擎：按销售日建表/评测（全部 memo，严格只用该日之前的数据），权重滚动自学习。
-  // opts: { matches 全部比赛（排名样本）, history history 文档, model {windowDays,maxActualRank},
+  // 因子引擎（v5）：按销售日建表/评测（全部 memo，严格只用该日之前的数据），权重滚动自学习。
+  // opts: { matches 全部比赛（排名样本）, model {windowDays,maxActualRank},
   //         evalDays 权重评测窗口(默认60天), evalMax 评测样本上限(默认150) }
   function factorEngine(opts) {
     opts = opts || {};
@@ -693,27 +623,27 @@
     var maxRank = modelCfg.maxActualRank || 6;
     var evalDays = opts.evalDays || 60;
     var evalMax = opts.evalMax || 150;
-    var allRows = historyRows(opts.history, null);
     var memo = {}, wMemo = {};
 
     function stateFor(slate) {
       var key = slate || '';
       if (memo[key]) return memo[key];
-      var rows = slate ? allRows.filter(function (r) { return r.date < slate; }) : allRows;
       var samples = modelSamples(opts.matches, 'diffA', { windowDays: windowDays, endDate: slate });
       var rankModel = modelTrain(samples, { maxActualRank: maxRank });
       // 排名B：口径B（相对差值）的排名表——即"模型B"的信号，作为独立因子参与权重学习
       var samplesB = modelSamples(opts.matches, 'relB', { windowDays: windowDays, endDate: slate });
       var rankB = modelTrain(samplesB, { maxActualRank: maxRank });
-      var st = { slate: slate, rows: rows, tables: factorTables(rows), rankModel: rankModel, rankUsed: rankModel.used, rankB: rankB };
+      var st = { slate: slate, rankModel: rankModel, rankUsed: rankModel.used, rankB: rankB };
       memo[key] = st;
       return st;
     }
 
     // 权重学习（自学习核心）：用最近 evalDays 的实盘样本滚动评测——
     //   对每个因子，统计它的"信息量"：对真实结果的平均对数似然 meanLL = mean(ln P_f(actual))；
-    //   与"基础分布"（全局进球分布）的 meanLL 比较：**必须高出 0.01 纳特才开始获得权重**
-    //   （高出 0.12 纳特封顶为满分）；达不到的因子权重≈0、休眠不干扰预测。
+    //   与"基础分布"（该评测窗口内实际进球数的经验分布）的 meanLL 比较：
+    //   **必须高出 0.01 纳特才开始获得权重**（高出 0.12 纳特封顶为满分）；
+    //   达不到的因子权重≈0、休眠不干扰预测——即因子必须证明自己比"盲猜该窗口最常见的
+    //   进球数"更强才拿到话语权（权重是相对的，会持续稀释主信号的保底权重不可取）。
     //   对数似然比"命中率"更能识别分布质量（分布形状好但 argmax 未命中的因子也能得分）。
     //   评测样本少时向先验回退——新因子先"试用"再"转正"；因子各自只按"可用场次"统计
     //   （如趋势因子只在有≥2份快照的场次上评测）。
@@ -724,9 +654,14 @@
       var evalSamplesB = modelSamples(opts.matches, 'relB', { windowDays: evalDays, endDate: slate });
       if (evalSamples.length > evalMax) evalSamples = evalSamples.slice(evalSamples.length - evalMax);
       if (evalSamplesB.length > evalMax) evalSamplesB = evalSamplesB.slice(evalSamplesB.length - evalMax);
-      var cnt = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };
-      var hit = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
-      var ll = { base: 0, rank: 0, relrank: 0, league: 0, team: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
+      // 基础分布 = 评测窗口内实际进球数的经验分布（与旧版用一年历史库的全局分布等效但更贴近
+      // 近期；只作"盲猜"参照，不参与预测）
+      var baseCounts = [0, 0, 0, 0, 0, 0, 0, 0];
+      evalSamples.forEach(function (sm) { if (sm.actual != null) baseCounts[sm.actual]++; });
+      var baseDist = distOf(baseCounts);
+      var cnt = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };
+      var hit = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
+      var ll = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
       var n = 0;
       evalSamples.forEach(function (sm, i) {
         var est = stateFor(sm.date); // 严格用该场之前的数据重建（防泄漏）
@@ -737,14 +672,9 @@
           ll[f] += Math.log((P[sm.actual] || 0) + 1e-6);
           if (argmaxDist(P) === sm.actual) hit[f]++;
         };
-        take('base', distOf(est.tables.global));
+        take('base', baseDist);
         take('rank', rankDist(est.rankModel, sm.diffs));
         take('relrank', i < evalSamplesB.length ? rankDist(est.rankB, evalSamplesB[i].diffs) : null);
-        if (est.tables.n) {
-          take('league', leagueDist(est.tables, sm.league));
-          var TD = teamDist(est.tables, sm.home, sm.away);
-          take('team', TD ? TD.dist : null);
-        }
         take('market', marketDist(sm.ttg));
         take('trend', trendDist(sm.caps));
       });
@@ -758,18 +688,16 @@
       };
       var wR = (1 - conf) * FACTOR_PRIOR.rank + conf * (0.12 + 0.88 * skill('rank'));
       var wRB = (1 - conf) * FACTOR_PRIOR.relrank + conf * (0.02 + 1.00 * skill('relrank'));
-      var wL = (1 - conf) * FACTOR_PRIOR.league + conf * (0.02 + 1.20 * skill('league'));
-      var wT = (1 - conf) * FACTOR_PRIOR.team + conf * (0.02 + 0.90 * skill('team'));
       var wM = (1 - conf) * FACTOR_PRIOR.market + conf * (0.02 + 1.20 * skill('market'));
       var wTr = (1 - conf) * FACTOR_PRIOR.trend + conf * (0.02 + 1.00 * skill('trend'));
-      var wsum = wR + wRB + wL + wT + wM + wTr || 1;
+      var wsum = wR + wRB + wM + wTr || 1;
       var r2 = function (v) { return v == null ? null : Math.round(v * 100) / 100; };
       var rateOf = function (f) { return cnt[f] ? hit[f] / cnt[f] : null; };
       var out = {
-        rank: wR / wsum, relrank: wRB / wsum, league: wL / wsum, team: wT / wsum, market: wM / wsum, trend: wTr / wsum,
+        rank: wR / wsum, relrank: wRB / wsum, market: wM / wsum, trend: wTr / wsum,
         eval: {
           n: n, base: r2(rateOf('base')),
-          rank: r2(rateOf('rank')), relrank: r2(rateOf('relrank')), league: r2(rateOf('league')), team: r2(rateOf('team')),
+          rank: r2(rateOf('rank')), relrank: r2(rateOf('relrank')),
           market: r2(rateOf('market')), trend: r2(rateOf('trend')),
           marketN: cnt.market, trendN: cnt.trend, relN: cnt.relrank, conf: r2(conf)
         }
@@ -778,8 +706,8 @@
       return out;
     }
 
-    // 对一场比赛预测（6 因子加权对数池）。
-    // match: { businessDate, league, home, away }；diffs: 8 档差值数组（口径A）；
+    // 对一场比赛预测（4 因子加权对数池，全部由赔率与赔率变化派生）。
+    // match: { businessDate }；diffs: 8 档差值数组（口径A）；
     // extra: { ttg: 总进球赔率数组, captures: 快照数组, rel: 口径B相对差值数组 }
     //        （缺省时对应因子不参与）
     function predictFor(match, diffs, extra) {
@@ -791,9 +719,6 @@
       if (!PR) return null;
       var rel = extra && extra.rel ? extra.rel : null;
       var PRB = rel ? rankDist(st.rankB, rel) : null;
-      var PL = st.tables.n ? leagueDist(st.tables, match.league || '') : null;
-      var TD = teamDist(st.tables, match.home || '', match.away || '');
-      var PT = TD ? TD.dist : null;
       var PM = marketDist(extra && extra.ttg);
       var PTr = trendDist(extra && extra.captures);
       var logS = [0, 0, 0, 0, 0, 0, 0, 0], g;
@@ -805,7 +730,7 @@
           logS[g2] += w * Math.log(v + 1e-9);
         }
       };
-      addF(PR, ws.rank); addF(PRB, ws.relrank); addF(PL, ws.league); addF(PT, ws.team); addF(PM, ws.market); addF(PTr, ws.trend);
+      addF(PR, ws.rank); addF(PRB, ws.relrank); addF(PM, ws.market); addF(PTr, ws.trend);
       var best = null, bv = -Infinity;
       for (g = 0; g <= 7; g++) {
         if (diffs[g] == null) continue; // 与基线口径一致：只考虑有差值的档
@@ -816,17 +741,15 @@
       return {
         goal: best,
         info: {
-          w: [r2(ws.rank), r2(ws.relrank), r2(ws.league), r2(ws.team), r2(ws.market), r2(ws.trend)],
+          w: [r2(ws.rank), r2(ws.relrank), r2(ws.market), r2(ws.trend)],
           evalN: ws.eval.n, evalHit: ws.eval,
-          histN: st.tables.n, rankN: st.rankUsed,
-          leagueN: (match.league && st.tables.leagues[match.league]) ? st.tables.leagues[match.league].n : 0,
-          lh: TD ? TD.lh : null, la: TD ? TD.la : null,
+          rankN: st.rankUsed,
           hasTrend: !!PTr, hasMarket: !!PM, hasRel: !!PRB
         }
       };
     }
 
-    return { stateFor: stateFor, weightsFor: weightsFor, predictFor: predictFor, rows: allRows };
+    return { stateFor: stateFor, weightsFor: weightsFor, predictFor: predictFor };
   }
 
   // ---------------------------------------------------------------- 合并 / 规整
@@ -970,9 +893,9 @@
     return out;
   }
 
-  // 赛果落定后为一场比赛冻结预测（窗口 = 该场销售日之前，防泄漏）
-  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队，权重自学习）；
-  // 模型B = v3 口径（相对差值排名表）作为对照保留。
+  // 封盘（开赛）后为一场比赛冻结预测（窗口 = 该场销售日之前，防泄漏）
+  // 模型A = v5 数据核心引擎（排名A⊕排名B⊕市场⊕趋势，全部由赔率与赔率变化派生，权重自学习）；
+  // 模型B = 相对差值排名表（对照口径，保留）。
   // opts.engine 可传入复用的因子引擎（批量冻结时避免重复建表）；不传则内部新建。
   function freezePrediction(match, allMatches, opts) {
     opts = opts || {};
@@ -987,7 +910,7 @@
     var maxRank = (opts.model && opts.model.maxActualRank) || 6;
     var samplesB = modelSamples(allMatches, 'relB', { windowDays: windowDays, endDate: slate });
     var modelB = modelTrain(samplesB, { maxActualRank: maxRank });
-    var engine = opts.engine || factorEngine({ matches: allMatches, history: opts.history, model: opts.model });
+    var engine = opts.engine || factorEngine({ matches: allMatches, model: opts.model });
     var fp = engine.predictFor(match, diffsA, { ttg: cap.odds.goals, captures: match.captures, rel: diffsB });
     return {
       baseA: d.predBaseA, modelA: fp ? fp.goal : d.predBaseA,
@@ -1314,9 +1237,8 @@
     modelPredict: modelPredict,
     modelSamples: modelSamples,
     freezePrediction: freezePrediction,
-    // v4 多因子
+    // v5 数据核心（只吃赔率与赔率变化）
     factorEngine: factorEngine,
-    factorTables: factorTables,
     marketDist: marketDist,
     trendDist: trendDist,
     stabilizeNeg: stabilizeNeg,

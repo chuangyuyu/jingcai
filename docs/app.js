@@ -131,7 +131,6 @@
     state.dirty = local;
     loadModelCfg();
     var numbersPromise = fetchJsonRel('data/numbers.json').then(function (d) { return d; }, function () { return null; });
-    var historyPromise = fetchJsonRel('data/history.json').then(function (d) { return d; }, function () { return null; });
     return fetchJsonRel('data/index.json').catch(function () { return { dates: {} }; })
       .then(function (index) {
         var dates = Object.keys(index.dates || {});
@@ -154,13 +153,11 @@
         state.days = {};
         (pairs || []).forEach(function (p) { if (p && p[1]) state.days[p[0]] = p[1]; });
         rebuildRows();
-        return Promise.all([numbersPromise, historyPromise]);
+        return numbersPromise;
       })
-      .then(function (extra) {
-        state.numbers = extra[0];
-        state.history = extra[1];
-        state.betStake = (state.numbers && state.numbers.betStake) || 100;
-        rebuildRows(); // 历史库到位后重建实时模型（联赛/球队因子参与）
+      .then(function (nums) {
+        state.numbers = nums;
+        state.betStake = (nums && nums.betStake) || 100;
         render();
         updateStatusLine();
       })
@@ -176,7 +173,8 @@
 
   // 实时模型（与"结算冻结"同算法）：赛前/赛中的模型A/B 预测由这里计算，显示在表格中；
   // 比赛结算时由服务器/本机任务用同一口径冻结存档（回测只认冻结值，防事后修正）。
-  // 模型A = v4 多因子引擎（排名⊕联赛⊕球队⊕市场⊕趋势，权重自学习）；模型B = v3 对照口径。
+  // 模型A = v5 数据核心引擎（排名A⊕排名B⊕市场⊕趋势，只吃赔率与赔率变化，权重自学习）；
+  // 模型B = 相对差值排名表（对照口径）。
   function trainLiveModels() {
     var winFrom = JC.addDays(todayStr(), -(state.modelCfg.windowDays || 30));
     var allMatches = [];
@@ -187,14 +185,14 @@
       samplesB.push({ date: r.date, diffs: (r.diffs.groups || []).map(function (g) { return g.relB; }), actual: r.actual });
     });
     state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: state.modelCfg.maxActualRank });
-    state.engine = JC.factorEngine({ matches: allMatches, history: state.history, model: state.modelCfg });
+    state.engine = JC.factorEngine({ matches: allMatches, model: state.modelCfg });
     state.liveSampleN = state.engine.stateFor(todayStr()).rankUsed;
     // 每行预计算一次实时预测（含市场/趋势因子），供 predsOf 复用
     state.rows.forEach(function (r) {
       if (!r.diffs) { r._fp = null; return; }
       var groups = r.diffs.groups || [];
       r._fp = state.engine.predictFor(
-        { businessDate: r.date, matchDate: r.matchDate, league: r.league, home: r.home, away: r.away },
+        { businessDate: r.date, matchDate: r.matchDate },
         groups.map(function (g) { return g.diffA; }),
         { ttg: groups.map(function (g) { return g.ttg; }), captures: r.caps, rel: groups.map(function (g) { return g.relB; }) }
       );
@@ -205,8 +203,8 @@
     if (!state.engine) return '';
     var w = state.engine.weightsFor(todayStr());
     var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
-    return '　｜　多因子权重（滚动自学习）：排名A ' + pct(w.rank) + ' · 排名B ' + pct(w.relrank) + ' · 联赛 ' + pct(w.league) + ' · 球队 ' + pct(w.team) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
-      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名A ' + pct(w.eval.rank) + '/排名B ' + pct(w.eval.relrank) + '/联赛 ' + pct(w.eval.league) + '/球队 ' + pct(w.eval.team) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
+    return '　｜　数据核心权重（滚动自学习）：排名A ' + pct(w.rank) + ' · 排名B ' + pct(w.relrank) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名A ' + pct(w.eval.rank) + '/排名B ' + pct(w.eval.relrank) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
   }
 
   // ---------------------------------------------------------------- 投注单（勾选场次 → 结构化复制）
@@ -449,7 +447,7 @@
   function freezeLocalPredictions() {
     var all = [];
     Object.keys(state.days).forEach(function (d) { (state.days[d].matches || []).forEach(function (m) { all.push(m); }); });
-    var engine = state.engine || JC.factorEngine({ matches: all, history: state.history, model: state.modelCfg });
+    var engine = state.engine || JC.factorEngine({ matches: all, model: state.modelCfg });
     var frozen = 0;
     Object.keys(state.days).forEach(function (d) {
       var doc = state.days[d];

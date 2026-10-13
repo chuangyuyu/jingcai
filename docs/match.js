@@ -70,7 +70,7 @@
                 fetch('data/days/' + d + '.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
                   .then(function (doc) { if (doc) state.allDays.push(doc); })
                   .then(function () { running--; done++; if (done === dates.length) resolve(); else next(); });
-              })(i);
+              })(dates[i]);   // 注意：传日期字符串（曾经误传数组下标 i，导致全部 404、实时模型无样本）
             }
           }
           next();
@@ -81,14 +81,11 @@
         (state.allDays || []).forEach(function (doc) { (doc.matches || []).forEach(function (m) { all.push(m); }); });
         state.allMatches = all;
         var today = JC.localDateStr();
-        // 模型B（v3 对照口径：相对差值排名表）
+        // 模型B（对照口径：相对差值排名表）
         var samplesB = JC.modelSamples(all, 'relB', { windowDays: 30, endDate: JC.addDays(today, 1) });
         state.liveModelB = JC.modelTrain(samplesB, { maxActualRank: 6 });
-        // 模型A（v4 多因子引擎）：联赛/球队历史库 data/history.json
-        return fetch('data/history.json', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }, function () { return null; })
-          .then(function (hist) {
-            state.engine = JC.factorEngine({ matches: all, history: hist, model: { windowDays: 30, maxActualRank: 6 } });
-          });
+        // 模型A = v5 数据核心引擎（只吃赔率与赔率变化：排名A/排名B/市场/趋势，权重自学习）
+        state.engine = JC.factorEngine({ matches: all, model: { windowDays: 30, maxActualRank: 6 } });
       });
   }
 
@@ -131,20 +128,20 @@
     if (pred) {
       tracks = [
         { key: 'baseA', name: '基线A（差值最小项）', g: pred.baseA, odds: oddsOf(pred.baseA) },
-        { key: 'modelA', name: '模型A（多因子·自修正）', g: pred.modelA, odds: oddsOf(pred.modelA) },
+        { key: 'modelA', name: '模型A（数据核心·自修正）', g: pred.modelA, odds: oddsOf(pred.modelA) },
         { key: 'modelB', name: '模型B（B口径·对照）', g: pred.modelB, odds: oddsOf(pred.modelB) }
       ];
     } else if (diffs) {
       var diffsA = (diffs.groups || []).map(function (x) { return x.diffA; });
       var diffsB = (diffs.groups || []).map(function (x) { return x.relB; });
-      var fp = state.engine ? state.engine.predictFor({ businessDate: m.businessDate || DATE, league: m.league, home: m.home, away: m.away }, diffsA,
+      var fp = state.engine ? state.engine.predictFor({ businessDate: m.businessDate || DATE }, diffsA,
         { ttg: last.odds.goals, captures: m.captures, rel: diffsB }) : null;
       state.factorInfo = fp ? fp.info : null;
       var liveModelG = fp ? fp.goal : diffs.predBaseA;
       var liveModelB = state.liveModelB ? JC.modelPredict(state.liveModelB, diffsB, null) : null;
       tracks = [
         { key: 'baseA', name: '基线A（差值最小项）', g: diffs.predBaseA, odds: oddsOf(diffs.predBaseA) },
-        { key: 'modelA', name: '模型A（多因子·实时）', g: liveModelG, odds: oddsOf(liveModelG) },
+        { key: 'modelA', name: '模型A（数据核心·实时）', g: liveModelG, odds: oddsOf(liveModelG) },
         { key: 'modelB', name: '模型B（实时·对照）', g: liveModelB, odds: oddsOf(liveModelB) }
       ];
     }
@@ -220,11 +217,10 @@
       var finfo = v.pred ? v.pred.factors : state.factorInfo;
       var factTxt = '';
       if (finfo && finfo.w) {
-        var wNames = ['排名A', '排名B', '联赛', '球队', '市场', '趋势'];
+        var wNames = ['排名A', '排名B', '市场', '趋势'];
         var wtxt = finfo.w.map(function (x, i) { return (wNames[i] || ('因子' + (i + 1))) + ' ' + Math.round((x || 0) * 100) + '%'; }).join(' · ');
-        factTxt = '<p class="card-sub" style="margin-top:6px">多因子修正：权重（' + wtxt + '）' +
-          '；本场联赛历史 ' + (finfo.leagueN || 0) + ' 场' + (finfo.lh != null ? '，两队期望进球 ' + finfo.lh + ' : ' + finfo.la : '') +
-          '；历史库 ' + (finfo.histN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
+        factTxt = '<p class="card-sub" style="margin-top:6px">数据核心模型（只吃赔率与赔率变化）：权重（' + wtxt + '）' +
+          '；排名表样本 ' + (finfo.rankN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
       }
       html += '</tbody></table></div>' + factTxt +
         (v.pred ? '' : '<p class="card-sub" style="margin-top:6px">（未冻结：赛前显示实时预测，赛果落定后冻结存档）</p>') +

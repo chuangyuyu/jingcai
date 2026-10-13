@@ -5,7 +5,7 @@
 #           UPDATE-README.txt 操作 → 到 Docker 里重启 jingcai 容器
 #   · 包含：docs 网页代码（不含 NAS 本地数据）、scripts、nas、package.json、
 #           docker-compose.yml、README.md、
-#           docs/data 的 history.json 与 numbers.json（多因子模型历史库种子）、
+#           docs/data 的 history.json 与 numbers.json（历史档案与编号历史种子）、
 #           config.nas.json（NAS 推荐配置：autoPush=false + 整点时间表）、
 #           UPDATE-README.txt（操作说明）
 #   · 不含：docs/data/days、docs/data/index.json、docs/excel（NAS 本地数据，绝不覆盖）
@@ -60,8 +60,9 @@ $readme = @"
 5) 浏览器打开 http://NAS的IP:8788 验证：页面状态栏显示「NAS 本地数据」即正常。
 
 本次更新内容：
-· v4.0.1 多因子模型（权重规则修正：因子需证明自己才获得权重）
-· 定时改为每天 8:00~23:00 每小时整点（夜间不执行）
+· v5.0.0 数据核心模型：自学习只吃「赔率 + 赔率的整点变化」两样根本数据（排名A/排名B/市场/趋势
+  四因子，权重自学习；联赛/球队等外部数据因子已全部下线）；历史预测已按新算法重新冻结
+· 注意：本机端（电脑）会自动把预测重算并推送到 GitHub 网页
 "@
 [System.IO.File]::WriteAllText((Join-Path $stage "UPDATE-README.txt"), $readme, (New-Object System.Text.UTF8Encoding($true)))
 
