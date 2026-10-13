@@ -151,10 +151,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -162,20 +163,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 1,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -328,10 +333,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -339,20 +345,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 3,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -505,10 +515,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -516,20 +527,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 4,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -682,10 +697,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -693,20 +709,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 4,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -859,10 +879,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -870,20 +891,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 3,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1036,10 +1061,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1047,20 +1073,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 4,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1213,10 +1243,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1224,20 +1255,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 3,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1390,10 +1425,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1401,20 +1437,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 3,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1567,10 +1607,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1578,20 +1619,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 2,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1744,10 +1789,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1755,20 +1801,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 2,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -1921,10 +1971,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -1932,20 +1983,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 1,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -2098,10 +2153,11 @@
     "windowB": 21,
     "factors": {
      "w": [
-      0.8,
-      0.06,
-      0.1,
-      0.05
+      0.75,
+      0.05,
+      0.07,
+      0.09,
+      0.04
      ],
      "evalN": 31,
      "evalHit": {
@@ -2109,20 +2165,24 @@
       "base": 0.26,
       "rank": 0.16,
       "relrank": 0.33,
+      "valley": 0.17,
       "market": 0.16,
       "trend": 0,
       "marketN": 31,
       "trendN": 11,
       "relN": 27,
+      "valleyN": 24,
       "conf": 0.44
      },
      "rankN": 28,
+     "valleyV": 2,
      "hasTrend": true,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   }
  ],

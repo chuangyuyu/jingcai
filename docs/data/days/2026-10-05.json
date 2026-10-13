@@ -92,9 +92,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -103,20 +104,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -210,9 +215,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -221,20 +227,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 1,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -328,9 +338,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -339,20 +350,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 4,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -446,9 +461,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -457,20 +473,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 4,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -564,9 +584,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -575,20 +596,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 1,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -682,9 +707,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -693,20 +719,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -800,9 +830,10 @@
     "windowB": 0,
     "factors": {
      "w": [
-      0.81,
+      0.76,
       0.05,
-      0.1,
+      0.06,
+      0.09,
       0.04
      ],
      "evalN": 0,
@@ -811,20 +842,24 @@
       "base": null,
       "rank": null,
       "relrank": null,
+      "valley": null,
       "market": null,
       "trend": null,
       "marketN": 0,
       "trendN": 0,
       "relN": 0,
+      "valleyN": 0,
       "conf": 0
      },
      "rankN": 0,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": false
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   }
  ],

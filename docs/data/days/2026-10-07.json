@@ -93,10 +93,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -104,20 +105,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -212,10 +217,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -223,20 +229,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 3,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -331,10 +341,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -342,20 +353,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -450,10 +465,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -461,20 +477,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 3,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -569,10 +589,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -580,20 +601,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 2,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   },
   {
@@ -688,10 +713,11 @@
     "windowB": 13,
     "factors": {
      "w": [
-      0.8,
+      0.75,
       0.05,
-      0.1,
-      0.05
+      0.06,
+      0.09,
+      0.04
      ],
      "evalN": 19,
      "evalHit": {
@@ -699,20 +725,24 @@
       "base": 0.26,
       "rank": 0.26,
       "relrank": 0.38,
+      "valley": 0.25,
       "market": 0.16,
       "trend": 0,
       "marketN": 19,
       "trendN": 5,
       "relN": 16,
+      "valleyN": 12,
       "conf": 0.32
      },
      "rankN": 17,
+     "valleyV": 3,
      "hasTrend": false,
      "hasMarket": true,
-     "hasRel": true
+     "hasRel": true,
+     "hasValley": true
     },
-    "ver": "5.0.0",
-    "at": "2026-10-13T12:28:19+08:00"
+    "ver": "5.1.0",
+    "at": "2026-10-13T12:52:51+08:00"
    }
   }
  ],
