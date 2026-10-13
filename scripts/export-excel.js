@@ -161,10 +161,10 @@ function addModelSheet(wb, rows, config, factorWeights) {
   if (factorWeights && factorWeights.eval) {
     const w = factorWeights;
     const pw = v => (v == null ? '—' : Math.round(v * 100) + '%');
-    ws.addRow(['数据核心修正（模型A = 排名A⊕排名B⊕市场⊕趋势 加权融合）']).font = { bold: true, size: 12 };
-    ws.addRow(['当前因子权重（滚动自学习）', '排名A ' + pw(w.rank) + ' · 排名B ' + pw(w.relrank) + ' · 市场 ' + pw(w.market) + ' · 趋势 ' + pw(w.trend)]);
+    ws.addRow(['数据核心修正（模型A = 排名A⊕排名B⊕谷值⊕市场⊕趋势 加权融合）']).font = { bold: true, size: 12 };
+    ws.addRow(['当前因子权重（滚动自学习）', '排名A ' + pw(w.rank) + ' · 排名B ' + pw(w.relrank) + ' · 谷值 ' + pw(w.valley) + ' · 市场 ' + pw(w.market) + ' · 趋势 ' + pw(w.trend)]);
     if (w.eval.n) {
-      ws.addRow(['权重评测样本', w.eval.n + ' 场（各自单独命中率：排名A ' + pw(w.eval.rank) + ' · 排名B ' + pw(w.eval.relrank) +
+      ws.addRow(['权重评测样本', w.eval.n + ' 场（各自单独命中率：排名A ' + pw(w.eval.rank) + ' · 排名B ' + pw(w.eval.relrank) + ' · 谷值 ' + pw(w.eval.valley) +
         ' · 市场 ' + pw(w.eval.market) + ' · 趋势 ' + pw(w.eval.trend) + ' · 基础 ' + pw(w.eval.base) + '）']);
     }
     ws.addRow(['说明：因子对真实结果的"信息量"（对数似然）需超过基础分布才获得权重（0.12 纳特封顶），达不到的自动休眠、权重≈0；全部因子只由赔率与赔率变化派生（v5 起联赛/球队等外部数据因子已下线）。']).font = { color: { argb: COLOR_MUTED } };
@@ -291,12 +291,13 @@ function addHelpSheet(wb, config) {
     '',
     '【预测双轨】',
     '  基线：预测 = 差值最小的进球数（0球用拟合值参与比较）',
-    '  自修正模型（v5 数据核心）：模型A = 排名A因子 ⊕ 排名B因子 ⊕ 市场因子 ⊕ 趋势因子，',
+    '  自修正模型（v5 数据核心）：模型A = 排名A因子 ⊕ 排名B因子 ⊕ 谷值因子 ⊕ 市场因子 ⊕ 趋势因子，',
     '    **只吃两样根本数据：赔率（含差值结构）+ 赔率的整点变化**——一切调整最终都通过赔率反映',
     '    （赔率已含市场对伤停/战意/阵容/场地等全部公开信息的定价，v5 起联赛/球队等外部数据因子全部下线）。',
     '    按各因子近期实盘表现自学习权重做加权对数池融合，取综合最高的进球数；',
     '    · 排名A因子：口径A差值排名 × 进球数 命中率（近 ' + (modelCfg.windowDays || 30) + ' 天，爆冷剔除）；',
     '    · 排名B因子：口径B相对差值的排名表（即原"模型B"信号）；',
+    '    · 谷值因子：1~5球差值曲线"凹处最低点"（两端负值不成凹形、不参与）+ 学习"实际进球数−谷值"的偏差分布；',
     '    · 市场因子：总进球赔率隐含的进球分布（1/赔率归一化——市场定价的直接表达）；',
     '    · 趋势因子：较早快照→最新快照的差值变化 softmax（用好整点抓取的更新数据）；',
     '    · 权重每次运行按最近实盘滚动评测重算：因子对真实结果的"信息量"（对数似然）需超过基础分布',

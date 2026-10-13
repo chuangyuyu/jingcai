@@ -222,8 +222,8 @@ function freezeMissingPredictions(config) {
   if (frozen) {
     const ws = engine.weightsFor(JC.localDateStr());
     log(`冻结预测：${frozen} 场（封盘即冻${refrozen ? '；其中 ' + refrozen + ' 场因算法升级重算' : ''}，模型窗口 ${(config.model && config.model.windowDays) || 30} 天）`);
-    log(`  数据核心权重：排名A ${Math.round(ws.rank * 100)}% · 排名B ${Math.round(ws.relrank * 100)}% · 市场 ${Math.round(ws.market * 100)}% · 趋势 ${Math.round(ws.trend * 100)}%` +
-      `（滚动评测 ${ws.eval.n} 场，各自命中率：排名A ${fmtRate(ws.eval.rank)}/排名B ${fmtRate(ws.eval.relrank)}/市场 ${fmtRate(ws.eval.market)}/趋势 ${fmtRate(ws.eval.trend)}，基础 ${fmtRate(ws.eval.base)}；市场可用 ${ws.eval.marketN} 场、趋势可用 ${ws.eval.trendN} 场）`);
+    log(`  数据核心权重：排名A ${Math.round(ws.rank * 100)}% · 排名B ${Math.round(ws.relrank * 100)}% · 谷值 ${Math.round(ws.valley * 100)}% · 市场 ${Math.round(ws.market * 100)}% · 趋势 ${Math.round(ws.trend * 100)}%` +
+      `（滚动评测 ${ws.eval.n} 场，各自命中率：排名A ${fmtRate(ws.eval.rank)}/排名B ${fmtRate(ws.eval.relrank)}/谷值 ${fmtRate(ws.eval.valley)}/市场 ${fmtRate(ws.eval.market)}/趋势 ${fmtRate(ws.eval.trend)}，基础 ${fmtRate(ws.eval.base)}；市场可用 ${ws.eval.marketN} 场、趋势可用 ${ws.eval.trendN} 场）`);
   }
   return frozen;
 }

@@ -217,10 +217,11 @@
       var finfo = v.pred ? v.pred.factors : state.factorInfo;
       var factTxt = '';
       if (finfo && finfo.w) {
-        var wNames = ['排名A', '排名B', '市场', '趋势'];
+        var wNames = ['排名A', '排名B', '谷值', '市场', '趋势'];
         var wtxt = finfo.w.map(function (x, i) { return (wNames[i] || ('因子' + (i + 1))) + ' ' + Math.round((x || 0) * 100) + '%'; }).join(' · ');
         factTxt = '<p class="card-sub" style="margin-top:6px">数据核心模型（只吃赔率与赔率变化）：权重（' + wtxt + '）' +
-          '；排名表样本 ' + (finfo.rankN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
+          '；本场差值曲线谷值 ' + (finfo.valleyV != null ? JC.labelG(finfo.valleyV) : '—') +
+          ' · 排名表样本 ' + (finfo.rankN || 0) + ' 场 · 权重评测 ' + (finfo.evalN || 0) + ' 场</p>';
       }
       html += '</tbody></table></div>' + factTxt +
         (v.pred ? '' : '<p class="card-sub" style="margin-top:6px">（未冻结：赛前显示实时预测，赛果落定后冻结存档）</p>') +
@@ -230,10 +231,12 @@
     // ③ 差值明细（8档）
     if (v.diffs) {
       var gs = v.diffs.groups || [];
+      var valleyV = JC.valleyOf(gs.map(function (x) { return x.diffA; }));
       html += '<div class="card"><div class="card-head"><h2>各进球数赔率与差值（最后一次记录）</h2></div>' +
         '<div class="table-scroll"><table class="grid"><thead><tr><th>进球数</th><th>总进球赔率</th><th>优化A</th><th>差值A</th><th>相对A</th><th>平均B</th><th>差值B</th><th>标注</th></tr></thead><tbody>';
       gs.forEach(function (g) {
         var marks = [];
+        if (valleyV != null && g.g === valleyV) marks.push('谷值');
         if (v.actual != null && g.g === v.actual) marks.push('实际');
         v.tracks.forEach(function (t) { if (t.g != null && t.g === g.g) marks.push(t.key === 'baseA' ? '基线A' : (t.key === 'modelA' ? '模型A' : '模型B')); });
         var cls = '';

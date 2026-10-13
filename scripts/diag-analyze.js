@@ -61,4 +61,4 @@ diffsList.filter(x => x.same === 'DIFF').forEach(x => {
   console.log('  ' + x.date + ' ' + x.t + ' 实际' + x.actual + '球 | 基线' + x.baseA + ' | 冻结(旧)' + x.frozen + ' | v3' + x.v3 + ' | v5新' + x.v4new);
 });
 const w = engine.weightsFor(JC.localDateStr());
-console.log('\n数据核心权重:', JSON.stringify({ 排名A: Math.round(w.rank * 100) + '%', 排名B: Math.round(w.relrank * 100) + '%', 市场: Math.round(w.market * 100) + '%', 趋势: Math.round(w.trend * 100) + '%', eval: w.eval }));
+console.log('\n数据核心权重:', JSON.stringify({ 排名A: Math.round(w.rank * 100) + '%', 排名B: Math.round(w.relrank * 100) + '%', 谷值: Math.round(w.valley * 100) + '%', 市场: Math.round(w.market * 100) + '%', 趋势: Math.round(w.trend * 100) + '%', eval: w.eval }));

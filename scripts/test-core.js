@@ -306,10 +306,33 @@ console.log('== 数据核心修正模型（v5：只吃赔率与赔率变化）==
   const diffsFlat = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5];
   const pM = engine.predictFor({ businessDate: '2026-02-20' }, diffsFlat, { ttg: [15, 15, 1.5, 15, 15, 15, 15, 15] });
   ok('市场因子生效：赔率最低档 → 预测该档（2球）', pM && pM.goal === 2, 'goal=' + (pM && pM.goal));
-  ok('预测附带 4 因子权重信息', !!(pM && pM.info && pM.info.w.length === 4), 'w=' + JSON.stringify(pM && pM.info && pM.info.w));
-  ok('因子可用标记（本场：市场有、趋势无）', !!(pM && pM.info && pM.info.hasMarket === true && pM.info.hasTrend === false && pM.info.hasRel === false));
+  ok('预测附带 5 因子权重信息', !!(pM && pM.info && pM.info.w.length === 5), 'w=' + JSON.stringify(pM && pM.info && pM.info.w));
+  ok('因子可用标记（本场：市场有、其余无样本）', !!(pM && pM.info && pM.info.hasMarket === true && pM.info.hasTrend === false && pM.info.hasRel === false && pM.info.hasValley === false));
   const w0 = engine.weightsFor('2026-02-20');
   ok('引擎已移除联赛/球队因子（纯赔率数据核心）', w0.league === undefined && w0.team === undefined);
+
+  // 谷值因子（v5.1）：凹处最低点只在 1~5 球内定位（两端负值/拟合值不参与）；
+  // 学习"实际进球数 − 谷值"的偏差分布（用户经验：集中在谷值或±1，由数据验证）
+  const dV = [0.9, 0.5, -0.2, 1.0, 2.0, 3.0, -5.0, -8.0];
+  ok('valleyOf：取 1~5 球最低点（=2球），忽略两端负值', JC.valleyOf(dV) === 2, 'v=' + JC.valleyOf(dV));
+  ok('valleyOf：有效点不足 2 个返回 null', JC.valleyOf([0.5, 1, null, null, null, null, null, null]) === null);
+  {
+    const vSamples = [];
+    for (let i = 0; i < 30; i++) {
+      const v = (i % 2) + 2;                             // 谷值在 2/3 球
+      const off = i < 20 ? 0 : (i % 2 ? 1 : -1);         // 谷值 20 次、±1 各 5 次
+      const diffs = [0.8, 1.6, 1.8, 2.0, 2.2, 2.6, null, null];
+      diffs[v] = 0.1;
+      vSamples.push({ date: 'D', diffs: diffs, actual: v + off });
+    }
+    const vm = JC.valleyTrain(vSamples, { maxActualRank: 6 });
+    ok('valleyTrain：样本计数', vm.used === 30, 'used=' + vm.used);
+    const vd = JC.valleyDist(vm, [0.8, 1.4, 1.6, 0.1, 1.9, 2.4, -6, 1.0]); // 谷值=3（6球-6 为干扰，须忽略）
+    ok('valleyDist：峰值在谷值档（3球）', !!(vd && vd.indexOf(Math.max.apply(null, vd)) === 3),
+      'vd=' + JSON.stringify(vd && vd.map(x => Math.round(x * 1000) / 1000)));
+    ok('valleyDist：±1 次峰高于远处', !!(vd && vd[2] > vd[0] && vd[4] > vd[0]));
+    ok('valleyDist：无样本返回 null（不投票）', JC.valleyDist({ cnt: [], used: 0 }, dV) === null);
+  }
 
   // 市场因子：赔率隐含分布（低赔率档=市场峰值）
   const md = JC.marketDist([10, 8, 3.2, 4.5, 9, 19, 41, 15]);
@@ -393,7 +416,9 @@ console.log('== 数据核心修正模型（v5：只吃赔率与赔率变化）==
   const eng2 = JC.factorEngine({ matches: liveMatches, model: { windowDays: 30, maxActualRank: 6 } });
   const w = eng2.weightsFor('2026-03-15');
   ok('权重评测：样本数 > 0', w.eval.n > 0, 'n=' + w.eval.n);
-  ok('权重集合完整（排名A/排名B/市场/趋势）', w.rank != null && w.relrank != null && w.market != null && w.trend != null);
+  ok('权重集合完整（排名A/排名B/谷值/市场/趋势）', w.rank != null && w.relrank != null && w.valley != null && w.market != null && w.trend != null);
+  ok('谷值因子参与评测并学到权重（超过先验水平）', w.eval.valleyN > 0 && w.valley > 0.08,
+    'wV=' + Math.round(w.valley * 100) / 100 + ' n=' + w.eval.valleyN);
   ok('市场因子单独命中率高（与实盘赔率一致）', w.eval.market != null && w.eval.market >= 0.9, 'market=' + w.eval.market);
   ok('权重自学习：市场因子明显获得权重（不再是先验水平）', w.market > 0.15,
     'w=' + JSON.stringify({ r: Math.round(w.rank * 100) / 100, rb: Math.round(w.relrank * 100) / 100, m: Math.round(w.market * 100) / 100, tr: Math.round(w.trend * 100) / 100 }));

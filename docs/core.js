@@ -20,7 +20,8 @@
  *         （一切调整最终都通过赔率反映——赔率已含市场对伤停/战意/阵容/场地等全部公开信息的定价，
  *           联赛/球队等外部数据因子已全部下线）：
  *         ①排名A（差值排名×进球数命中率表，近30天，爆冷剔除）②排名B（口径B相对差值排名表）
- *         ③市场（总进球赔率隐含分布）④趋势（快照间差值变化的 softmax 内嵌函数）
+ *         ③谷值（1~5球差值曲线凹处最低点 + 学习的历史偏差分布）④市场（总进球赔率隐含分布）
+ *         ⑤趋势（快照间差值变化的 softmax 内嵌函数）
  *         各因子按近期实盘表现的"信息量"（对数似然）自学习权重：未超过基础分布的自动休眠，
  *         预测 = 加权对数池（几何平均）取最大——因子不需全部激活，数据说话，每次运行自更新。
  *   · 每场在封盘（开赛）时冻结当时的预测（用该场之前的窗口，杜绝未来数据泄漏），长期对比各轨命中率。
@@ -35,7 +36,7 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var VERSION = '5.0.0';
+  var VERSION = '5.1.0';
   var API_BASE = 'https://webapi.sporttery.cn';
 
   var ODDS_URL = API_BASE + '/gateway/jc/football/getMatchCalculatorV1.qry' +
@@ -472,11 +473,14 @@
   //   自学习模型只吃两样根本数据：
   //     ① 赔率（及其推导出的差值结构）——市场对每场比赛的完整定价；
   //     ② 赔率的整点变化——资金流向 / 市场修正方向（用好每小时抓取）。
-  //   四个因子全部由这两样数据派生：
+  //   五个因子全部由这两样数据派生：
   //   ① 排名A：口径A差值排名 × 进球数 经验命中率（近 windowDays 天，剔除深冷门）——原自修正模型
   //   ② 排名B：口径B相对差值的排名表（原"模型B"信号）
-  //   ③ 市场：总进球赔率隐含的进球分布（1/赔率归一化）
-  //   ④ 趋势（内嵌函数）：较早快照→最新快照的差值变化 softmax——用好整点更新数据
+  //   ③ 谷值（v5.1，用户口径）：1~5球差值曲线"凹处最低点" + 学习"实际进球数−谷值"的偏差分布——
+  //      曲线两端的负值（0球拟合外推、6/7+ 结构缺格偏负）不成凹形，不参与谷值定位；
+  //      用户实测结果集中在谷值或左右±1，具体偏差形状由数据说话（自学习）
+  //   ④ 市场：总进球赔率隐含的进球分布（1/赔率归一化）
+  //   ⑤ 趋势（内嵌函数）：较早快照→最新快照的差值变化 softmax——用好整点更新数据
   //   每个因子按【近期实盘表现】自动决定话语权：对真实结果的"信息量"（对数似然）
   //   超过基础分布才拿到权重，表现平平的因子权重趋近 0（休眠，不干扰预测）。
   //   预测 = 各因子分布的加权对数池（加权几何平均）取最大档。
@@ -489,9 +493,9 @@
   // 注：docs/data/history.json（联赛/球队历史档案）仍随编号历史一并维护（零额外请求），
   //   但 v5 引擎不再读取——保留为分析档案与将来可选的扩展数据源。
 
-  var FACTOR_PRIOR = { rank: 1, relrank: 0.06, market: 0.12, trend: 0.05 };
+  var FACTOR_PRIOR = { rank: 1, relrank: 0.06, valley: 0.08, market: 0.12, trend: 0.05 };
   // 先验：证据不足时以排名因子为骨架；市场因子略高于其他（赔率信息先验可信度较高）；
-  // 排名B（口径B相对差值的排名表，即"模型B"信号）与趋势≈休眠，必须用实盘表现证明自己。
+  // 谷值/排名B/趋势≈休眠，必须用实盘表现（对数似然）证明自己才获得更高权重。
 
   // history 文档 → 比赛行（只取 beforeDate 之前，严格 < 防同日泄漏）
   function historyRows(histDoc, beforeDate) {
@@ -613,6 +617,58 @@
     return s;
   }
 
+  // 谷值定位：差值曲线的"凹处最低点" = 1~5 球内 diffA 最小档。
+  // 两端不参与：0球的差值是拟合外推值、6/7+ 因比分池结构缺格（6:0/0:6 在其他档）偏负，
+  // 都不成凹形（用户口径）。有效点不足 2 个返回 null。
+  function valleyOf(diffs) {
+    if (!diffs) return null;
+    var best = null, bv = Infinity, n = 0;
+    for (var g = 1; g <= 5; g++) {
+      if (diffs[g] == null) continue;
+      n++;
+      if (diffs[g] < bv) { bv = diffs[g]; best = g; }
+    }
+    return n >= 2 ? best : null;
+  }
+
+  // 学习"实际进球数 − 谷值"的偏差分布（近 windowDays 样本；与排名表同口径剔除深冷门）。
+  // 用户经验：结果集中在谷值或其左右±1——具体偏差形状让数据说话（自学习）。
+  function valleyTrain(samples, opts) {
+    var maxActualRank = (opts && opts.maxActualRank) || 6;
+    var cnt = [0, 0, 0, 0, 0, 0, 0, 0, 0];   // 偏移 -4..+4（索引 = 偏移 + 4）
+    var used = 0;
+    (samples || []).forEach(function (s) {
+      if (s.actual == null || !s.diffs) return;
+      var rankActual = modelRank(0, s.diffs, s.actual);
+      if (rankActual == null || rankActual >= maxActualRank) return;
+      var v = valleyOf(s.diffs);
+      if (v == null) return;
+      var off = s.actual - v;
+      if (off < -4 || off > 4) return;
+      cnt[off + 4]++;
+      used++;
+    });
+    return { cnt: cnt, used: used };
+  }
+
+  // 谷值分布：把偏差直方图套到本场谷值上——本场谷值档及其左右（偏差可达处）得概率，
+  // 平滑（0.92/0.08 均匀混合）保证 8 档都有支撑，不做硬否决。
+  function valleyDist(vmodel, diffs) {
+    if (!vmodel || !vmodel.used || !diffs) return null;
+    var v = valleyOf(diffs);
+    if (v == null) return null;
+    var P = [0, 0, 0, 0, 0, 0, 0, 0], sum = 0, o, b;
+    for (o = -4; o <= 4; o++) {
+      b = v + o;
+      if (b < 0 || b > 7) continue;
+      var p = (vmodel.cnt[o + 4] + 0.5) / (vmodel.used + 4.5);
+      P[b] += p; sum += p;
+    }
+    if (!sum) return null;
+    for (b = 0; b < 8; b++) P[b] = 0.92 * (P[b] / sum) + 0.08 / 8;
+    return P;
+  }
+
   // 因子引擎（v5）：按销售日建表/评测（全部 memo，严格只用该日之前的数据），权重滚动自学习。
   // opts: { matches 全部比赛（排名样本）, model {windowDays,maxActualRank},
   //         evalDays 权重评测窗口(默认60天), evalMax 评测样本上限(默认150) }
@@ -633,7 +689,9 @@
       // 排名B：口径B（相对差值）的排名表——即"模型B"的信号，作为独立因子参与权重学习
       var samplesB = modelSamples(opts.matches, 'relB', { windowDays: windowDays, endDate: slate });
       var rankB = modelTrain(samplesB, { maxActualRank: maxRank });
-      var st = { slate: slate, rankModel: rankModel, rankUsed: rankModel.used, rankB: rankB };
+      // 谷值（v5.1）：1~5球差值曲线凹处最低点 + 学习的"实际−谷值"偏差分布
+      var valleyModel = valleyTrain(samples, { maxActualRank: maxRank });
+      var st = { slate: slate, rankModel: rankModel, rankUsed: rankModel.used, rankB: rankB, valleyModel: valleyModel, valleyUsed: valleyModel.used };
       memo[key] = st;
       return st;
     }
@@ -659,9 +717,9 @@
       var baseCounts = [0, 0, 0, 0, 0, 0, 0, 0];
       evalSamples.forEach(function (sm) { if (sm.actual != null) baseCounts[sm.actual]++; });
       var baseDist = distOf(baseCounts);
-      var cnt = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };
-      var hit = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
-      var ll = { base: 0, rank: 0, relrank: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
+      var cnt = { base: 0, rank: 0, relrank: 0, valley: 0, market: 0, trend: 0 };
+      var hit = { base: 0, rank: 0, relrank: 0, valley: 0, market: 0, trend: 0 };   // argmax 命中（展示用）
+      var ll = { base: 0, rank: 0, relrank: 0, valley: 0, market: 0, trend: 0 };   // 对数似然累计（学习用）
       var n = 0;
       evalSamples.forEach(function (sm, i) {
         var est = stateFor(sm.date); // 严格用该场之前的数据重建（防泄漏）
@@ -675,6 +733,7 @@
         take('base', baseDist);
         take('rank', rankDist(est.rankModel, sm.diffs));
         take('relrank', i < evalSamplesB.length ? rankDist(est.rankB, evalSamplesB[i].diffs) : null);
+        take('valley', valleyDist(est.valleyModel, sm.diffs));
         take('market', marketDist(sm.ttg));
         take('trend', trendDist(sm.caps));
       });
@@ -688,25 +747,26 @@
       };
       var wR = (1 - conf) * FACTOR_PRIOR.rank + conf * (0.12 + 0.88 * skill('rank'));
       var wRB = (1 - conf) * FACTOR_PRIOR.relrank + conf * (0.02 + 1.00 * skill('relrank'));
+      var wV = (1 - conf) * FACTOR_PRIOR.valley + conf * (0.02 + 1.00 * skill('valley'));
       var wM = (1 - conf) * FACTOR_PRIOR.market + conf * (0.02 + 1.20 * skill('market'));
       var wTr = (1 - conf) * FACTOR_PRIOR.trend + conf * (0.02 + 1.00 * skill('trend'));
-      var wsum = wR + wRB + wM + wTr || 1;
+      var wsum = wR + wRB + wV + wM + wTr || 1;
       var r2 = function (v) { return v == null ? null : Math.round(v * 100) / 100; };
       var rateOf = function (f) { return cnt[f] ? hit[f] / cnt[f] : null; };
       var out = {
-        rank: wR / wsum, relrank: wRB / wsum, market: wM / wsum, trend: wTr / wsum,
+        rank: wR / wsum, relrank: wRB / wsum, valley: wV / wsum, market: wM / wsum, trend: wTr / wsum,
         eval: {
           n: n, base: r2(rateOf('base')),
-          rank: r2(rateOf('rank')), relrank: r2(rateOf('relrank')),
+          rank: r2(rateOf('rank')), relrank: r2(rateOf('relrank')), valley: r2(rateOf('valley')),
           market: r2(rateOf('market')), trend: r2(rateOf('trend')),
-          marketN: cnt.market, trendN: cnt.trend, relN: cnt.relrank, conf: r2(conf)
+          marketN: cnt.market, trendN: cnt.trend, relN: cnt.relrank, valleyN: cnt.valley, conf: r2(conf)
         }
       };
       wMemo[key] = out;
       return out;
     }
 
-    // 对一场比赛预测（4 因子加权对数池，全部由赔率与赔率变化派生）。
+    // 对一场比赛预测（5 因子加权对数池，全部由赔率与赔率变化派生）。
     // match: { businessDate }；diffs: 8 档差值数组（口径A）；
     // extra: { ttg: 总进球赔率数组, captures: 快照数组, rel: 口径B相对差值数组 }
     //        （缺省时对应因子不参与）
@@ -719,6 +779,7 @@
       if (!PR) return null;
       var rel = extra && extra.rel ? extra.rel : null;
       var PRB = rel ? rankDist(st.rankB, rel) : null;
+      var PV = valleyDist(st.valleyModel, diffs);
       var PM = marketDist(extra && extra.ttg);
       var PTr = trendDist(extra && extra.captures);
       var logS = [0, 0, 0, 0, 0, 0, 0, 0], g;
@@ -730,7 +791,7 @@
           logS[g2] += w * Math.log(v + 1e-9);
         }
       };
-      addF(PR, ws.rank); addF(PRB, ws.relrank); addF(PM, ws.market); addF(PTr, ws.trend);
+      addF(PR, ws.rank); addF(PRB, ws.relrank); addF(PV, ws.valley); addF(PM, ws.market); addF(PTr, ws.trend);
       var best = null, bv = -Infinity;
       for (g = 0; g <= 7; g++) {
         if (diffs[g] == null) continue; // 与基线口径一致：只考虑有差值的档
@@ -741,10 +802,10 @@
       return {
         goal: best,
         info: {
-          w: [r2(ws.rank), r2(ws.relrank), r2(ws.market), r2(ws.trend)],
+          w: [r2(ws.rank), r2(ws.relrank), r2(ws.valley), r2(ws.market), r2(ws.trend)],
           evalN: ws.eval.n, evalHit: ws.eval,
-          rankN: st.rankUsed,
-          hasTrend: !!PTr, hasMarket: !!PM, hasRel: !!PRB
+          rankN: st.rankUsed, valleyV: valleyOf(diffs),
+          hasTrend: !!PTr, hasMarket: !!PM, hasRel: !!PRB, hasValley: !!PV
         }
       };
     }
@@ -1241,6 +1302,9 @@
     factorEngine: factorEngine,
     marketDist: marketDist,
     trendDist: trendDist,
+    valleyOf: valleyOf,
+    valleyTrain: valleyTrain,
+    valleyDist: valleyDist,
     stabilizeNeg: stabilizeNeg,
     historyRows: historyRows,
     historyDayFromResults: historyDayFromResults,

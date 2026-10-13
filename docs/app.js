@@ -203,8 +203,8 @@
     if (!state.engine) return '';
     var w = state.engine.weightsFor(todayStr());
     var pct = function (v) { return v == null ? '—' : Math.round(v * 100) + '%'; };
-    return '　｜　数据核心权重（滚动自学习）：排名A ' + pct(w.rank) + ' · 排名B ' + pct(w.relrank) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
-      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名A ' + pct(w.eval.rank) + '/排名B ' + pct(w.eval.relrank) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
+    return '　｜　数据核心权重（滚动自学习）：排名A ' + pct(w.rank) + ' · 排名B ' + pct(w.relrank) + ' · 谷值 ' + pct(w.valley) + ' · 市场 ' + pct(w.market) + ' · 趋势 ' + pct(w.trend) +
+      (w.eval.n ? '（评测 ' + w.eval.n + ' 场：排名A ' + pct(w.eval.rank) + '/排名B ' + pct(w.eval.relrank) + '/谷值 ' + pct(w.eval.valley) + '/市场 ' + pct(w.eval.market) + '/趋势 ' + pct(w.eval.trend) + '，基础 ' + pct(w.eval.base) + '；因子信息量须超过基础分布才获得权重）' : '（暂无评测样本）');
   }
 
   // ---------------------------------------------------------------- 投注单（勾选场次 → 结构化复制）
