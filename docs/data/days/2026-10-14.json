@@ -413,7 +413,7 @@
    "away": "皇马",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -815,7 +815,7 @@
    "away": "巴黎圣曼",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2070,5 +2070,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-14T22:00:04+08:00"
+ "updatedAt": "2026-10-14T23:00:04+08:00"
 }
