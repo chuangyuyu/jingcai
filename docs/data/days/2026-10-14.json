@@ -133,7 +133,48 @@
    ],
    "totalCaptures": 8,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 1,
+    "modelA": 4,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 0.552,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 1,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041966,
@@ -267,7 +308,48 @@
    ],
    "totalCaptures": 13,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 4,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.306,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041967,
@@ -401,7 +483,48 @@
    ],
    "totalCaptures": 7,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 2,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 0.741,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 2,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041968,
@@ -535,7 +658,48 @@
    ],
    "totalCaptures": 10,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.086,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041969,
@@ -669,7 +833,48 @@
    ],
    "totalCaptures": 9,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.491,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041970,
@@ -803,7 +1008,48 @@
    ],
    "totalCaptures": 8,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.749,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041971,
@@ -937,7 +1183,48 @@
    ],
    "totalCaptures": 12,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 7,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.275,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041972,
@@ -1071,7 +1358,48 @@
    ],
    "totalCaptures": 11,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.826,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2041973,
@@ -1086,64 +1414,6 @@
    "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
-    {
-     "at": "2026-10-14T19:00:03+08:00",
-     "odds": {
-      "ttg1": 3.7,
-      "s10": 7,
-      "s01": 6.8,
-      "had": [
-       2.75,
-       2.57,
-       2.66
-      ],
-      "goals": [
-       7,
-       3.7,
-       3,
-       4.15,
-       8.2,
-       21,
-       35,
-       55
-      ],
-      "scores": {
-       "0:0": 7,
-       "0:1": 6.8,
-       "0:2": 12,
-       "0:3": 30,
-       "0:4": 90,
-       "0:5": 300,
-       "1:0": 7,
-       "1:1": 5.25,
-       "1:2": 9.5,
-       "1:3": 27,
-       "1:4": 80,
-       "1:5": 200,
-       "2:0": 13,
-       "2:1": 9.7,
-       "2:2": 17,
-       "2:3": 40,
-       "2:4": 100,
-       "2:5": 350,
-       "3:0": 35,
-       "3:1": 28,
-       "3:2": 42,
-       "3:3": 80,
-       "4:0": 95,
-       "4:1": 90,
-       "4:2": 150,
-       "5:0": 350,
-       "5:1": 300,
-       "5:2": 450
-      },
-      "other": {
-       "win": 250,
-       "draw": 550,
-       "lose": 200
-      }
-     }
-    },
     {
      "at": "2026-10-14T20:00:03+08:00",
      "odds": {
@@ -1201,9 +1471,67 @@
        "lose": 200
       }
      }
+    },
+    {
+     "at": "2026-10-15T08:00:03+08:00",
+     "odds": {
+      "ttg1": 3.7,
+      "s10": 7,
+      "s01": 6.8,
+      "had": [
+       2.75,
+       2.5,
+       2.73
+      ],
+      "goals": [
+       7,
+       3.7,
+       3,
+       4.15,
+       8.2,
+       21,
+       35,
+       55
+      ],
+      "scores": {
+       "0:0": 7,
+       "0:1": 6.8,
+       "0:2": 12,
+       "0:3": 30,
+       "0:4": 90,
+       "0:5": 300,
+       "1:0": 7,
+       "1:1": 5.25,
+       "1:2": 9.5,
+       "1:3": 27,
+       "1:4": 80,
+       "1:5": 200,
+       "2:0": 13,
+       "2:1": 9.7,
+       "2:2": 17,
+       "2:3": 40,
+       "2:4": 100,
+       "2:5": 350,
+       "3:0": 35,
+       "3:1": 28,
+       "3:2": 42,
+       "3:3": 80,
+       "4:0": 95,
+       "4:1": 90,
+       "4:2": 150,
+       "5:0": 350,
+       "5:1": 300,
+       "5:2": 450
+      },
+      "other": {
+       "win": 250,
+       "draw": 550,
+       "lose": 200
+      }
+     }
     }
    ],
-   "totalCaptures": 7,
+   "totalCaptures": 8,
    "result": null,
    "pred": null
   },
@@ -1220,64 +1548,6 @@
    "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
-    {
-     "at": "2026-10-14T21:00:03+08:00",
-     "odds": {
-      "ttg1": 8.1,
-      "s10": 13,
-      "s01": 17.5,
-      "had": [
-       1.87,
-       3.8,
-       3.02
-      ],
-      "goals": [
-       25,
-       8.1,
-       4.8,
-       3.8,
-       4.4,
-       6.3,
-       10,
-       12
-      ],
-      "scores": {
-       "0:0": 25,
-       "0:1": 17.5,
-       "0:2": 23,
-       "0:3": 40,
-       "0:4": 80,
-       "0:5": 225,
-       "1:0": 13,
-       "1:1": 8.2,
-       "1:2": 10,
-       "1:3": 20,
-       "1:4": 55,
-       "1:5": 120,
-       "2:0": 15,
-       "2:1": 8,
-       "2:2": 11,
-       "2:3": 21,
-       "2:4": 55,
-       "2:5": 150,
-       "3:0": 21,
-       "3:1": 12.5,
-       "3:2": 14.5,
-       "3:3": 30,
-       "4:0": 45,
-       "4:1": 30,
-       "4:2": 31,
-       "5:0": 100,
-       "5:1": 70,
-       "5:2": 80
-      },
-      "other": {
-       "win": 26,
-       "draw": 150,
-       "lose": 37
-      }
-     }
-    },
     {
      "at": "2026-10-14T22:00:04+08:00",
      "odds": {
@@ -1335,9 +1605,67 @@
        "lose": 34
       }
      }
+    },
+    {
+     "at": "2026-10-15T08:00:03+08:00",
+     "odds": {
+      "ttg1": 8.2,
+      "s10": 14,
+      "s01": 17,
+      "had": [
+       1.97,
+       3.7,
+       2.85
+      ],
+      "goals": [
+       23,
+       8.2,
+       4.8,
+       3.8,
+       4.45,
+       6.3,
+       10,
+       12
+      ],
+      "scores": {
+       "0:0": 23,
+       "0:1": 17,
+       "0:2": 22,
+       "0:3": 40,
+       "0:4": 80,
+       "0:5": 225,
+       "1:0": 14,
+       "1:1": 8.35,
+       "1:2": 10,
+       "1:3": 20,
+       "1:4": 45,
+       "1:5": 120,
+       "2:0": 16,
+       "2:1": 8.25,
+       "2:2": 11,
+       "2:3": 21,
+       "2:4": 50,
+       "2:5": 125,
+       "3:0": 24,
+       "3:1": 12.5,
+       "3:2": 14.5,
+       "3:3": 27,
+       "4:0": 50,
+       "4:1": 30,
+       "4:2": 31,
+       "5:0": 100,
+       "5:1": 70,
+       "5:2": 80
+      },
+      "other": {
+       "win": 26,
+       "draw": 100,
+       "lose": 34
+      }
+     }
     }
    ],
-   "totalCaptures": 5,
+   "totalCaptures": 6,
    "result": null,
    "pred": null
   },
@@ -2070,5 +2398,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-14T23:00:04+08:00"
+ "updatedAt": "2026-10-15T08:00:03+08:00"
 }
