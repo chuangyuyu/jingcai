@@ -315,7 +315,7 @@
    "away": "科隆",
    "matchTime": "02:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -771,7 +771,7 @@
    "away": "西悉尼",
    "matchTime": "17:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -838,5 +838,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-15T22:00:03+08:00"
+ "updatedAt": "2026-10-15T23:00:02+08:00"
 }
