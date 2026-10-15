@@ -132,7 +132,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "3:2",
+    "halfScore": "1:1",
+    "goals": 5,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 1,
     "modelA": 4,
@@ -307,7 +314,14 @@
     }
    ],
    "totalCaptures": 13,
-   "result": null,
+   "result": {
+    "score": "3:6",
+    "halfScore": "0:3",
+    "goals": 9,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 4,
@@ -482,7 +496,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -657,7 +678,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "3:4",
+    "halfScore": "1:1",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -832,7 +860,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1007,7 +1042,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "3:2",
+    "halfScore": "0:0",
+    "goals": 5,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1182,7 +1224,14 @@
     }
    ],
    "totalCaptures": 12,
-   "result": null,
+   "result": {
+    "score": "2:4",
+    "halfScore": "0:3",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 7,
     "modelA": 3,
@@ -1357,7 +1406,14 @@
     }
    ],
    "totalCaptures": 11,
-   "result": null,
+   "result": {
+    "score": "6:0",
+    "halfScore": "3:0",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-15T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1533,7 +1589,48 @@
    ],
    "totalCaptures": 8,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 7,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 4,
+    "fit0A": 4.055,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 2,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T09:00:03+08:00"
+   }
   },
   {
    "matchId": 2041974,
@@ -1667,7 +1764,48 @@
    ],
    "totalCaptures": 6,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 0.942,
+    "fit0B": 0,
+    "windowA": 95,
+    "windowB": 81,
+    "factors": {
+     "w": [
+      0.71,
+      0.06,
+      0.07,
+      0.09,
+      0.06
+     ],
+     "evalN": 122,
+     "evalHit": {
+      "n": 122,
+      "base": 0.25,
+      "rank": 0.19,
+      "relrank": 0.25,
+      "valley": 0.17,
+      "market": 0.19,
+      "trend": 0.07,
+      "marketN": 122,
+      "trendN": 102,
+      "relN": 114,
+      "valleyN": 115,
+      "conf": 0.75
+     },
+     "rankN": 95,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-15T09:00:03+08:00"
+   }
   },
   {
    "matchId": 2041990,
@@ -1806,7 +1944,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-14T21:00:04+08:00"
+    "at": "2026-10-15T09:00:03+08:00"
    },
    "pred": {
     "baseA": 2,
@@ -1988,7 +2126,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-14T21:00:04+08:00"
+    "at": "2026-10-15T09:00:03+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -2170,7 +2308,7 @@
     "goals": 6,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-14T21:00:04+08:00"
+    "at": "2026-10-15T09:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2352,7 +2490,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-14T21:00:04+08:00"
+    "at": "2026-10-15T09:00:03+08:00"
    },
    "pred": {
     "baseA": 2,
@@ -2398,5 +2536,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-15T08:00:03+08:00"
+ "updatedAt": "2026-10-15T09:00:03+08:00"
 }
