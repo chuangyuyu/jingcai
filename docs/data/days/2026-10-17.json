@@ -145,7 +145,7 @@
    "away": "维拉",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1217,7 +1217,7 @@
    "away": "富川FC",
    "matchTime": "15:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1753,7 +1753,7 @@
    "away": "切尔西",
    "matchTime": "19:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2691,7 +2691,7 @@
    "away": "多特蒙德",
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -3486,5 +3486,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-16T22:00:03+08:00"
+ "updatedAt": "2026-10-16T23:00:03+08:00"
 }
