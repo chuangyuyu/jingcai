@@ -132,7 +132,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "1:3",
+    "halfScore": "1:1",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 4,
@@ -307,7 +314,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:1",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 4,
     "modelA": 4,
@@ -1538,7 +1552,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -1720,7 +1734,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -1902,7 +1916,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 2,
@@ -2084,7 +2098,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2266,7 +2280,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2448,7 +2462,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2630,7 +2644,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2812,7 +2826,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 1,
@@ -2994,7 +3008,7 @@
     "goals": 1,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -3176,7 +3190,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-17T23:00:04+08:00"
+    "at": "2026-10-18T09:00:04+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -3352,7 +3366,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -3527,7 +3548,14 @@
     }
    ],
    "totalCaptures": 6,
-   "result": null,
+   "result": {
+    "score": "4:0",
+    "halfScore": "0:0",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 4,
     "modelA": 3,
@@ -3702,7 +3730,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "4:3",
+    "halfScore": "3:1",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -3877,7 +3912,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "2:2",
+    "halfScore": "0:2",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 7,
     "modelA": 3,
@@ -4052,7 +4094,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:1",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -4227,7 +4276,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -4402,7 +4458,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "goals": 0,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -4577,7 +4640,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "1:2",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -4752,7 +4822,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "3:2",
+    "halfScore": "2:1",
+    "goals": 5,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -4927,7 +5004,14 @@
     }
    ],
    "totalCaptures": 6,
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "1:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -5102,7 +5186,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "goals": 0,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -5277,7 +5368,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "1:3",
+    "halfScore": "1:0",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-18T09:00:04+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 4,
@@ -5322,5 +5420,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-17T23:00:04+08:00"
+ "updatedAt": "2026-10-18T09:00:04+08:00"
 }
