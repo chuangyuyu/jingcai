@@ -137,8 +137,8 @@
     "halfScore": "1:1",
     "goals": 4,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -319,8 +319,8 @@
     "halfScore": "0:1",
     "goals": 1,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 4,
@@ -496,7 +496,14 @@
     }
    ],
    "totalCaptures": 5,
-   "result": null,
+   "result": {
+    "score": "6:1",
+    "halfScore": "3:0",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -671,7 +678,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "2:5",
+    "halfScore": "1:2",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -846,7 +860,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "3:4",
+    "halfScore": "2:3",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1021,7 +1042,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "2:0",
+    "halfScore": "0:0",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -1196,7 +1224,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "0:0",
+    "halfScore": "0:0",
+    "goals": 0,
+    "rescheduled": false,
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -1552,7 +1587,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -1734,7 +1769,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -1916,7 +1951,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 2,
@@ -2098,7 +2133,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2280,7 +2315,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2462,7 +2497,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2644,7 +2679,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2826,7 +2861,7 @@
     "goals": 4,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 1,
@@ -3008,7 +3043,7 @@
     "goals": 1,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -3190,7 +3225,7 @@
     "goals": 2,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-18T09:00:04+08:00"
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -3371,8 +3406,8 @@
     "halfScore": "0:0",
     "goals": 1,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -3553,8 +3588,8 @@
     "halfScore": "0:0",
     "goals": 4,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 4,
@@ -3735,8 +3770,8 @@
     "halfScore": "3:1",
     "goals": 7,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -3917,8 +3952,8 @@
     "halfScore": "0:2",
     "goals": 4,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -4099,8 +4134,8 @@
     "halfScore": "0:1",
     "goals": 1,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 2,
@@ -4281,8 +4316,8 @@
     "halfScore": "0:0",
     "goals": 1,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -4463,8 +4498,8 @@
     "halfScore": "0:0",
     "goals": 0,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -4645,8 +4680,8 @@
     "halfScore": "1:0",
     "goals": 3,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -4827,8 +4862,8 @@
     "halfScore": "2:1",
     "goals": 5,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -5009,8 +5044,8 @@
     "halfScore": "1:0",
     "goals": 1,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -5191,8 +5226,8 @@
     "halfScore": "0:0",
     "goals": 0,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -5373,8 +5408,8 @@
     "halfScore": "1:0",
     "goals": 4,
     "rescheduled": false,
-    "status": "1",
-    "at": "2026-10-18T09:00:04+08:00"
+    "status": "2",
+    "at": "2026-10-18T10:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -5420,5 +5455,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-18T09:00:04+08:00"
+ "updatedAt": "2026-10-18T10:00:03+08:00"
 }
