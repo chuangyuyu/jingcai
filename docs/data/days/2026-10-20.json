@@ -431,7 +431,7 @@
    "away": "巴萨",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -565,7 +565,7 @@
    "away": "比利亚雷",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1034,5 +1034,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-19T22:00:03+08:00"
+ "updatedAt": "2026-10-19T23:00:04+08:00"
 }
