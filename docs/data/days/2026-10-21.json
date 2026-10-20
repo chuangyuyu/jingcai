@@ -413,7 +413,7 @@
    "away": "莱红牛",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -815,7 +815,7 @@
    "away": "阿森纳",
    "matchTime": "03:00:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1744,5 +1744,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-20T22:00:03+08:00"
+ "updatedAt": "2026-10-20T23:00:05+08:00"
 }
