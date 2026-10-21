@@ -133,7 +133,48 @@
    ],
    "totalCaptures": 14,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.322,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042097,
@@ -267,7 +308,48 @@
    ],
    "totalCaptures": 8,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.012,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042098,
@@ -401,7 +483,48 @@
    ],
    "totalCaptures": 9,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 2,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.87,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 2,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042099,
@@ -535,7 +658,48 @@
    ],
    "totalCaptures": 8,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 7,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 0.611,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042100,
@@ -669,7 +833,48 @@
    ],
    "totalCaptures": 6,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 4,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 3.487,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042101,
@@ -803,7 +1008,48 @@
    ],
    "totalCaptures": 10,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 7.509,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 4,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042102,
@@ -937,7 +1183,48 @@
    ],
    "totalCaptures": 12,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.137,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 4,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042103,
@@ -1071,7 +1358,48 @@
    ],
    "totalCaptures": 5,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.166,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 5,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042104,
@@ -1205,7 +1533,48 @@
    ],
    "totalCaptures": 10,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 2.485,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   },
   {
    "matchId": 2042105,
@@ -1339,7 +1708,48 @@
    ],
    "totalCaptures": 11,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 3,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.003,
+    "fit0B": 0,
+    "windowA": 177,
+    "windowB": 150,
+    "factors": {
+     "w": [
+      0.46,
+      0.04,
+      0.05,
+      0.41,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.14,
+      "relrank": 0.25,
+      "valley": 0.14,
+      "market": 0.23,
+      "trend": 0.11,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 142,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 177,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-21T08:00:03+08:00"
+   }
   }
  ],
  "updatedAt": "2026-10-20T23:00:05+08:00"
