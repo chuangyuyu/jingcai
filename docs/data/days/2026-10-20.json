@@ -132,7 +132,14 @@
     }
    ],
    "totalCaptures": 14,
-   "result": null,
+   "result": {
+    "score": "2:2",
+    "halfScore": "2:1",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -307,7 +314,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "1:2",
+    "halfScore": "1:1",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -482,7 +496,14 @@
     }
    ],
    "totalCaptures": 9,
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:0",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -657,7 +678,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "4:3",
+    "halfScore": "2:1",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 7,
     "modelA": 3,
@@ -832,7 +860,14 @@
     }
    ],
    "totalCaptures": 6,
-   "result": null,
+   "result": {
+    "score": "4:0",
+    "halfScore": "2:0",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 4,
@@ -1007,7 +1042,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "4:2",
+    "halfScore": "1:0",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -1182,7 +1224,14 @@
     }
    ],
    "totalCaptures": 12,
-   "result": null,
+   "result": {
+    "score": "4:3",
+    "halfScore": "2:2",
+    "goals": 7,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -1357,7 +1406,14 @@
     }
    ],
    "totalCaptures": 5,
-   "result": null,
+   "result": {
+    "score": "5:1",
+    "halfScore": "2:0",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -1532,7 +1588,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "1:0",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1707,7 +1770,14 @@
     }
    ],
    "totalCaptures": 11,
-   "result": null,
+   "result": {
+    "score": "0:1",
+    "halfScore": "0:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-21T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1752,5 +1822,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-20T23:00:05+08:00"
+ "updatedAt": "2026-10-21T09:00:03+08:00"
 }
