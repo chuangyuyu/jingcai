@@ -132,7 +132,14 @@
     }
    ],
    "totalCaptures": 13,
-   "result": null,
+   "result": {
+    "score": "1:0",
+    "halfScore": "1:0",
+    "goals": 1,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -307,7 +314,14 @@
     }
    ],
    "totalCaptures": 13,
-   "result": null,
+   "result": {
+    "score": "1:1",
+    "halfScore": "0:1",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -482,7 +496,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "2:4",
+    "halfScore": "2:2",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -657,7 +678,14 @@
     }
    ],
    "totalCaptures": 13,
-   "result": null,
+   "result": {
+    "score": "2:2",
+    "halfScore": "1:2",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -832,7 +860,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "0:2",
+    "halfScore": "0:2",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -1007,7 +1042,14 @@
     }
    ],
    "totalCaptures": 11,
-   "result": null,
+   "result": {
+    "score": "3:0",
+    "halfScore": "2:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1182,7 +1224,14 @@
     }
    ],
    "totalCaptures": 10,
-   "result": null,
+   "result": {
+    "score": "1:2",
+    "halfScore": "0:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -1357,7 +1406,14 @@
     }
    ],
    "totalCaptures": 13,
-   "result": null,
+   "result": {
+    "score": "2:2",
+    "halfScore": "1:0",
+    "goals": 4,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 7,
     "modelA": 3,
@@ -1532,7 +1588,14 @@
     }
    ],
    "totalCaptures": 12,
-   "result": null,
+   "result": {
+    "score": "3:0",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1707,7 +1770,14 @@
     }
    ],
    "totalCaptures": 14,
-   "result": null,
+   "result": {
+    "score": "0:6",
+    "halfScore": "0:3",
+    "goals": 6,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 3,
     "modelA": 3,
@@ -1882,7 +1952,14 @@
     }
    ],
    "totalCaptures": 7,
-   "result": null,
+   "result": {
+    "score": "2:0",
+    "halfScore": "0:0",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -2057,7 +2134,14 @@
     }
    ],
    "totalCaptures": 4,
-   "result": null,
+   "result": {
+    "score": "3:0",
+    "halfScore": "1:0",
+    "goals": 3,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-23T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 6,
     "modelA": 3,
@@ -2233,8 +2317,49 @@
    ],
    "totalCaptures": 12,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.873,
+    "fit0B": 0,
+    "windowA": 195,
+    "windowB": 168,
+    "factors": {
+     "w": [
+      0.39,
+      0.04,
+      0.04,
+      0.5,
+      0.03
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.24,
+      "rank": 0.13,
+      "relrank": 0.24,
+      "valley": 0.16,
+      "market": 0.25,
+      "trend": 0.13,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 143,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 195,
+     "valleyV": 2,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-23T09:00:03+08:00"
+   }
   }
  ],
- "updatedAt": "2026-10-23T08:00:02+08:00"
+ "updatedAt": "2026-10-23T09:00:03+08:00"
 }
