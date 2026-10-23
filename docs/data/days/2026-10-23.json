@@ -681,7 +681,7 @@
    "away": "蒙扎",
    "matchTime": "02:45:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1658,5 +1658,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-23T22:00:03+08:00"
+ "updatedAt": "2026-10-23T23:00:03+08:00"
 }

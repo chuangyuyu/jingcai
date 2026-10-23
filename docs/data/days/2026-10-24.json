@@ -145,7 +145,7 @@
    "away": "热刺",
    "matchTime": "00:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1619,7 +1619,7 @@
    "away": "墨尔本城",
    "matchTime": "16:40:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -1753,7 +1753,7 @@
    "away": "曼城",
    "matchTime": "19:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -2423,7 +2423,7 @@
    "away": "不来梅",
    "matchTime": "21:30:00",
    "matchStatus": "Selling",
-   "isSingleWin": true,
+   "isSingleWin": false,
    "isSingleHandicap": false,
    "captures": [
     {
@@ -3620,5 +3620,5 @@
    "pred": null
   }
  ],
- "updatedAt": "2026-10-23T22:00:03+08:00"
+ "updatedAt": "2026-10-23T23:00:03+08:00"
 }
