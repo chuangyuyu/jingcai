@@ -1182,7 +1182,14 @@
     }
    ],
    "totalCaptures": 8,
-   "result": null,
+   "result": {
+    "score": "0:2",
+    "halfScore": "0:1",
+    "goals": 2,
+    "rescheduled": false,
+    "status": "1",
+    "at": "2026-10-26T09:00:03+08:00"
+   },
    "pred": {
     "baseA": 2,
     "modelA": 3,
@@ -1708,7 +1715,48 @@
    ],
    "totalCaptures": 9,
    "result": null,
-   "pred": null
+   "pred": {
+    "baseA": 6,
+    "modelA": 3,
+    "baseB": null,
+    "modelB": 3,
+    "fit0A": 1.693,
+    "fit0B": 0,
+    "windowA": 236,
+    "windowB": 199,
+    "factors": {
+     "w": [
+      0.45,
+      0.04,
+      0.05,
+      0.42,
+      0.04
+     ],
+     "evalN": 150,
+     "evalHit": {
+      "n": 150,
+      "base": 0.23,
+      "rank": 0.13,
+      "relrank": 0.25,
+      "valley": 0.2,
+      "market": 0.27,
+      "trend": 0.13,
+      "marketN": 150,
+      "trendN": 150,
+      "relN": 141,
+      "valleyN": 150,
+      "conf": 0.79
+     },
+     "rankN": 236,
+     "valleyV": 3,
+     "hasTrend": true,
+     "hasMarket": true,
+     "hasRel": true,
+     "hasValley": true
+    },
+    "ver": "5.1.0",
+    "at": "2026-10-26T09:00:03+08:00"
+   }
   },
   {
    "matchId": 2042213,
@@ -1847,7 +1895,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2029,7 +2077,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2211,7 +2259,7 @@
     "goals": 6,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -2393,7 +2441,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 3,
@@ -2575,7 +2623,7 @@
     "goals": 1,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 7,
@@ -2757,7 +2805,7 @@
     "goals": 3,
     "rescheduled": false,
     "status": "2",
-    "at": "2026-10-25T23:00:03+08:00"
+    "at": "2026-10-26T09:00:03+08:00"
    },
    "pred": {
     "baseA": 6,
@@ -5078,5 +5126,5 @@
    }
   }
  ],
- "updatedAt": "2026-10-26T08:00:03+08:00"
+ "updatedAt": "2026-10-26T09:00:03+08:00"
 }
